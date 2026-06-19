@@ -1,0 +1,12 @@
+window_id,start_date,end_date,risk_level,expected_direction,a8_direction,a93_direction,main_drivers,assessment_status
+2026-W01,2026-06-26,2026-06-29,high,outbound,A8 toward Salzburg,A93 toward Kiefersfelden,"Slovenia and Poland summer-holiday starts; Hesse, Rhineland-Palatinate and Saarland start summer holidays",analyst_derived
+2026-W02,2026-07-03,2026-07-05,very_high,outbound,A8 toward Salzburg,A93 toward Kiefersfelden,"Eastern Austria, Netherlands North, Belgium, Czechia and several German states enter summer holidays",analyst_derived
+2026-W03,2026-07-10,2026-07-12,very_high,outbound,A8 toward Salzburg,A93 toward Kiefersfelden,"Salzburg, Tyrol and western Austria enter summer holidays; Netherlands South starts",analyst_derived
+2026-W04,2026-07-17,2026-07-20,very_high,outbound,A8 toward Salzburg,A93 toward Kiefersfelden,"Netherlands Central and North Rhine-Westphalia summer-holiday starts",analyst_derived
+2026-W05,2026-07-30,2026-08-03,extreme,outbound,A8 toward Salzburg,A93 toward Kiefersfelden,"Baden-Württemberg and Bavaria summer-holiday starts",analyst_derived
+2026-W06,2026-08-28,2026-09-01,very_high,return,A8 toward Munich,A93 toward Rosenheim,"Netherlands, Belgium, Czechia, Slovenia, Croatia and Poland school returns",analyst_derived
+2026-W07,2026-09-05,2026-09-06,high,return,A8 toward Munich,A93 toward Rosenheim,"Eastern Austria summer-holiday end",analyst_derived
+2026-W08,2026-09-11,2026-09-14,extreme,return,A8 toward Munich,A93 toward Rosenheim,"Baden-Württemberg, Salzburg, Tyrol and Bavaria summer-holiday ends",analyst_derived
+2026-W09,2026-10-23,2026-10-26,high,bidirectional,both directions,both directions,"Austria National Day falls on Monday, creating a long weekend",analyst_derived
+2026-W10,2026-12-04,2026-12-08,medium_high,bidirectional,both directions,both directions,"Austria and Italy observe Immaculate Conception on Tuesday; bridge-day travel is possible",analyst_derived
+2026-W11,2026-12-18,2027-01-10,very_high,bidirectional,both directions,both directions,"Overlapping Christmas and New Year school holidays across most included countries",analyst_derived
