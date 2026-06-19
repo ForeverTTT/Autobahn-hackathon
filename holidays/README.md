@@ -1,148 +1,174 @@
-# A8 East / A93 South 节假日数据说明
+# 拜仁州、萨尔茨堡州、蒂罗尔州节假日数据
 
-本目录保存可能影响 **A8 East（慕尼黑—萨尔茨堡）** 和
-**A93 South（罗森海姆—库夫施泰因）** 假日交通的公共假日与学校假期。
+本目录只保存可能影响 **A8 East（慕尼黑—萨尔茨堡）** 和
+**A93 South（罗森海姆—库夫施泰因）** 的以下三个地区：
 
-数据目标范围为 **2026-01-01 至 2029-12-31**。学校假期只保存当前已经发布或被
-数据源收录的日期；未发布的未来日期不会被填成“无假期”，而是在
-`coverage.csv` 中保留缺口。
+| 地区代码 | 地区 |
+|---|---|
+| `DE-BY` | 德国拜仁州（Bavaria） |
+| `AT-SB` | 奥地利萨尔茨堡州（Salzburg） |
+| `AT-TI` | 奥地利蒂罗尔州（Tyrol） |
+
+数据目标范围为 **2023-01-01 至 2029-12-31**。全国性法定假日只要适用于目标州，
+就会映射到相应目标州；其他国家和德国、奥地利的其他州均不保留。
+只适用于州内个别城市的地方假日也不保留，例如奥格斯堡和平节不会被当作拜仁全州假日。
+
+学校假期只保存当前已经发布或被数据源收录的日期。尚未发布的未来日期不会被
+填成“无假期”，应结合 `coverage.csv` 判断数据完整性。
 
 ## 文件
 
 | 文件 | 内容 |
 |---|---|
-| `holiday_periods.csv` | 每行一个节假日或学校假期区间 |
-| `holiday_scopes.csv` | 假期与州、省、学校假期区等地域范围的多对多关系 |
-| `holiday_dates.csv` | 将区间展开到每天，方便按 `date` 与交通数据连接 |
-| `coverage.csv` | 各国公共/学校假期数据目前覆盖到的日期 |
-| `sources.csv` | 官方参考网页、交通相关性和地区优先级 |
-| `traffic_windows_2026.csv` | 根据假期开始/结束叠加得到的 2026 重点交通窗口 |
-| `update_holidays.py` | 从 OpenHolidays API 重新生成上述数据 |
-
-## 覆盖地区
-
-优先级数字越小，对两条公路的预期影响越大：
-
-| 优先级 | 地区 | 原因 |
-|---|---|---|
-| 1 `core` | 德国、奥地利 | 道路所在地、主要客源地与直接过境地 |
-| 2 `high` | 意大利、斯洛文尼亚、克罗地亚 | 布伦纳及东南方向主要目的地/返程来源 |
-| 3 `medium` | 荷兰、比利时、捷克、波兰、匈牙利、斯洛伐克、瑞士 | 重要跨境客源或竞争性阿尔卑斯交通 |
-| 4 `secondary` | 塞尔维亚、罗马尼亚、保加利亚 | 东南欧长途过境交通 |
+| `holiday_periods.csv` | 每行一个去重后的节假日或学校假期区间 |
+| `holiday_scopes.csv` | 每个假期适用于三个目标州中的哪些州 |
+| `holiday_dates.csv` | 按目标州展开到每天，可直接与交通数据连接 |
+| `coverage.csv` | 每个目标州的公共/学校假期数据覆盖情况 |
+| `sources.csv` | 三个目标州的机器数据源与官方核验来源 |
+| `traffic_windows_2023_2029.csv` | 根据三个目标州学校假期自动推导的 2023–2029 交通窗口 |
+| `update_holidays.py` | 重新下载和生成数据的脚本 |
 
 ## `holiday_periods.csv`
+
+这是去重后的假期区间表。同一个奥地利全国假日同时适用于萨尔茨堡和蒂罗尔时，
+这里只保存一条记录，具体适用州由 `holiday_scopes.csv` 表示。
 
 主要字段：
 
 | 字段 | 说明 |
 |---|---|
-| `record_id` | OpenHolidays 记录 UUID，也是其他表的连接键 |
+| `record_id` | OpenHolidays UUID，也是其他表的连接键 |
 | `holiday_class` | `public_holiday`、`school_holiday`、`school_marker` 等 |
 | `api_type` | 数据源原始类型，如 `Public`、`School`、`EndOfLessons` |
-| `country_code` | ISO 3166-1 两位国家代码 |
-| `traffic_priority` | 1–4 的交通相关性等级 |
 | `start_date`, `end_date` | 包含首尾两日的 ISO 日期区间 |
 | `duration_days` | 区间自然日数量 |
-| `nationwide` | 是否全国适用 |
-| `subdivision_count` | 适用的州、省、地区数量 |
-| `group_count` | 学校假期区或学校类别数量 |
-| `verification_status` | 当前为 `aggregated_official_calendar`，表示来自官方日历聚合数据，但没有逐行人工复核 |
+| `nationwide` | 该记录在所属国家是否全国适用 |
+| `target_region_count` | 该记录适用于三个目标州中的几个 |
+| `verification_status` | `aggregated_official_calendar` 表示来自官方日历聚合数据，未逐行人工复核 |
+| `record_origin` | `api` 或 `statutory_calculation` |
 | `retrieved_at` | UTC 抓取时间 |
 
-`EndOfLessons` 和 `BackToSchool` 是学校日历边界标记，不应直接视作一段完整假期。
+`EndOfLessons` 和 `BackToSchool` 是学校日历边界标记，不应直接视作完整假期。
 
 ## `holiday_scopes.csv`
 
-一个假期可能覆盖多个州或假期区，因此地域范围单独规范化：
+该表只允许出现以下 `region_code`：
 
-| `scope_kind` | 含义 |
-|---|---|
-| `national` | 全国适用 |
-| `subdivision` | 州、省、县、市等行政区 |
-| `group` | 荷兰 North/Central/South、比利时语言共同体或特定学校类别 |
-| `unspecified` | 数据源说明为地区性，但未给出机器可读地区代码 |
+```text
+DE-BY
+AT-SB
+AT-TI
+```
 
-某些记录同时具有 `subdivision` 和 `group`。聚合时应先选定一种地域粒度，避免重复计数。
+字段包括：
+
+- `record_id`：连接 `holiday_periods.csv`。
+- `country_code`：`DE` 或 `AT`。
+- `region_code`：目标州代码。
+- `region_name`：Bavaria、Salzburg 或 Tyrol。
 
 ## `holiday_dates.csv`
 
-推荐直接与日级交通数据连接：
+该表按照“日期 × 假期 × 目标州”展开。因此一个同时适用于萨尔茨堡和蒂罗尔的
+奥地利全国假日，在同一天会有两行。
+
+主要字段：
+
+- `date`：连接交通数据的日期。
+- `region_code`、`region_name`：无需再次连接地域表即可按州建模。
+- `day_index=0`：假期第一天。
+- `days_to_end=0`：假期最后一天。
+- `is_start_date`、`is_end_date`：用于构造出发和返程波。
+- `weekday_iso`：周一为 1，周日为 7。
+
+使用示例：
 
 ```python
 import pandas as pd
 
-traffic = pd.read_csv("../data/daily_traffic.csv")
-holiday_dates = pd.read_csv("holiday_dates.csv")
-
-school = holiday_dates[
-    holiday_dates["holiday_class"].eq("school_holiday")
-].copy()
+holidays = pd.read_csv("holidays/holiday_dates.csv")
 
 features = (
-    school.groupby(["date", "traffic_priority"])
-    .agg(active_holiday_records=("record_id", "nunique"))
+    holidays[holidays["holiday_class"].isin(["school_holiday", "public_holiday"])]
+    .groupby(["date", "region_code"])
+    .agg(active_holidays=("record_id", "nunique"))
     .reset_index()
 )
-
-traffic = traffic.merge(features, on="date", how="left")
 ```
 
-重要字段：
+## `coverage.csv`
 
-- `day_index=0`：假期区间第一天。
-- `days_to_end=0`：假期区间最后一天。
-- `is_start_date` / `is_end_date`：可用于构造出发与返程波。
-- `weekday_iso`：周一为 1，周日为 7。
+每个目标州包含两行：
 
-若需要按州或学校假期区过滤，应通过 `record_id` 再连接 `holiday_scopes.csv`。
+- `dataset_type=public`
+- `dataset_type=school`
+
+因此正常情况下共 6 行。重要字段：
+
+- `target_last_record_start`、`target_last_record_end`
+- `target_record_count`
+- `api_record_count`、`calculated_record_count`
+- `coverage_status`：区分纯API记录和含法律规则计算记录的数据
+- `has_any_record_overlap_2023` 至 `has_any_record_overlap_2029`
+
+`has_any_record_overlap_YYYY=true` 只表示至少有一个区间与该年重叠，不代表该年
+学校日历完整。例如跨年圣诞假期可能让下一年显示为 `true`，但下一年暑假仍未发布。
+
+## `traffic_windows_2023_2029.csv`
+
+该文件只使用拜仁、萨尔茨堡和蒂罗尔三个州的学校假期推导，覆盖 2023–2029。
+每个长度不少于 3 天的学校假期都会生成：
+
+- `departure`：假期开始附近的出发窗口；
+- `return`：假期结束附近的返程窗口。
+
+相互重叠或紧邻的三州窗口会被合并。`risk_level` 根据同时涉及的州数以及是否为
+暑假确定。它仍然只是规则分析结果，不是政府发布的交通预测：
+
+```text
+assessment_status=rule_derived
+```
 
 ## 建议交通特征
 
-简单的 `is_holiday` 不足以描述走廊交通，建议至少构造：
-
 ```text
-active_school_holiday_count_by_priority
-active_public_holiday_count_by_priority
+is_school_holiday_DE_BY
+is_school_holiday_AT_SB
+is_school_holiday_AT_TI
+is_public_holiday_DE_BY
+is_public_holiday_AT_SB
+is_public_holiday_AT_TI
+three_region_holiday_overlap_count
 days_to_next_school_holiday_start
-days_since_school_holiday_start
-is_first_friday_or_saturday_of_holiday
-is_last_sunday_of_holiday
-holiday_overlap_country_count
-holiday_overlap_core_high_count
+is_first_holiday_friday_or_saturday
+is_last_holiday_sunday
 ```
 
-方向含义：
+通常假期开始提高 A8 萨尔茨堡方向和 A93 库夫施泰因方向流量，假期结束则提高
+A8 慕尼黑方向和 A93 罗森海姆方向返程流量。
 
-- 假期开始前的星期五和第一个星期六通常提高 A8 萨尔茨堡方向、
-  A93 库夫施泰因方向的流量。
-- 假期结束前最后一个星期日通常提高 A8 慕尼黑方向、
-  A93 罗森海姆方向的返程流量。
+## 数据来源与限制
 
-`traffic_windows_2026.csv` 是基于假期叠加关系形成的分析结果，而不是政府发布的
-交通预测。`assessment_status=analyst_derived` 用于明确区分它与官方日历记录。
-
-## 覆盖与质量限制
-
-1. `coverage.csv` 中 `latest_available_start_date` 是数据源当前保存的最晚记录，
-   **不等于该学年已经完整发布**。
-   `has_any_record_overlap_YYYY` 也只表示至少有一个区间与该年重叠，不能当作全年完整性标记。
-2. 德国、荷兰和比利时等国已发布较长周期的校历；奥地利、意大利、斯洛文尼亚、
-   克罗地亚及部分东南欧国家通常逐学年发布。
-3. 意大利、德国、奥地利、瑞士、荷兰和比利时必须按地区处理，不能压成一个全国布尔值。
-4. 学校、学校类别或地方政府可能存在例外日期。
-5. OpenHolidays API 是机器可读聚合源。用于正式预测发布前，应优先按
-   `sources.csv` 中的官方页面复核优先级 1–2 地区。
-6. OpenHolidays 数据采用
-   [Open Database License](https://github.com/openpotato/openholidaysapi.data/blob/main/LICENSE)；
-   使用和再分发时应保留来源说明。
+- 机器数据来自 [OpenHolidays API](https://www.openholidaysapi.org/en/)。
+- 拜仁官方核验来源为
+  [巴伐利亚教育部](https://www.km.bayern.de/termine/ferien-und-feiertage)。
+- 萨尔茨堡和蒂罗尔官方核验来源为
+  [奥地利政府假期日历](https://www.oesterreich.gv.at/de/themen/bildung_und_ausbildung/schulen/3)。
+- 奥地利 2029 年完整学校日历截至 2026-06-19 尚未逐项发布。数据集中2029年
+  学期假、复活节假、圣灵降临节假、暑假、秋假、圣诞假及州纪念日依据现行
+  [《Schulzeitgesetz 1985》第2条](https://ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10009575&Paragraf=2)
+  计算，并标记为 `calculated_from_current_law`，不冒充已发布日历。
+- 地方学校和特定学校类型可能存在例外日期。
+- 拜仁州的圣母升天节只在部分以天主教人口为主的市镇属于法定假日；数据源将其标为
+  `DE-BY` 地区性假日，建模时不应把它解释成拜仁全州统一放假。
+- OpenHolidays 数据采用
+  [Open Database License](https://github.com/openpotato/openholidaysapi.data/blob/main/LICENSE)。
 
 ## 更新
-
-脚本仅使用 Python 标准库：
 
 ```bash
 python3 holidays/update_holidays.py
 ```
 
-API 对较长日期范围有限制，因此脚本按自然年请求，再通过 `record_id` 去重。
-建议每月自动更新一次，并在暑假、圣诞假期预测发布前额外运行一次。
+脚本只请求 `DE-BY`、`AT-SB` 和 `AT-TI`，按自然年下载后通过 UUID 去重，
+并自动生成2023–2029交通窗口。
