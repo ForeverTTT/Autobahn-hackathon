@@ -1,355 +1,215 @@
-# Model Documentation — CatBoost v2 Traffic Forecasting
+# 模型说明
 
-> **Notebook**: `model/model_notebook.ipynb`  
-> **Status**: ✅ Training complete, forecasts generated for 2026–2029  
-> **Last run**: 2026-06-20  
-> **Replaces**: `model_v2_review.md`, `model_v2_next_steps.md`, `hyperparameter_guide.md`, `final_plan.md` (those are now obsolete)
+当前可交付预测由 **CatBoost v2** 生成。TFT 已完成训练实验并保存 checkpoint，但尚未与 CatBoost 融合，也没有生成当前 Agent 使用的交付文件。
 
----
+## 1. 文件与角色
 
-## 1. What the Model Does
+| 文件/目录 | 角色 |
+|---|---|
+| `model/model_notebook.ipynb` | 当前 CatBoost v2 训练、评估和 2026–2029 推理 |
+| `model/tft.ipynb` | 多目标 Temporal Fusion Transformer 实验 |
+| `model/model.md` | 模型设计背景和特征方案 |
+| `model/compressed_notebook.md` | `model_notebook.ipynb` 的文本化审阅副本 |
+| `model/compress_notebook.py` | 重新生成压缩审阅副本 |
+| `model/review_notes.md` | 对 conformal、速度误差、施工和全量重训的审阅建议 |
+| `models/kfz_h/multi.cbm` | 总流量 MultiQuantile 模型 |
+| `models/sv_h/lkw_ratio.cbm` | 重型车占比模型 |
+| `models/v_kfz/speed_drop.cbm` | 速度下降模型 |
+| `models/snapshots/` | CatBoost 训练快照和训练日志 |
+| `models/tft/` | TFT 日志和 checkpoint |
+| `data_autobahn/forecast_2026_2029.csv` | 当前交付预测，Agent 默认读取 |
 
-Predicts **hourly traffic for 12 measurement stations** on the A8 East and A93 South autobahn corridors, **2026-01-01 → 2029-12-31** (420,768 rows = 12 sites × 1,461 days × 24 hours).
+`processed/` 是 notebook 的中间产物目录，已被 `.gitignore` 忽略，因此不能假定其中的 parquet、profile 或 conformal JSON 存在于其他机器。
 
-### Three Targets
+## 2. CatBoost v2
 
-| Target | Unit | Method | Model |
-|--------|------|--------|-------|
-| `kfz_h` (total flow) | veh/h | P10/P50/P90 quantile regression | CatBoost `MultiQuantile:alpha=0.1,0.5,0.9` — single model, shared trees |
-| `sv_h` (truck volume) | veh/h | Ratio method: `lkw_ratio × kfz_h_p50` | CatBoost RMSE on `lkw_ratio = sv_h / kfz_h` |
-| `v_kfz` (avg speed) | km/h | Two-step: `prof_v_p85 − speed_drop` | CatBoost RMSE on `speed_drop` (G3: includes `kfz_p50_pred`) |
+### 2.1 预测任务
 
-### Core Idea
+| 目标 | 方法 | 输出 |
+|---|---|---|
+| `kfz_h` | CatBoost MultiQuantile | P10 / P50 / P90 |
+| `sv_h` | 预测 `sv_h / kfz_h` 比例，再乘 `kfz_h_p50` | 重型车流量 |
+| `v_kfz` | 预测相对自由流速度画像的 `speed_drop` | 平均车速 |
 
-Historical **profile features** (median traffic by site×hour×weekday, site×hour×tagestyp, etc.) provide the baseline prediction (~64% of feature importance). External **conditional features** (holidays, weather climatology, construction, events) provide marginal adjustments on top. **No lag features, no recursive forecasting** — the model predicts any future date directly from calendar-anchored features.
+速度模型额外使用 `kfz_p50_pred`，显式表达流量升高与速度下降的关系。
 
----
+### 2.2 核心思路
 
-## 2. Feature Engineering Overview
+模型不是递归预测未来四年，而是把历史观测压缩为可查表的画像特征：
 
-### Feature Groups (82–86 features depending on target)
-
-| Group | Count | Examples | Purpose |
-|-------|-------|----------|---------|
-| **CALENDAR** | 17 | `hour`, `weekday`, `month`, `doy`, `hour_sin/cos`, `dow_sin/cos`, `month_sin/cos`, `doy_sin/cos`, `is_weekend/friday/saturday/sunday` | Temporal position encoding |
-| **STATIC_NUM** | 3 | `bab_km`, `longitude`, `latitude` | Site geographic position |
-| **STATIC_CAT** | 6 | `site_id`, `road`, `direction`, `site_name`, `tagestyp`, `season` | Site identity + day type |
-| **PROF_KFZ** | 5 | `prof_kfz_shd` (site×h×wkday), `prof_kfz_sht` (site×h×tagestyp), `prof_kfz_shm` (site×h×month), `prof_kfz_p90` (P90), `prof_kfz_shs` (site×h×season) | Historical flow profiles — **primary signal (64% importance)** |
-| **PROF_LKW** | 2 | `prof_lkw_shd`, `prof_lkw_sht` | Historical truck ratio profiles |
-| **PROF_V** | 3 | `prof_v_shd`, `prof_v_p85` (free-flow baseline), `prof_v_sht` | Historical speed profiles |
-| **HOLIDAY** | 17 | `is_school/public_holiday_DE_BY/AT_SB/AT_TI`, `school/public_holiday_count`, `is_holiday_start/end`, `days_to_holiday_start`, `days_since_holiday_end`, `total_holiday_overlap`, `is_departure/return_wave_day`, `in_traffic_window` | Holiday impact + departure/return wave detection |
-| **HOLIDAY_CAT** | 4 | `window_direction`, `window_risk_level`, `a8_direction`, `a93_direction` | Categorical holiday modifiers |
-| **WEATHER** | 6 | `w_precip`, `w_snow`, `w_lowvis`, `w_tmin`, `w_tmax`, `w_ice` | Daily weather (observed for past, climatology for future) |
-| **WEATHER_CAT** | 1 | `weather_source` | Data source indicator |
-| **TEMP** | 3 | `lt_mean` (air temp), `fbt_mean` (road temp), `fbt_min` | Hourly temperature (observed or climatology) |
-| **CONSTRUCTION** | 9 | `has_a8/a93_construction`, `has_2_plus_0`, `two_plus_0_count`, `max_closed_lanes`, `sum_closed_lanes`, `has_target_bbox_construction` | Construction/closure indicators |
-| **EVENTS** | 12 | `has_special_event`, `active_event_count`, `max_impact_level`, `impact_score`, `affects_a8_ost/a93_sued`, `has_munich/salzburg/rosenheim/kufstein_event`, `has_confirmed/estimated_event` | Special event impact scores |
-| **G3 (speed only)** | 1 | `kfz_p50_pred` | Flow prediction fed into speed model (flow→speed coupling) |
-
-### Profile Features — The Core Signal
-
-Profiles are built **only from training data** (2023–2024), preventing data leakage:
-
-```python
-profiles = build_profiles(train_df)  # train_df ends at 2024-12-31
-train_df = apply_profiles(train_df, profiles)
-val_df   = apply_profiles(val_df, profiles)    # val = 2025, profiles still from train only
+```text
+历史小时流量
+  → site × hour × weekday/tagestyp/month/season 画像
+  → 日历、假期、天气气候态、施工、活动修正
+  → 任意未来日期的直接预测
 ```
 
-Each profile is a groupby-median (or quantile) lookup: e.g., `prof_kfz_sht = median(kfz_h) by (site_id, hour, tagestyp)`. Missing keys fall back to a global median.
+因此：
 
-Profile keys:
-- `shd` = site × hour × weekday
-- `sht` = site × hour × tagestyp (w/s/u)
-- `shm` = site × hour × month
-- `shs` = site × hour × season (v2 new)
-- `p90` / `p85` = upper quantiles for peak detection / free-flow speed
+- 不使用 lag 特征。
+- 不依赖前一小时预测。
+- 2026–2029 每个小时可以独立构造特征。
+- 长期预测中的“天气”表示气候态，不是真实预报。
 
----
+### 2.3 特征组
 
-## 3. Model Architecture
+| 特征组 | 示例 |
+|---|---|
+| 日历 | hour、weekday、month、doy、周期编码、周末/周五/周日 |
+| 站点静态 | site_id、road、direction、site_name、经纬度、公里桩 |
+| 历史画像 | site × hour × weekday/tagestyp/month/season 的中位数或分位数 |
+| 假期 | 三州公共/学校假期、起止日、交通窗口、出发/返程方向 |
+| 天气 | 降水、降雪、低能见度、温度、结冰风险、数据来源 |
+| 施工 | A8/A93 施工、2+0、关闭车道、目标区域施工 |
+| 活动 | 活动数量、影响等级、城市和走廊影响 |
 
-### 3.1 kfz_h: MultiQuantile CatBoost
+历史画像是主信号；条件特征主要用于在画像上做可解释偏移。
 
-```
-CatBoostRegressor(
-    loss_function="MultiQuantile:alpha=0.1,0.5,0.9",
-    iterations=2000, learning_rate=0.02, depth=8,
-    l2_leaf_reg=3.0, min_data_in_leaf=50,
-    subsample=0.85, rsm=0.8,
-    early_stopping_rounds=200
-)
-```
+## 3. 训练与校准
 
-Single model outputs P10, P50, P90 simultaneously. Shared tree structure prevents quantile crossing. `rsm=0.8` adds column subsampling for minor diversity between quantiles.
+当前 notebook 的评估切分：
 
-Post-processing: monotonicity constraint (`P90 ≥ P50 ≥ P10`) + conformal calibration (`±conf_quantile` applied to P10/P90).
-
-### 3.2 sv_h: Ratio Method
-
-```
-lkw_ratio = sv_h / kfz_h  →  CatBoostRegressor(loss_function="RMSE", ...)
-sv_h_pred = lkw_ratio_pred × kfz_h_p50
+```text
+训练：2023-01-01 至 2024-12-31
+验证：2025-01-01 至 2025-12-31
+推理：2026-01-01 至 2029-12-31
 ```
 
-Trained on rows where `sv_h > 0`. Ratio prediction is more stable than direct SV regression (ratios are bounded and less volatile).
+画像只用训练段构建，再应用到验证段，避免验证泄漏。
 
-### 3.3 v_kfz: Two-Step Speed Drop (G3)
+总流量模型使用单个 MultiQuantile CatBoost 同时预测三个分位数。推理后执行单调修正，保证：
 
-```
-speed_drop = prof_v_p85 − v_kfz      # positive = congestion
-v_kfz_pred = prof_v_p85 − speed_drop_pred
-```
-
-Training target clipped to `[-20, 60]` to reduce outlier influence. Validation target kept raw for honest evaluation.
-
-**G3 enhancement**: `kfz_p50_pred` added as a feature so the speed model sees the predicted flow level, capturing the flow→speed relationship directly. This requires two-stage training: kfz model first → predict kfz_p50 on train/val → speed model uses it as input.
-
-```
-CatBoostRegressor(
-    loss_function="RMSE", eval_metric="RMSE",
-    iterations=1200, learning_rate=0.02, depth=5,
-    l2_leaf_reg=15.0, min_data_in_leaf=200,
-    early_stopping_rounds=100, random_strength=1.0, rsm=0.85
-)
+```text
+P10 ≤ P50 ≤ P90
 ```
 
-More conservative than the flow model (shallower trees, stronger regularization) because the speed-flow relationship is simpler but noisier.
+2025 验证集按时间再拆分为校准段与测试段，进行 split conformal 校准。notebook 记录的全局校准量约为 `+26.3 veh/h`。
 
----
+## 4. 评估结果
 
-## 4. Key Milestones & Fixes Applied
+`model/model_notebook.ipynb` 中保存的 2025 hold-out 结果：
 
-### Timeline
+| 指标 | v1 | v2 |
+|---|---:|---:|
+| `kfz_h` MAE | 137.1 veh/h | 135.4 veh/h |
+| `kfz_h` RMSE | 238.7 | 235.4 |
+| `kfz_h` MAPE | 16.4% | 16.1% |
+| `kfz_h` WMAPE | — | 10.7% |
+| `sv_h` MAE | 24.5 veh/h | 23.7 veh/h |
+| `sv_h` RMSE | 41.9 | 40.5 |
+| `sv_h` MAPE | 20.9% | 19.9% |
+| `v_kfz` MAE | 5.9 km/h | 5.7 km/h |
+| `v_kfz` RMSE | 9.6 | 9.5 |
+| `v_kfz` MAPE | 7.5% | 7.3% |
+| P10–P90 原始覆盖率 | 69.5% | 71.4% |
+| P10–P90 校准后覆盖率 | — | 81.5% |
+| 校准后平均区间宽度 | 365 veh/h | 393 veh/h |
+| Top-10% 峰值召回率 | 88.1% | 88.1% |
 
-| Milestone | Status | Description |
-|-----------|--------|-------------|
-| **v1 baseline** | ✅ | 3 independent CatBoost models (P10/P50/P90). PICP=69.5%, MAPE=16.4%. MPIW baseline corrected (was 585, real 365). |
-| **v2 MultiQuantile** | ✅ | Single model for all 3 quantiles. Shared trees, no quantile crossing, 3× faster training. |
-| **A: tagestyp rebuild** | ✅ | `derive_tagestyp()` reconstructs tagestyp (w/s/u) from holiday flags for future grid. 99.91% accuracy validated on 2023–2025. Prevents summer holidays being treated as workdays (was causing systematic underestimation of peak days). |
-| **B: Split conformal** | ✅ | 2025 validation split by time: first half calibrates `conf_quantile`, second half reports honest PICP. `conf_quantile` saved to `conformal.json` and applied to forecast P10/P90. Result: raw PICP 71.4% → calibrated 81.5% (held-out). |
-| **E: Honest baselines** | ✅ | V1_BASELINE MPIW corrected 585→365. Both raw and calibrated PICP reported. Peak Recall label fixed to top10%. Comparison table no longer misleading. |
-| **G3: Speed model + flow** | ✅ | `kfz_p50_pred` added as feature to speed model. v_kfz MAE improved from 5.9→5.7 km/h. Requires two-stage pipeline. |
-| **Confidence metrics** | ✅ | `interval_width` and `relative_interval_width` added to forecast output for Agent layer consumption. |
-| **Chinese→English labels** | ✅ | All chart titles, axis labels, DataFrame columns, and print output translated to English for consistent rendering. |
+覆盖率提升主要来自 conformal 校准，不应归因于 `rsm` 等普通超参数调整。
 
-### What Was NOT a Real Improvement (Corrected)
+## 5. 交付预测
 
-- **PICP "69.5→80.0%" in early v2**: Was in-sample self-deception (calibrated and evaluated on the same data). Fixed by split conformal. The real improvement is 69.5% → 81.5% (honest).
-- **MPIW "585→393"**: Used a wrong v1 baseline (585). Real v1 MPIW = 365. The real change is 365→393 (interval slightly wider, which is the price of honest 80% coverage).
-- **rsm boosting PICP**: The `hyperparameter_guide.md` previously claimed `rsm=0.8` could push PICP from 69% to 75-80%. Actual data: rsm contribution ~2pt (69.5%→71.4%). The main PICP lever is conformal calibration.
+文件：`data_autobahn/forecast_2026_2029.csv`
 
----
+已核对：
 
-## 5. Final Metrics (2025 Hold-Out, Split-Conformal Evaluation)
+- 420,768 行。
+- 12 个站点。
+- 2026-01-01 至 2029-12-31，共 1,461 天。
+- 每站每天 24 行。
+- `(site_id, date, hour)` 无重复。
+- 没有分位数交叉。
 
-| Metric | v1 (model.ipynb) | v2 (model_notebook.ipynb) | Δ | Verdict |
-|--------|-------------------|---------------------------|---|---------|
-| kfz_h MAE | 137.1 veh/h | **135.4** | ▼ 1.7 | ✅ Small real improvement |
-| kfz_h RMSE | 238.7 | **235.4** | ▼ 3.3 | ✅ |
-| kfz_h MAPE | 16.4% | **16.1%** | ▼ 0.26pt | ✅ |
-| kfz_h WMAPE | — | **10.7%** | new | Reference |
-| sv_h MAE | 24.5 veh/h | **23.7** | ▼ 0.8 | ✅ |
-| sv_h RMSE | 41.9 | **40.5** | ▼ 1.4 | ✅ |
-| sv_h MAPE | 20.9% | **19.9%** | ▼ 0.99pt | ✅ |
-| v_kfz MAE | 5.9 km/h | **5.7** | ▼ 0.19 | ✅ G3 improvement |
-| v_kfz RMSE | 9.6 | **9.5** | ▼ 0.14 | ✅ |
-| v_kfz MAPE | 7.5% | **7.3%** | ▼ 0.21pt | ✅ |
-| **PICP (raw)** | 69.5% | **71.4%** | ▲ 1.9pt | Small (rsm), not the main lever |
-| **PICP (calibrated)** | — | **81.5%** | — | ✅ Split-conformal, honest, held-out |
-| **MPIW (calibrated)** | 365 veh/h | **393** | ▲ 28 | Price of honest 80% coverage |
-| **Peak Recall (top10%)** | 88.1% | **88.1%** | 0 | Stable |
-| **Improved / Total** | — | **11 / 12** | — | MPIW is the only "regression" (expected) |
+当前字段：
 
-### Feature Importance (kfz_h P50)
+```text
+site_id, road, direction, site_name, date, hour,
+kfz_h_p10, kfz_h_p50, kfz_h_p90,
+sv_h_pred, v_kfz_pred, interval_width, relative_interval_width
+```
 
-| Group | Share |
-|-------|-------|
-| ① Historical Profile | 63.9% |
-| ② Calendar | 18.5% |
-| ⑦ Site Static | 6.7% |
-| ④ Weather/Temp | 6.1% |
-| ③ Holiday | 3.7% |
-| ⑥ Events | 1.1% |
-| ⑤ Construction | **0.0%** (verified correct — see §6.1) |
+`relative_interval_width = interval_width / (p50 + 1)`，供 Agent 解释预测不确定性。Agent 代码也能用 P10/P50/P90 动态重算。
 
----
+## 6. TFT 实验
 
-## 6. Known Limitations & Issues
+`model/tft.ipynb` 构建了多目标 TFT，同时预测 `kfz_h`、`sv_h` 和 `v_kfz`，输入覆盖：
 
-### 6.1 🔴 Train/Test Split: Construction Features Dead (0% Importance)
+- 静态站点特征。
+- 已知未来日历和条件特征。
+- 历史观测特征。
+- 连续小时面板和缺测回填标记。
 
-**What**: All construction features have 0.0% importance in the model.
+仓库中存在：
 
-**Why (verified correct)**: The training window (2023–2024, 731 days) contains **zero** days with meaningful construction data. The Autobahn API has no historical endpoint. Additionally, the merged construction table was built from a buggy pipeline with an over-permissive `is_2_plus_0` decoder. A corrected pipeline exists (`scripts/fix_construction_data.py`) but its output was never wired into the merged table. **Full investigation**: see [`doc/CONSTRUCTION_DATA_ISSUE.md`](CONSTRUCTION_DATA_ISSUE.md).
+- `models/tft/checkpoints/tft-epoch=02-val_loss=119.308.ckpt`
+- `models/tft/checkpoints/tft-epoch=08-val_loss=112.102.ckpt`
+- 两组 Lightning 日志和超参数文件。
 
-**Impact**: The model **cannot represent "2+0" capacity halving** during road maintenance. This is a data limitation, not a code bug.
+最后一条完整日志记录的验证指标约为：
 
-**Mitigation**: Known future 2+0 closures should be handled via rule-based post-processing (`apply_capacity_override()` in `doc/tasks_D_F_G_tutorial.md`). The training set limitation must be documented when presenting results.
+| 目标 | MAE | RMSE |
+|---|---:|---:|
+| `kfz_h` | 131.9 | 206.8 |
+| `sv_h` | 26.3 | 40.4 |
+| `v_kfz` | 5.4 | 8.7 |
 
-### 6.2 🟠 Delivery Model Uses 2023–2024 Only (2025 Not Used for Final Training)
+这些指标来自 TFT 自身的多步验证流程，与 CatBoost notebook 的评估采样和校准不完全一致，不能直接据此宣布 TFT 优于 CatBoost。
 
-**What**: The final forecast (`forecast_2026_2029.parquet`) was generated using profiles and models trained only on 2023–2024. The 2025 data was used for validation but **not incorporated** into the final model.
+当前没有：
 
-**Impact**: ~105,000 additional training rows (2025) are thrown away. Using them would likely improve generalization, especially for stations that were installed late (Gletschergarten: 0% data in 2023).
+- TFT 训练数据集序列化文件。
+- `tft_best.ckpt` 统一导出。
+- TFT 的 2026–2029 交付预测。
+- CatBoost × TFT 融合产物。
 
-**Why not done (Task C deferred)**: The model v2 pipeline was built around the train/val split for honest evaluation. Full-data retraining requires a separate "deploy mode" switch (`DEPLOY_FULL_REFIT`). Team decided to defer this — the 2025 hold-out metrics are already good and the priority is delivery.
+因此系统架构应表述为“CatBoost 交付 + TFT 实验”，而不是已经上线的双引擎融合。
 
-### 6.3 🟡 Gletschergarten Station: No 2023 Data
+## 7. 已知限制
 
-Gletschergarten (both directions) was not installed until January 2024. All of 2023 = 0% data. Profile features for this station are built from 2024 only, making them noisier. Since February 2024, reliability is >95% — this is a deployment timeline issue, not ongoing.
+### 最终模型未全量重训 2025
 
-### 6.4 🟡 Kiefersfelden DE33,34: 6-Month Outage in 2023
+2025 用于独立验证，没有重新并入当前 CatBoost 交付模型。这样评估更可信，但少用了约一年的训练数据，尤其影响 2024 才上线的 Gletschergarten。
 
-The DE33,34 sensor on the Kufstein direction was dead July–December 2023. The co-located DE1,2 sensor (Rosenheim direction) worked throughout. Since 2024, reliability >96%. The model handles this via the global `site_id` categorical — the Kiefersfelden_Kff site gets less reliable profile estimates for 2023 periods.
+### 施工特征的训练信号弱
 
-### 6.5 🟢 Weather: Single-Point Measurement
+训练窗口中的 `2+0` 样本为零，模型无法仅靠数据学习容量减半的效果。施工表已经修正了早期过度识别 2+0 的问题，但未来已知施工进入条件表后，输出仍不能被当作精确的车道容量模拟。
 
-All weather data comes from one station at AD Rosenheim (km 54.6, A8 Salzburg direction). No spatial variation captured. For 4-year forecasting, weather enters as climatology (month×hour averages), so this limitation is acceptable.
+### 远期天气和施工存在结构性不确定性
 
----
+- 未来天气使用气候态。
+- 2027–2029 尚未发布的施工在表中通常为 0。
+- 预测区间主要刻画模型误差，不包含所有未来政策、事故和施工变化。
 
-## 7. Unfinished / Experimental Tasks
+### 交付依赖中间结果复制
 
-These are documented with implementation code in `doc/tasks_D_F_G_tutorial.md`.
+notebook 写入被忽略的 `processed/`，而 Agent 读取 `data_autobahn/forecast_2026_2029.csv`。重新训练后需要显式更新交付 CSV 和模型文件。
 
-| Task | Priority | Description | Effort |
-|------|----------|-------------|--------|
-| **C** | 🟠 Deferred | Full-data refit (2023–2025) for final forecast | 1 switch + rerun |
-| **D** | 🟠 Pending data | Capacity override rules for known 2+0 closures | Fill real closure data |
-| **F** | 🟢 Delegated | Daily aggregation + color grading → Agent layer | Agent-side |
-| **G1** | 🟢 Experimental | Peak-hour weighted training (2× weight for kfz_h > P90) | 15 min |
-| **G2** | 🟢 Experimental | sv_h direct regression vs ratio method comparison | 15 min |
-| **G4** | 🟢 Experimental | Grouped conformal calibration (per-site or per-tagestyp) | 15 min |
-
----
-
-## 8. Forecast Output Schema
-
-### `processed/forecast_2026_2029.csv` (primary for Agent) / `.parquet`
-
-420,768 rows × 13 columns:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `site_id` | str | Unique site identifier (e.g., `A8_Mch_MQB25_Mch_H`) |
-| `road` | str | Highway: A8 or A93 |
-| `direction` | str | Direction: Mch (→Munich), Sbg (→Salzburg), Ro (→Rosenheim), Kff (→Kufstein) |
-| `site_name` | str | Station name |
-| `date` | datetime | Date (2026-01-01 to 2029-12-31) |
-| `hour` | int | Hour (0–23) |
-| `kfz_h_p10` | float | Total flow P10 (lower bound, veh/h) |
-| `kfz_h_p50` | float | Total flow P50 (median prediction, veh/h) |
-| `kfz_h_p90` | float | Total flow P90 (upper bound, veh/h) |
-| `sv_h_pred` | float | Truck volume prediction (veh/h) |
-| `v_kfz_pred` | float | Average speed prediction (km/h) |
-| `interval_width` | float | Absolute uncertainty: `p90 − p10` (veh/h) |
-| `relative_interval_width` | float | Normalized uncertainty: `width / (p50 + 1)` (median ~0.34) |
-
-### Confidence Interpretation (for Agent)
-
-The Agent can derive confidence from `relative_interval_width`:
-
-| relative_interval_width | Confidence | Interpretation |
-|--------------------------|------------|----------------|
-| < 0.3 | High | Tight interval, routine conditions |
-| 0.3 – 0.6 | Medium | Moderate uncertainty |
-| > 0.6 | Low | Wide interval, unusual conditions (holidays, extreme weather) |
-
-The conformal calibration ensures ~80% of true values fall within `[p10, p90]` across all predictions.
-
----
-
-## 9. How to Run
-
-### Prerequisites
+根目录的 `clean_outputs.sh` 可清理 CatBoost 模型、快照和 `processed/` 中间产物。它是破坏性清理脚本，运行前应先使用：
 
 ```bash
-cd Autobahn-hackathon
-.venv/bin/python -m ipykernel install --user --name=autobahn_venv
+bash clean_outputs.sh --dry
 ```
 
-### Execute
+## 8. 运行
 
-Open `model/model_notebook.ipynb` in VS Code, select the `autobahn_venv` kernel, then **Restart Kernel → Run All**.
+CatBoost 环境：
 
-**Expected runtime**: ~8–12 minutes (CatBoost training dominates). The notebook auto-creates `.venv` if missing, installs dependencies, and registers the kernel.
-
-### Cell Order
-
-| § | Content | Notes |
-|---|---------|-------|
-| §0 | Environment setup (venv + deps) | Skip if venv exists |
-| §1 | Imports + hyperparameters | All config in one cell |
-| §2 | Data loading | Reads 6 merged CSVs from `data_autobahn/` |
-| §3 | Feature engineering | Calendar + profiles + conditional merge |
-| §4.0 | (Optional) Load saved models | Skip training, go straight to eval/inference |
-| §4.1 | kfz_h training | MultiQuantile CatBoost (~5 min) |
-| §4.2 | Loss curves | |
-| §4.3 | sv_h training | Ratio regression (~1 min) |
-| §4.4 | v_kfz training | Speed drop with G3 (~1 min) |
-| §5 | Validation evaluation | Split-conformal, metrics, comparison table |
-| §6 | Full 2026–2029 inference | Saves forecast CSV + parquet |
-| §7 | Explainability | Feature importance + SHAP |
-
-### Generated Files
-
-```
-processed/
-├── forecast_2026_2029.csv           ← Primary for Agent consumption
-├── forecast_2026_2029.parquet
-├── forecast_kfz_2026_2029.parquet
-├── forecast_sv_2026_2029.parquet
-├── forecast_vkfz_2026_2029.parquet
-├── conformal.json                   ← {conf_quantile: 26.3, coverage: 0.80}
-├── profiles.pkl
-└── site_meta.parquet
-
-models/
-├── kfz_h/multi.cbm                  ← MultiQuantile P10/P50/P90
-├── sv_h/lkw_ratio.cbm
-└── v_kfz/speed_drop.cbm
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+jupyter lab model/model_notebook.ipynb
 ```
 
----
+TFT 需要额外安装 notebook 中列出的 `torch`、`lightning` 和 `pytorch-forecasting`。
 
-## 10. Hyperparameter Reference
+建议执行顺序：
 
-| Parameter | kfz_h | sv_h (ratio) | v_kfz (speed) | Notes |
-|-----------|-------|-------------|---------------|-------|
-| `iterations` | 2000 | 2000 | 1200 | Early stopping usually triggers earlier |
-| `learning_rate` | 0.02 | 0.02 | 0.02 | |
-| `depth` | 8 | 8 | 5 | Speed model: shallower (simpler relationship) |
-| `l2_leaf_reg` | 3.0 | 3.0 | 15.0 | Speed model: stronger regularization |
-| `min_data_in_leaf` | 50 | 50 | 200 | Speed model: larger (sparser signal) |
-| `subsample` | 0.85 | 0.85 | 0.85 | |
-| `rsm` | 0.8 | — | 0.85 | Column subsampling (minor PICP boost) |
-| `early_stopping_rounds` | 200 | 200 | 100 | |
-| `loss_function` | MultiQuantile | RMSE | RMSE | |
-| `random_strength` | — | — | 1.0 | Speed only |
-
-### Key Tuning Insights
-
-- **PICP improvement**: Conformal calibration is the main lever (raw 71% → cal 82%). `rsm` tuning contributes only ~2pt — don't expect it to fix PICP.
-- **Overfitting**: If train MAPE ≪ val MAPE, increase `l2_leaf_reg` (kfz: 3→5→8) or decrease `depth` (8→7).
-- **Underfitting**: If both train and val MAPE are high, increase `iterations` (2000→3000) or decrease `learning_rate` (0.02→0.01 with more iterations).
-- **Peak Recall**: Currently 88.1%. For improvement, try peak-weighted training (G1).
-
----
-
-## 11. Related Documents
-
-| Document | Relevance |
-|----------|-----------|
-| `../CLAUDE.md` | Complete data dictionary, station mapping, project context |
-| `station_reliability_report.md` | Per-station sensor reliability analysis |
-| `DATA.md` | Merged data table schema reference |
-| `CONSTRUCTION_DATA_ISSUE.md` | Full investigation of construction data bug — root cause, fix guide, script inventory |
-| `tasks_D_F_G_tutorial.md` | Implementation code for unfinished tasks (D, F, G1–G4) |
-| `SOLUTION.md` | Original system architecture vision (pre-implementation) |
-| `product.md` / `product_func.md` | Product requirements and user stories |
-| `../agent/README.md` | Agent layer architecture (LangGraph multi-agent system) |
-
----
-
-*Document generated 2026-06-20. Replaces `model_v2_review.md`, `model_v2_next_steps.md`, `hyperparameter_guide.md`, and `final_plan.md` which are superseded by this combined document and the executed notebook outputs.*
+1. 运行数据加载与检查。
+2. 构建训练段画像。
+3. 训练 CatBoost 三个任务。
+4. 在 2025 验证并执行 split conformal。
+5. 生成 2026–2029 全网格。
+6. 检查行数、主键、缺失和分位数单调性。
+7. 将最终 CSV 更新到 `data_autobahn/forecast_2026_2029.csv`。

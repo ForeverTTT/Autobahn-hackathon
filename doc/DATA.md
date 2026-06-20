@@ -1,412 +1,243 @@
-# 数据目录说明（`data/`）
+# 数据说明
 
-> Autobahn Hackathon · A8 East / A93 South 走廊历史数据  
-> 数据来源：Die Autobahn GmbH des Bundes  
-> 时间范围：2023-01-01 至 2026-01-01（部分子集按年切分）
+本文合并了原先分散的数据总览、数据发现和传感器可靠性报告，只记录当前仓库中实际存在的数据。
 
----
+## 1. 数据层级
 
-## 目录总览
-
-```
-data/
-├── A8_A93_MQ_locations.csv              # 交通计数站位置元数据
-├── Definition_Verhicle_Classes.png      # 车型分类标准图（TLS）
-├── 2023-2025_1min_2+0_v/                # 1 分钟粒度交通流量（FG1 · Kurz）
-│   └── 2023-2025_1min_2+0_v/
-│       └── *.csv                        # 12 个断面 × 方向
-├── DAUZ_2+0_1h_2023-2026/               # 1 小时粒度交通流量（FG1 · Lang）
-│   └── DAUZ_2+0_1h_2023-2026/
-│       └── *.csv                        # 12 个断面 × 方向
-└── AirTemp_SurfaceTemp/                 # 气温 & 路面温度（FG3）
-    └── lt und fbt/
-        ├── Location_LT und FBT_*.csv    # 气象传感器位置
-        ├── FG3_WUD_LT_*.csv               # 气温（Lufttemperatur）
-        ├── FG3_WUD_FBT_*.csv            # 路面温度（Fahrbahntemperatur）
-        └── 2023.png / 2024.png / 2025.png  # 可视化图表
+```text
+data/             主办方原始数据，约 4.3 GB
+external/         天气、施工、节假日等外部数据快照
+construction/     Autobahn 官网与 Wayback 施工历史资料
+data_autobahn/    模型和 Agent 使用的标准化表
+predictions/      辅助/旧版预测输出
+doc/material/     挑战说明 PDF
 ```
 
-| 文件夹 | 大小（约） | 核心用途 |
-|---|---|---|
-| `2023-2025_1min_2+0_v` | ~1.1 GB | 精细日内曲线、高峰识别、分钟级建模 |
-| `DAUZ_2+0_1h_2023-2026` | ~19 MB | 日/小时聚合、快速探索、长期趋势 |
-| `AirTemp_SurfaceTemp` | ~73 MB | 天气特征、冬季路面结冰风险 |
-| 根目录元数据 | <1 MB | 站点坐标、车型分类对照 |
+模型的主要输入是 `data_autobahn/`，原始复核应回到 `data/`。
 
----
+## 2. 原始数据 `data/`
 
-## 通用命名规则
+### 2.1 交通测站
 
-### 文件名结构
+研究对象为 A8 East 和 A93 South 的 6 个物理测量点、双向共 12 条站点序列。
 
-以交通数据为例：
+| DAUZ 编号 | 物理位置 | 道路 | 公里桩 | 方向 |
+|---|---|---|---:|---|
+| 9171 | MQB25 / MQQ37 | A8 | 约 20 | Mch / Sbg |
+| 9192 | MQQ209 / MQQ213 | A8 | 约 93–95 | Mch / Sbg |
+| 9194 | MQQ245 | A8 | 106 | Mch / Sbg |
+| 9190 | AD Inntal | A93 | 1.9 | Ro / Kff |
+| 9629 | Gletschergarten | A93 | 12.4 | Ro / Kff |
+| 9191 | Kiefersfelden | A93 | 25.0 | Ro / Kff |
 
-```
-FG1_Kurz_MQ_Gletschergarten_Kff,DE33,34_agg1min_2023-01-01_bis_2026-01-01.csv
-│   │    │  │                │   │         │      └─ 结束日期
-│   │    │  │                │   │         └─ 起始日期
-│   │    │  │                │   └─ 检测器/车道编号
-│   │    │  │                └─ 行驶方向
-│   │    │  └─ 计数站名称（Messquerschnitt）
-│   │    └─ 数据类型前缀（MQ / MQDZ / MQQ…）
-│   └─ Kurz（短周期原始）或 Lang（长周期聚合）
-└─ Funktionsgruppe 功能组编号
-```
-
-| 片段 | 含义 |
-|---|---|
-| `FG1` | Funktionsgruppe 1 — 标准交通流量统计 |
-| `FG3` | Funktionsgruppe 3 — 气象/环境传感器 |
-| `Kurz` | 短周期原始数据（1 分钟） |
-| `Lang` | 长周期聚合数据（1 小时） |
-| `MQ` | Messquerschnitt，常规定数断面 |
-| `MQDZ` | 边境管制（Dosierung）计数断面 |
-| `agg1min` / `agg1h` | 按 1 分钟 / 1 小时聚合 |
-| `2+0` | TLS 车型分类级别：2 类（Pkw-ähnlich + Lkw-ähnlich），无「未分类」附加类 |
-
-### 方向代码
-
-| 代码 | 含义 | 典型场景 |
-|---|---|---|
-| `Kff` | 朝 Kiefersfelden 方向 | A93 南下，去阿尔卑斯 |
-| `Ro` | 朝 Rosenheim 方向 | A93 北上，返程 |
-| `Mch_H` | 朝 München 方向 | A8 西/北向 |
-| `Sbg_H` | 朝 Salzburg 方向 | A8 东/南向，去奥地利 |
-
-### 路段代码（`Strecke` 列）
+方向代码：
 
 | 代码 | 含义 |
 |---|---|
-| `A8-Ost_Mch` | A8 东段，慕尼黑侧 |
-| `A8-Ost_Sbg` | A8 东段，萨尔茨堡侧 |
-| `A93-Sued_Kff` | A93 南段，Kiefersfelden 方向 |
-| `A93-Sued_Ros` | A93 南段，Rosenheim 方向 |
+| `Mch` | 朝 München |
+| `Sbg` | 朝 Salzburg |
+| `Ro` | 朝 Rosenheim |
+| `Kff` | 朝 Kiefersfelden / Kufstein |
 
-### 星期编码（`wochentag`）
+![A8 与 A93 测站示意图](station_map.png)
 
-`1` = 周一，`2` = 周二，…，`7` = 周日
+### 2.2 1 分钟交通数据
 
----
+目录：`data/2023-2025_1min_2+0_v/`
 
-## 根目录文件
+- 12 个 CSV。
+- 时间范围：2023-01-01 至 2025-12-31。
+- 分隔符：`;`。
+- 主要字段：
 
-### `A8_A93_MQ_locations.csv`
-
-交通计数站（FG1）的**位置元数据**，用于地图标注、断面合并、按 corridor 分组。
-
-**格式**：`;` 分隔
-
-```
-site;unit;Funktionsgruppe;Strecke;BAB-Km;Longitude_WGS84;Latitude_WGS84
-```
-
-| 列 | 含义 | 示例 |
-|---|---|---|
-| `site` | 计数站 ID | `MQQ245_Sbg_H` |
-| `unit` | 单个检测器/车道单元 | `DETQ245_Sbg_H1` |
-| `Funktionsgruppe` | 功能组 | `1` |
-| `Strecke` | 所属路段 | `A8-Ost_Sbg` |
-| `BAB-Km` | 高速公路公里桩 | `106,27` |
-| `Longitude_WGS84` | 经度 | `12.733…` |
-| `Latitude_WGS84` | 纬度 | `47.830…` |
-
-### `Definition_Verhicle_Classes.png`
-
-德国 TLS（*Technische Lieferbedingungen für Streckenstationen*）标准下的**车型分类对照图**。
-
-本数据集使用 **`2+0` 分类**（2 类 + 0 附加）：
-
-| 分类 | 德文 | 说明 |
-|---|---|---|
-| Pkw-ähnlich | 小客车类 | 含 Pkw、Lieferwagen 等 |
-| Lkw-ähnlich | 货车类 | 含 Lkw > 3.5t、Busse、Pkw mit Anhänger 等（Schwerverkehr, SV） |
-
-对应 CSV 列：`q_pkw`（小客车类）、`q_lkw`（货车类）、`q_kfz`（合计）。
-
----
-
-## `2023-2025_1min_2+0_v/` — 1 分钟交通流量
-
-### 文件夹含义
-
-| 部分 | 含义 |
+| 字段 | 说明 |
 |---|---|
-| `2023-2025` | 数据覆盖年份（实际至 2026-01-01） |
-| `1min` | 1 分钟时间粒度 |
-| `2+0_v` | 2+0 车型分类的数据集版本 |
+| `devices` | 测站和检测器 ID |
+| `datum` | 日期，`DD.MM.YYYY` |
+| `t_start` | 分钟起始时刻 |
+| `wochentag` | 星期，1=周一，7=周日 |
+| `q_kfz` | 每分钟机动车总数 |
+| `q_lkw` | 每分钟 Lkw-ähnlich 车辆数 |
+| `q_pkw` | 每分钟 Pkw-ähnlich 车辆数 |
+| `v_kfz` | 该分钟平均车速，km/h |
 
-### 文件列表（12 个 CSV）
+`Definition_Verhicle_Classes.png` 给出 TLS 车型分类。`q_lkw` 与小时表中的 `sv_h` 口径接近但并不完全等同，不应直接当作同一字段。
 
-| 文件名关键词 | 路段 | 方向 | 说明 |
-|---|---|---|---|
-| `MQ_Gletschergarten` | A93 | Kff / Ro | Gletschergarten 断面 |
-| `MQDZ_Kiefersfelden_(S)` | A93 边境 | Kff / Ro | Kiefersfelden 管制站 |
-| `MQDZ_AD Inntal_(S)` | A93 边境 | Kff / Ro | Inntal 管制站 |
-| `MQB25_Mch_H` | A8 | Mch_H | km 20 附近 |
-| `MQQ37_Sbg_H` | A8 | Sbg_H | km 20 附近 |
-| `MQQ209_Mch_H` | A8 | Mch_H | km 93 附近 |
-| `MQQ213_Sbg_H` | A8 | Sbg_H | km 95 附近 |
-| `MQQ245_Mch_H` | A8 | Mch_H | km 106 附近（边境） |
-| `MQQ245_Sbg_H` | A8 | Sbg_H | km 106 附近（边境） |
+### 2.3 1 小时交通数据
 
-### 数据格式
+目录：`data/DAUZ_2+0_1h_2023-2026/`
 
-**分隔符**：`;`  
-**表头**：
+- 12 个 CSV，每个 26,304 条数据行。
+- 时间范围实际为 2023-01-01 至 2025-12-31。
+- 主要字段：
 
-```
-devices;datum;t_start;wochentag;q_kfz;q_lkw;q_pkw;v_kfz
-```
-
-| 列 | 类型 | 含义 | 示例 |
-|---|---|---|---|
-| `devices` | string | 计数站 + 检测器 ID | `MQ_Gletschergarten_Kff,DE33,34` |
-| `datum` | date | 日期（`DD.MM.YYYY`） | `10.08.2025` |
-| `t_start` | time | 该分钟起始时刻 | `05:31:00` |
-| `wochentag` | int | 星期几（1–7） | `7` |
-| `q_kfz` | int | 该分钟总车流量（辆） | `16` |
-| `q_lkw` | int | 该分钟货车类车流量 | `3` |
-| `q_pkw` | int | 该分钟小客车类车流量 | `13` |
-| `v_kfz` | float | 该分钟平均车速（km/h） | `121.5` |
-
-**示例行**：
-
-```
-MQ_Gletschergarten_Kff,DE33,34;10.08.2025;05:31:00;7;16;3;13;121.5
-```
-
-**缺失值**：`null` — 通常表示该分钟无车辆通过（速度无法计算）或传感器短暂离线。
-
-**行数**：每个文件约 157 万行（3 年 × 365 天 × 1440 分钟）。
-
-### 推荐使用方式
-
-- 聚合为 **hourly**：对 `q_*` 求和，对 `v_kfz` 取加权平均
-- 聚合为 **daily**：对 hourly 再求和
-- 用于绘制 **24 小时流量曲线**、识别早/晚高峰
-
----
-
-## `DAUZ_2+0_1h_2023-2026/` — 1 小时交通流量
-
-### 文件夹含义
-
-| 部分 | 含义 |
+| 字段 | 说明 |
 |---|---|
-| `DAUZ` | 德语 *Dauer* 的缩写，表示长周期/持久聚合数据 |
-| `2+0` | 同上，2+0 车型分类 |
-| `1h` | 1 小时时间粒度 |
-| `2023-2026` | 数据覆盖年份 |
+| `kfz_h` | 每小时机动车总流量，辆/小时 |
+| `sv_h` | 每小时 Schwerverkehr 重型车流量，辆/小时 |
+| `tagestyp` | `w` 工作日、`s` 周日/公共假日、`u` 假期出行日 |
 
-### 与 1 分钟数据的关系
+`sv_h` 是流量，不是速度。速度来自 1 分钟数据聚合后的 `v_kfz`。
 
-- **同一组 12 个断面**，方向一一对应
-- 文件名中 `FG1_Lang` 对应 1 分钟数据的 `FG1_Kurz`
-- 额外包含站点编号前缀（如 `9629`、`9171`），与 `devices` 列一致
-- 体积极小（~19 MB），适合快速 EDA 和日级建模
+### 2.4 气温与路温
 
-### 数据格式
+目录：`data/AirTemp_SurfaceTemp/`
 
-**分隔符**：`;`  
-**表头**：
+- AD Rosenheim B15n、A8 km 54.6、Salzburg 方向。
+- LT 为气温，FBT 为路面温度。
+- 2023、2024、2025 分年保存，时间戳约为分钟级。
+- 位置文件列出 13 类可用传感器，但仓库中只有 LT 和 FBT 时序。
 
+数据行数显示存在时间缺口：
+
+| 年份 | LT 数据行 | FBT 数据行 | 结论 |
+|---|---:|---:|---|
+| 2023 | 519,023 | 519,023 | 约缺 4.6 天 |
+| 2024 | 500,561 | 500,561 | 约缺 18.4 天 |
+| 2025 | 524,766 | 524,755 | 少量缺口，两个传感器末尾略有差异 |
+
+历史分析得到 LT–FBT 相关系数约 0.93。模型仍保留两者的小时气候画像，但应注意共线性。
+
+### 2.5 Consyst 拥堵图
+
+仓库包含 A8 的每日拥堵时空图：
+
+| 目录 | 图片数 |
+|---|---:|
+| `2023_ConsystPlots_A8(1)` | 708 |
+| `2023_ConsystPlots_A8(2)` | 736 |
+| `2024_ConsystPlots_A8(1)` | 724 |
+| `2024_ConsystPlots_A8(2)` | 728 |
+| `2025_ConsystPlots_A8` | 1,372 |
+
+这些 PNG 可用于 A8 拥堵事件复核，但当前 CatBoost 交付模型没有直接从图片提取监督标签。
+
+## 3. 标准化数据 `data_autobahn/`
+
+除 `forecast_2026_2029.csv` 外，本目录 CSV 使用 `;` 分隔，第二行是中文字段说明。读取时需要跳过第二行：
+
+```python
+pd.read_csv(path, sep=";", skiprows=[1])
 ```
-devices;datum;t_start;wochentag;tagestyp;kfz_h;sv_h
-```
 
-| 列 | 类型 | 含义 | 示例 |
-|---|---|---|---|
-| `devices` | string | 计数站 + 检测器 ID | `9629_MQ_Gletschergarten_Kff,DE33,34` |
-| `datum` | date | 日期（`DD.MM.YYYY`） | `01.02.2024` |
-| `t_start` | time | 该小时起始时刻 | `07:00:00` |
-| `wochentag` | int | 星期几（1–7） | `4` |
-| `tagestyp` | char | 日类型 | `w` 或 `s` |
-| `kfz_h` | int | 该小时总车流量（辆） | `1508` |
-| `sv_h` | float | 该小时平均车速（km/h） | `409` |
+### 3.1 历史小时主表
 
-**`tagestyp` 取值**：
+`合并表格，小时交通流量.csv`
 
-| 值 | 含义 |
-|---|---|
-| `w` | Werktag（工作日） |
-| `s` | Sonn- und Feiertag（周日及公共假日） |
+- 315,648 条有效数据行，即 12 站 × 1,096 天 × 24 小时。
+- 覆盖 2023–2025 的完整小时网格。
+- `kfz_h` / `sv_h` 各有 31,985 个缺失值，约 10.13%。
+- `v_kfz` 有 24,992 个缺失值，约 7.92%。
+- 有效范围：`kfz_h` 0–6,941，`sv_h` 0–1,034，`v_kfz` 5–158 km/h。
 
-**示例行**：
+`tagestyp` 分布：
 
-```
-9629_MQ_Gletschergarten_Kff,DE33,34;01.02.2024;07:00:00;4;w;1508;409
-```
+| 值 | 行数 | 占比 |
+|---|---:|---:|
+| `w` | 194,112 | 61.5% |
+| `s` | 56,160 | 17.8% |
+| `u` | 65,376 | 20.7% |
 
-**行数**：每个文件约 2.6 万行（3 年 × 365 天 × 24 小时）。
+### 3.2 温度主表
 
-### 推荐使用方式
+`合并表格，时间，气温，路温.csv`
 
-- 直接用于 **日级/小时级** 交通预测建模
-- 与 1 分钟数据交叉校验：`sum(1min q_kfz) ≈ kfz_h`
-- 不需要精细日内曲线时的**首选数据源**
+- 字段：`t_start;lt;fbt`。
+- 约 154 万行。
+- 用于构造小时温度和未来 day-of-year × hour 气候画像。
 
----
+### 3.3 日级条件表
 
-## `AirTemp_SurfaceTemp/` — 气温与路面温度
-
-### 文件夹含义
-
-气象环境传感器数据（FG3），目前仅包含 **Rosenheim B15n** 一处站点的：
-
-- **LT**（*Lufttemperatur*）：气温
-- **FBT**（*Fahrbahntemperatur*）：路面/道面温度
-
-子文件夹 `lt und fbt` = Lufttemperatur und Fahrbahntemperatur。
-
-### 文件列表
+以下四张表均覆盖 2023-01-01 至 2029-12-31，共 2,557 个有效日期行：
 
 | 文件 | 内容 |
 |---|---|
-| `Location_LT und FBT_AD Rosenheim_B15n.csv` | 传感器位置元数据 |
-| `FG3_WUD_LT_AD_Rosenheim_B15n_Sbg_H_agg1min_2023-…csv` | 2023 年气温（按年切分） |
-| `FG3_WUD_LT_…_2024-…csv` | 2024 年气温 |
-| `FG3_WUD_LT_…_2025-…csv` | 2025 年气温 |
-| `FG3_WUD_FBT_…`（同上 3 个年份） | 路面温度 |
-| `2023.png` / `2024.png` / `2025.png` | 温度时序可视化 |
+| `合并表格，holiday日级.csv` | 拜仁、萨尔茨堡、蒂罗尔公共/学校假期及交通窗口 |
+| `合并表格，weather日级.csv` | 历史观测天气和未来气候态 |
+| `合并表格，construction日级.csv` | 施工、封道、2+0、关闭车道等特征 |
+| `合并表格，special_events日级.csv` | München、Salzburg、Rosenheim、Kufstein 活动特征 |
 
-> 气象数据按**自然年**切分为 3 个文件（2023、2024、2025），与交通数据的单文件 2023–2026 不同。
+未来天气不是天气预报，而是历史同期气候态。2027–2029 未知施工也不能被解释成“确认无施工”。
 
-### 位置元数据格式
+### 3.4 交付预测表
 
-**文件**：`Location_LT und FBT_AD Rosenheim_B15n.csv`
+`forecast_2026_2029.csv`
 
-```
-site;unit;Funktionsgruppe;Strecke;BAB-Km;Longitude_WGS84;Latitude_WGS84
-```
+- CSV 使用逗号分隔，没有中文说明行。
+- 420,768 行：12 站 × 1,461 天 × 24 小时。
+- 日期范围：2026-01-01 至 2029-12-31。
+- 主键 `(site_id, date, hour)` 无重复。
+- 已检查 P10 ≤ P50 ≤ P90，无分位数交叉。
 
-| 列 | 示例 |
+字段：
+
+| 字段 | 说明 |
 |---|---|
-| `site` | `WS_GMA_AD_Rosenheim_B15n_Sbg_H` |
-| `unit` | `WUD_LT_AD_Rosenheim_B15n_Sbg_H` |
-| `Funktionsgruppe` | `3` |
-| `Strecke` | `A8-Ost_Sbg` |
-| `BAB-Km` | `54,6` |
+| `site_id` | `road_direction_site_name` |
+| `road` | `A8` / `A93` |
+| `direction` | `Mch` / `Sbg` / `Ro` / `Kff` |
+| `site_name` | 测站名称 |
+| `date`, `hour` | 日期和小时 |
+| `kfz_h_p10/p50/p90` | 总流量分位数预测 |
+| `sv_h_pred` | 重型车流量预测 |
+| `v_kfz_pred` | 平均车速预测 |
+| `interval_width` | `p90 - p10` |
+| `relative_interval_width` | `interval_width / (p50 + 1)` |
 
-该站点位于 A8 东段 km 54.6，Rosenheim 附近，萨尔茨堡方向。
+Agent 既可以直接读取 `relative_interval_width`，也可以用 P10/P50/P90 重新计算。
 
-### 气温数据格式（LT）
+## 4. 外部数据
 
-**分隔符**：`;`  
-**表头**：
+### `external/`
 
-```
-t_start;lt
-```
+- `weather_daily.parquet`：2018–2025 日天气。
+- `weather_climatology.parquet`：366 个 day-of-year 气候态。
+- `construction_sites_clean.csv`：清洗后的当前/计划施工。
+- `construction_daily.parquet`：日期 × 走廊施工特征。
+- `holidays/`：三个目标州 2023–2029 节假日、覆盖信息和交通窗口。
 
-| 列 | 类型 | 含义 | 示例 |
-|---|---|---|---|
-| `t_start` | datetime | 时间戳（`YYYY-MM-DD HH:MM:SS`） | `2023-01-01 00:05:04` |
-| `lt` | float | 气温（°C） | `11.3` |
+详见 `external/README.md` 和 `external/holidays/README.md`。
 
-**示例行**：
+### `construction/`
 
-```
-2023-01-01 00:05:04;11.3
-```
+保存 Autobahn GmbH 当前官网和 Internet Archive 的 A8/A93 项目、状态观察、历史事件和候选 URL。它是施工证据库，不等同于实时封路 API。
 
-### 路面温度数据格式（FBT）
+详见 `construction/README.md`。
 
-**分隔符**：`;`  
-**表头**：
+### 施工表修正状态
 
-```
-t_start;fbt
-```
+`data_autobahn/合并表格，construction日级.csv` 已使用严格的 2+0 判定和目标走廊过滤重建。当前统计：
 
-| 列 | 类型 | 含义 | 示例 |
-|---|---|---|---|
-| `t_start` | datetime | 时间戳 | `2023-01-01 00:05:04` |
-| `fbt` | float | 路面温度（°C） | `6.4` |
+| 时段 | 有施工天数 | 2+0 天数 | 解释 |
+|---|---:|---:|---|
+| 2023–2024 | 0 / 731 | 0 | 实时 API 不提供历史档案 |
+| 2025 | 128 / 365 | 0 | A8 近期开工记录 |
+| 2026–2029 | 549 / 1,461 | 224 | 已发布的近期/计划施工 |
 
-**示例行**：
+此前曾有一版数据把约 91.5% 的未来日期误判为 2+0；当前修正版为约 15.3%。需要注意：
 
-```
-2023-01-01 00:05:04;6.4
-```
+- 2023–2024 的 0 表示数据源缺历史，不证明当年没有施工。
+- 2028–2029 大量 0 表示计划尚未发布，不证明未来没有施工。
+- `external/construction_daily.parquet` 是按日期 × 道路的精简表，`data_autobahn` CSV 是模型需要的一日一行宽表。
+- 仓库中没有旧文档提到的 `scripts/fix_construction_data.py` 或 `scripts/rebuild_construction_csv.py`；当前可复现的施工采集入口是 `construction/collect_construction.py`，但其输出是 Wayback 证据库，不会直接重建模型施工特征。
 
-**行数**：每个年份文件约 52 万行（1 分钟粒度）。
+## 5. 数据质量结论
 
-### 推荐使用方式
+原有两份传感器可靠性报告的共同结论已合并如下：
 
-- 按日期聚合为日均/日最低/日最高温度
-- 作为天气特征与交通数据按 `date` join
-- 未来预测（2026–2029）应使用**气候态均值**而非真实预报值
+- 12 个 1 分钟站点中，10 个总体完整率高于约 97%。
+- Gletschergarten 双方向在 2023 年无数据，2024 年 1 月部分上线，2024 年 2 月后通常高于 95%。
+- Kiefersfelden Kff 方向在 2023 年 7–12 月有明显故障，2024 年后恢复。
+- 2024-02 至 2025-12 是全部 12 站最一致的观测窗口。
+- DE1,2 与 DE33,34 本身没有系统性的可靠性差异，主要问题来自少数具体站点。
+- 历史原始 `v_kfz` 曾出现约 250 km/h 的异常值；标准化小时表已将有效上限控制在 158 km/h。
+- 阿尔卑斯走廊不是普通通勤路：周末和假期的午间峰值非常重要，`tagestyp × hour` 是核心特征。
 
----
+## 6. 使用建议
 
-## 建模建议：如何选择数据集
-
-| 目标 | 推荐数据源 | 聚合方式 |
-|---|---|---|
-| 日级车流量预测 | `DAUZ_2+0_1h` | 对 `kfz_h` 按日求和 |
-| 小时级高峰识别 | `DAUZ_2+0_1h` | 直接使用 hourly |
-| 精细日内曲线 | `2023-2025_1min_2+0_v` | 1min → hourly → daily |
-| 车型结构分析 | `2023-2025_1min_2+0_v` | 使用 `q_pkw` / `q_lkw` |
-| 天气影响 | `AirTemp_SurfaceTemp` | 日均温 join 到 daily 表 |
-| 地图/空间分析 | `A8_A93_MQ_locations.csv` | 按 `site` 关联 |
-
-### 标准建模单元（corridor）
-
-建议按 **道路 + 方向** 建立 4 个序列：
-
-```
-A8E_out   = A8-Ost  → Salzburg 方向（Sbg_H 系列）
-A8E_in    = A8-Ost  → München 方向（Mch_H 系列）
-A93S_out  = A93-Süd → Kiefersfelden 方向（Kff 系列）
-A93S_in   = A93-Süd → Rosenheim 方向（Ro 系列）
-```
-
-同一 corridor 下多个断面的流量可求和或取代表站点。
-
----
-
-## 数据读取示例（Python）
-
-```python
-import pandas as pd
-
-# 1 分钟交通数据
-df_1min = pd.read_csv(
-    "data/2023-2025_1min_2+0_v/2023-2025_1min_2+0_v/"
-    "FG1_Kurz_MQ_Gletschergarten_Kff,DE33,34_agg1min_2023-01-01_bis_2026-01-01.csv",
-    sep=";",
-    na_values=["null"],
-)
-df_1min["datetime"] = pd.to_datetime(
-    df_1min["datum"] + " " + df_1min["t_start"], format="%d.%m.%Y %H:%M:%S"
-)
-
-# 1 小时交通数据
-df_1h = pd.read_csv(
-    "data/DAUZ_2+0_1h_2023-2026/DAUZ_2+0_1h_2023-2026/"
-    "FG1_Lang_9629_MQ_Gletschergarten_Kff,DE33,34_agg1h_2023-01-01_bis_2026-01-01.csv",
-    sep=";",
-    na_values=["null"],
-)
-
-# 气温数据
-df_lt = pd.read_csv(
-    "data/AirTemp_SurfaceTemp/lt und fbt/"
-    "FG3_WUD_LT_AD_Rosenheim_B15n_Sbg_H_agg1min_2023-01-01_bis_2024-01-01.csv",
-    sep=";",
-    parse_dates=["t_start"],
-)
-
-# 站点位置
-locations = pd.read_csv("data/A8_A93_MQ_locations.csv", sep=";")
-```
-
----
-
-## 注意事项
-
-1. **`data/` 已在 `.gitignore` 中排除**，不会推送到 Git 远程仓库；克隆后需自行获取数据。
-2. **日期格式不统一**：交通数据用 `DD.MM.YYYY`，气象数据用 `YYYY-MM-DD HH:MM:SS`，读取时需分别处理。
-3. **`null` 缺失值**：读取时建议 `na_values=["null"]`。
-4. **1 分钟数据体积大**（~1.1 GB），处理时注意内存；优先用 hourly 数据做探索。
-5. **气象数据仅覆盖一个站点**（Rosenheim B15n），不代表整个走廊；建模时可作参考或需补充外部 DWD 数据。
+- 快速建模：使用 `data_autobahn/合并表格，小时交通流量.csv`。
+- 复核分钟曲线和传感器缺测：使用 `data/2023-2025_1min_2+0_v/`。
+- Agent 查询：使用 `data_autobahn/forecast_2026_2029.csv` 和四张日级条件表。
+- 不要把未来气候态当作真实天气预报。
+- 不要把 Wayback 缺少记录解释为当时没有施工。
+- 不要将前端 Demo 颜色当作模型预测；当前前端尚未接入这些数据。
