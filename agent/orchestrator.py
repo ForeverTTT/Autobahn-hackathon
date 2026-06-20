@@ -6,14 +6,9 @@ import asyncio
 from typing import Dict, Any
 
 from .models import AgentRequest, UserType
-from .personas import PersonaType
 from .agents import (
     IntentParser,
     ParsedIntent,
-    TimeRangeType,
-    DataGranularity,
-    TripType,
-    TripPlan,
     ForecastAgent,
     ContextAgent,
     SearchAgent,
@@ -151,54 +146,15 @@ class Orchestrator:
 
     def _create_agent_tasks(self, parsed: ParsedIntent, request: AgentRequest) -> Dict[str, Any]:
         """
-        根据用户画像和时间范围决定调用哪些 Agent
-
-        规则:
-        1. 短时间范围 (1-2天): 主要看 Forecast
-        2. 中等时间范围 (一周): Forecast + Context (假期)
-        3. 长时间范围 (月级): Forecast + Context + Search (全面)
-        4. Logistics: 总是需要 Search (施工信息)
-        5. Operator: 总是需要全部 Agent
+        创建 Agent 任务 - 始终调度全部三个 Agent 并行执行
         """
-        tasks = {}
-        persona = parsed.persona_type
-        duration = parsed.time_range.duration_days
-        granularity = parsed.data_requirements.granularity
+        tasks = {
+            "forecast": asyncio.create_task(self.forecast_agent.process(request)),
+            "context": asyncio.create_task(self.context_agent.process(request)),
+            "search": asyncio.create_task(self.search_agent.process(request)),
+        }
 
-        # Forecast Agent - 几乎总是需要
-        tasks["forecast"] = asyncio.create_task(
-            self.forecast_agent.process(request)
-        )
-
-        # Context Agent - 假期、季节等离线因素
-        need_context = (
-            persona == PersonaType.OPERATOR or  # 管理者需要全部
-            persona == PersonaType.FAMILY_TRAVELER or  # 旅行者关心假期
-            duration > 3 or  # 超过3天需要假期信息
-            granularity in [DataGranularity.WEEKLY, DataGranularity.MONTHLY]  # 周/月级需要
-        )
-        if need_context:
-            tasks["context"] = asyncio.create_task(
-                self.context_agent.process(request)
-            )
-
-        # Search Agent - 施工、活动等实时信息
-        need_search = (
-            persona == PersonaType.OPERATOR or  # 管理者需要全部
-            persona == PersonaType.LOGISTICS or  # 物流需要施工信息
-            duration > 7 or  # 超过一周需要活动信息
-            parsed.time_range.type in [  # 特殊时期需要活动信息
-                TimeRangeType.SUMMER,
-                TimeRangeType.CHRISTMAS,
-                TimeRangeType.EASTER,
-            ]
-        )
-        if need_search:
-            tasks["search"] = asyncio.create_task(
-                self.search_agent.process(request)
-            )
-
-        print(f"[Orchestrator] Running agents: {list(tasks.keys())}")
+        print(f"[Orchestrator] Running agents: forecast, context, search")
 
         return tasks
 

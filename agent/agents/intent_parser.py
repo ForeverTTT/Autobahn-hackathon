@@ -1,7 +1,9 @@
 """
 IntentParser - 意图解析器
 使用 LLM 充分理解用户自然语言输入，智能识别用户画像和时间范围
+LLM 失败时自动降级到关键词匹配
 """
+import re
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
@@ -207,16 +209,16 @@ SYSTEM_PROMPT = """你是 AlpineFlow 交通智能助手。
 
 class IntentParser:
     """
-    意图解析器 - 使用 LLM 直接进行完整意图分析
+    意图解析器
 
     核心功能:
-    1. 识别用户画像 (Persona)
-    2. 智能识别时间范围（支持模糊时间如"暑假"）
-    3. 判断往返需求
-    4. 给出初步的出行建议
+    1. 使用 LLM 进行完整意图分析（包括往返判断）
+    2. LLM 失败时自动降级到关键词匹配
+    3. 智能识别时间范围（支持模糊时间如"暑假"）
     """
 
-    def __init__(self):
+    def __init__(self, use_llm: bool = True):
+        self.use_llm = use_llm
         self._llm_client = None
 
     def _get_llm_client(self):
@@ -231,12 +233,17 @@ class IntentParser:
         return self._llm_client
 
     async def parse_async(self, query: str, default_user_type: UserType = None) -> ParsedIntent:
-        """异步解析用户查询 (使用 LLM)"""
-        llm_client = self._get_llm_client()
-        if not llm_client:
-            raise RuntimeError("LLM client not available. Please configure OPENAI_API_KEY or ANTHROPIC_API_KEY.")
+        """异步解析用户查询 (优先使用 LLM，失败时降级到关键词匹配)"""
+        if self.use_llm:
+            llm_client = self._get_llm_client()
+            if llm_client:
+                try:
+                    return await self._parse_with_llm(query, default_user_type, llm_client)
+                except Exception as e:
+                    print(f"LLM parsing failed: {e}, falling back to keyword matching")
 
-        return await self._parse_with_llm(query, default_user_type, llm_client)
+        # Fallback: 关键词匹配
+        return self.parse(query, default_user_type)
 
     async def _parse_with_llm(
         self,
@@ -528,3 +535,224 @@ class IntentParser:
             PersonaType.OPERATOR: UserType.AUTHORITY,
         }
         return mapping.get(persona, default or UserType.TRAVELER)
+
+    # ============ Fallback: 关键词匹配 ============
+
+    def parse(self, query: str, default_user_type: UserType = None) -> ParsedIntent:
+        """同步解析 (关键词匹配，作为 LLM 的 fallback)"""
+        query_lower = query.lower()
+        today = datetime.now()
+
+        # 1. 识别 persona
+        persona_type = self._parse_persona_keywords(query_lower)
+        user_type = self._persona_to_user_type(persona_type, default_user_type)
+
+        # 2. 解析时间范围
+        time_range = self._parse_time_range_keywords(query, today)
+
+        # 3. 推断行程类型
+        trip_plan = self._infer_trip_plan(persona_type, time_range)
+
+        # 4. 解析目的地和道路
+        destination = self._parse_destination_keywords(query_lower)
+        road = self._parse_road_keywords(query_lower)
+
+        # 5. 解析意图
+        intent = self._parse_intent_keywords(query_lower)
+
+        # 6. 获取画像和数据需求
+        persona = get_persona(persona_type)
+        data_req = self._build_data_requirements(persona, time_range)
+
+        return ParsedIntent(
+            user_type=user_type,
+            persona_type=persona_type,
+            destination=destination,
+            road=road,
+            intent=intent,
+            core_question=persona.core_question,
+            time_range=time_range,
+            trip_plan=trip_plan,
+            data_requirements=data_req,
+        )
+
+    def _infer_trip_plan(self, persona_type: PersonaType, time_range: TimeRange) -> TripPlan:
+        """根据画像和时间范围推断行程类型"""
+        if persona_type == PersonaType.COMMUTER:
+            trip_type = TripType.COMMUTE
+        elif persona_type in [PersonaType.FAMILY_TRAVELER, PersonaType.TOURIST]:
+            trip_type = TripType.ROUND_TRIP
+        else:
+            trip_type = TripType.ONE_WAY
+
+        # 推断停留天数
+        if trip_type == TripType.ROUND_TRIP:
+            if time_range.type == TimeRangeType.THIS_WEEKEND:
+                stay_days = 1
+            elif time_range.type == TimeRangeType.NEXT_WEEKEND:
+                stay_days = 1
+            else:
+                stay_days = min(3, time_range.duration_days)
+        else:
+            stay_days = 0
+
+        return TripPlan(
+            trip_type=trip_type,
+            stay_days=stay_days,
+        )
+
+    def _parse_time_range_keywords(self, query: str, today: datetime) -> TimeRange:
+        """使用关键词解析时间范围"""
+        # 检测时间范围关键词
+        if any(kw in query for kw in ["暑假", "夏天", "暑期", "summer"]):
+            range_type = TimeRangeType.SUMMER
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "暑假"
+
+        elif any(kw in query for kw in ["寒假", "冬天", "滑雪", "winter", "ski"]):
+            range_type = TimeRangeType.WINTER
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "冬季"
+
+        elif any(kw in query for kw in ["圣诞", "christmas", "新年"]):
+            range_type = TimeRangeType.CHRISTMAS
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "圣诞期间"
+
+        elif any(kw in query for kw in ["复活节", "easter"]):
+            range_type = TimeRangeType.EASTER
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "复活节"
+
+        elif any(kw in query for kw in ["下周末", "next weekend"]):
+            range_type = TimeRangeType.NEXT_WEEKEND
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "下周末"
+
+        elif any(kw in query for kw in ["这周末", "周末", "this weekend", "weekend"]):
+            range_type = TimeRangeType.THIS_WEEKEND
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "这周末"
+
+        elif any(kw in query for kw in ["下周", "next week"]):
+            range_type = TimeRangeType.NEXT_WEEK
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "下周"
+
+        elif any(kw in query for kw in ["这周", "本周", "this week"]):
+            range_type = TimeRangeType.THIS_WEEK
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "本周"
+
+        elif any(kw in query for kw in ["明天", "tomorrow"]):
+            range_type = TimeRangeType.TOMORROW
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "明天"
+
+        elif any(kw in query for kw in ["今天", "today"]):
+            range_type = TimeRangeType.TODAY
+            start, end = self._calculate_date_range(range_type, today)
+            desc = "今天"
+
+        else:
+            # 尝试解析具体日期
+            date = self._parse_specific_date(query, today)
+            if date:
+                range_type = TimeRangeType.CUSTOM
+                start, end = date, date
+                desc = date.strftime("%Y-%m-%d")
+            else:
+                range_type = TimeRangeType.FLEXIBLE
+                start, end = today, today
+                desc = "灵活"
+
+        duration = (end - start).days + 1
+
+        return TimeRange(
+            type=range_type,
+            start_date=start.strftime("%Y-%m-%d"),
+            end_date=end.strftime("%Y-%m-%d"),
+            duration_days=duration,
+            description=desc,
+        )
+
+    def _parse_specific_date(self, query: str, today: datetime) -> Optional[datetime]:
+        """解析具体日期"""
+        # 周几
+        weekday_map = {
+            "周一": 0, "周二": 1, "周三": 2, "周四": 3,
+            "周五": 4, "周六": 5, "周日": 6, "周天": 6,
+        }
+        for keyword, target_weekday in weekday_map.items():
+            if keyword in query:
+                current_weekday = today.weekday()
+                days_ahead = (target_weekday - current_weekday) % 7
+                if days_ahead == 0:
+                    days_ahead = 7
+                return today + timedelta(days=days_ahead)
+
+        # 具体日期格式
+        patterns = [
+            (r"(\d{4})-(\d{1,2})-(\d{1,2})", lambda m: datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))),
+            (r"(\d{1,2})月(\d{1,2})[日号]?", lambda m: datetime(today.year, int(m.group(1)), int(m.group(2)))),
+            (r"(\d{1,2})[/-](\d{1,2})", lambda m: datetime(today.year, int(m.group(1)), int(m.group(2)))),
+        ]
+        for pattern, parser in patterns:
+            match = re.search(pattern, query)
+            if match:
+                try:
+                    return parser(match)
+                except:
+                    continue
+
+        return None
+
+    # ============ 关键词常量 ============
+
+    PERSONA_KEYWORDS = {
+        PersonaType.COMMUTER: ["上班", "下班", "通勤", "每天", "工作日", "commute", "daily", "work"],
+        PersonaType.FAMILY_TRAVELER: ["带家人", "带孩子", "周末出游", "度假", "旅行", "自驾游", "暑假", "假期", "family", "vacation", "trip", "holiday"],
+        PersonaType.LOGISTICS: ["送货", "运输", "货车", "物流", "配送", "快递", "卡车", "拉货", "truck", "delivery", "logistics"],
+        PersonaType.TOURIST: ["第一次", "不熟悉", "游客", "旅游", "tourist", "visit", "new to"],
+        PersonaType.OPERATOR: ["管理", "监控", "交警", "为什么堵", "原因", "分析", "operator", "manage", "why"],
+    }
+
+    DESTINATION_KEYWORDS = {
+        "salzburg": ["萨尔茨堡", "salzburg", "奥地利", "austria"],
+        "innsbruck": ["因斯布鲁克", "innsbruck", "滑雪", "阿尔卑斯", "alps"],
+    }
+
+    def _parse_persona_keywords(self, query: str) -> PersonaType:
+        """使用关键词解析用户画像"""
+        for persona, keywords in self.PERSONA_KEYWORDS.items():
+            if any(kw in query for kw in keywords):
+                return persona
+        return PersonaType.TOURIST
+
+    def _parse_destination_keywords(self, query: str) -> Optional[str]:
+        """使用关键词解析目的地"""
+        for dest, keywords in self.DESTINATION_KEYWORDS.items():
+            if any(kw in query for kw in keywords):
+                return dest
+        return None
+
+    def _parse_road_keywords(self, query: str) -> str:
+        """使用关键词解析道路"""
+        if "a93" in query or "93" in query:
+            return "A93"
+        return "A8"
+
+    def _parse_intent_keywords(self, query: str) -> str:
+        """使用关键词解析意图"""
+        if any(kw in query for kw in ["出发", "什么时候", "几点", "最佳", "推荐", "建议", "plan"]):
+            return "plan"
+        elif any(kw in query for kw in ["对比", "比较", "哪天好", "compare"]):
+            return "compare"
+        elif any(kw in query for kw in ["施工", "修路", "封路", "construction"]):
+            return "construction"
+        elif any(kw in query for kw in ["活动", "音乐节", "啤酒节", "event"]):
+            return "events"
+        elif any(kw in query for kw in ["预测", "拥堵", "路况", "forecast"]):
+            return "forecast"
+        else:
+            return "general"
