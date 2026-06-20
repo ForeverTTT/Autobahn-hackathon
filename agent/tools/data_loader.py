@@ -32,7 +32,7 @@ class PredictionLoader:
 
     def __init__(self, file_path: str = None):
         self.file_path = file_path or str(DATA_DIR / "forecast_2026_2029.csv")
-        self.daily_file_path = str(DATA_DIR / "forecast_2026_2029_daily.csv")
+        self.daily_file_path = str(DATA_DIR / "forecast_2026_daily.csv")
         self.factor_file_path = str(DATA_DIR / "factor_attribution_daily.csv")
         self._cache: Dict[str, pd.DataFrame] = {}
         self._cache_order: List[str] = []

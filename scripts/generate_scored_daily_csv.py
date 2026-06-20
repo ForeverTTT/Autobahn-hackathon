@@ -1,6 +1,6 @@
 """
 生成带拥堵评分的日级 CSV 文件
-读取 forecast_2026_2029_daily.csv，计算每天的 congestion_score 和 level
+读取 forecast_2026_daily.csv，计算每天的 congestion_score 和 level
 """
 import pandas as pd
 import numpy as np
@@ -8,7 +8,7 @@ from pathlib import Path
 
 # 路径
 DATA_DIR = Path(__file__).parent.parent / "data_autobahn"
-FORECAST_FILE = DATA_DIR / "forecast_2026_2029_daily.csv"
+FORECAST_FILE = DATA_DIR / "forecast_2026_daily.csv"
 HOLIDAY_FILE = DATA_DIR / "合并表格，holiday日级.csv"
 WEATHER_FILE = DATA_DIR / "合并表格，weather日级.csv"
 EVENT_FILE = DATA_DIR / "合并表格，special_events日级.csv"
