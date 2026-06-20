@@ -12,6 +12,7 @@ interface Project {
   col1a: string;
   col1b: string;
   col2: string;
+  hideDemo?: boolean;
   layout?:
     | "default"
     | "model-overview"
@@ -29,6 +30,7 @@ const PROJECTS: Project[] = [
     col1a: "/shots/catboost_model_architecture.png",
     col1b: "/shots/feature_group_importance_no_construction.png",
     col2: "/shots/feature_group_importance_no_construction.png",
+    hideDemo: true,
     layout: "model-overview",
   },
   {
@@ -39,6 +41,7 @@ const PROJECTS: Project[] = [
     col1a: "/shots/1_best_fit_week.png",
     col1b: "/shots/3_best_fit_day.png",
     col2: "/shots/7_daily_profile_by_tagestyp.png",
+    hideDemo: true,
     layout: "model-results",
   },
   {
@@ -49,6 +52,7 @@ const PROJECTS: Project[] = [
     col1a: "/shots/alpineflow_agent_architecture.png",
     col1b: "/shots/alpineflow_agent_architecture.png",
     col2: "/shots/alpineflow_agent_architecture.png",
+    hideDemo: true,
     layout: "agent-architecture",
   },
   {
@@ -125,9 +129,11 @@ function ProjectCard({
               </span>
             </div>
           </div>
-          <div className="hidden sm:block flex-shrink-0">
-            <LiveProjectButton href={project.href} />
-          </div>
+          {!project.hideDemo && (
+            <div className="hidden sm:block flex-shrink-0">
+              <LiveProjectButton href={project.href} />
+            </div>
+          )}
         </div>
 
         {/* Bottom row — image grid */}
