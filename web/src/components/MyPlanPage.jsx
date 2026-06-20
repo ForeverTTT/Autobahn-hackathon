@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./MyPlanPage.css";
 
 // Mock data for the hourly traffic stats
@@ -29,19 +29,55 @@ const MOCK_STATS = [
   { p: 180, c: 5 },
 ];
 
-function HourCell({ hour, data }) {
+function LiveClock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const hours = String(time.getHours()).padStart(2, "0");
+  const minutes = String(time.getMinutes()).padStart(2, "0");
+  const seconds = String(time.getSeconds()).padStart(2, "0");
+
+  return (
+    <div className="live-clock">
+      <span className="clock-label">Last Update</span>
+      <span className="clock-time">
+        {hours}:{minutes}:<span className="clock-seconds">{seconds}</span>
+      </span>
+    </div>
+  );
+}
+
+function LiveMonitorBar() {
+  return (
+    <div className="live-monitor-bar">
+      <div className="monitor-left">
+        <span className="pulse-dot" />
+        <div className="monitor-text">
+          <h3>Real-time Schedule Monitor - A8 Munich → Salzburg</h3>
+          <p>
+            In the past hour, <span className="highlight-number">1,284</span>{" "}
+            people changed their travel plans
+          </p>
+        </div>
+      </div>
+      <LiveClock />
+    </div>
+  );
+}
+
+function HourCell({ data }) {
   const barColor =
-    data.p > 1500 ? "#f43f5e" : data.p > 800 ? "#f59e0b" : "#10b981";
+    data.p > 1500 ? "var(--red)" : data.p > 800 ? "var(--orange)" : "var(--green)";
   const height = (data.p / 2000) * 100;
 
   return (
     <div className={`hour-cell ${data.isMe ? "my-plan-slot" : ""}`}>
       {data.isMe && <span className="my-tag">My Plan</span>}
-      <div
-        className={`text-lg font-mono font-bold mb-1 ${
-          data.p > 1500 ? "text-rose-500" : "text-slate-300"
-        }`}
-      >
+      <div className={`cell-value ${data.p > 1500 ? "value-critical" : ""}`}>
         {data.p}
       </div>
       <div className="bar-bg">
@@ -50,11 +86,7 @@ function HourCell({ hour, data }) {
           style={{ height: `${height}%`, backgroundColor: barColor }}
         />
       </div>
-      <div
-        className={`font-mono font-bold text-xs ${
-          data.c > 0 ? "trend-up" : "trend-down"
-        }`}
-      >
+      <div className={`trend ${data.c > 0 ? "trend-up" : "trend-down"}`}>
         {data.c > 0 ? "↑" : "↓"}
         {Math.abs(data.c)}
       </div>
@@ -79,16 +111,12 @@ export default function MyPlanPage() {
 
   return (
     <div className="myplan-page">
+      {/* Live Monitor Bar */}
+      <LiveMonitorBar />
+
       {/* Top: Personal Trip Status Bar */}
       <section className="status-section">
         <div className="status-main">
-          {/* Decorative background */}
-          <div className="status-decoration">
-            <svg width="200" height="200" fill="white">
-              <circle cx="100" cy="100" r="100" />
-            </svg>
-          </div>
-
           <div className="status-content">
             <div className="avatar-container">
               <div className="avatar">
@@ -133,7 +161,10 @@ export default function MyPlanPage() {
           </div>
           <div className="dashboard-tags">
             <span className="tag-date">2026.07.25</span>
-            <span className="tag-status">Live Data</span>
+            <span className="tag-status">
+              <span className="live-dot"></span>
+              Live
+            </span>
           </div>
         </div>
 
@@ -150,7 +181,7 @@ export default function MyPlanPage() {
             {/* Data row */}
             <div className="hour-cell row-label">Traffic</div>
             {stats.map((data, hour) => (
-              <HourCell key={hour} hour={hour} data={data} />
+              <HourCell key={hour} data={data} />
             ))}
           </div>
         </div>
@@ -173,9 +204,7 @@ export default function MyPlanPage() {
           </div>
           <div className="suggestion-actions">
             <button className="btn-ignore">Ignore</button>
-            <button className="btn-accept">
-              Switch to {suggestedHour}:00
-            </button>
+            <button className="btn-accept">Switch to {suggestedHour}:00</button>
           </div>
         </div>
       </div>
