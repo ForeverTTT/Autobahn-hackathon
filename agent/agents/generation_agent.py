@@ -491,18 +491,17 @@ class GenerationAgent(BaseAgent):
             ])
 
             # 根据日历数据分析返程
-                weekend_days = [d for d in calendar if d["weekday"] in ["周六", "周日"]]
-                if weekend_days:
-                    # 找返程最佳日
-                    best_return = min(weekend_days, key=lambda d: d["score"]) if weekend_days else None
-                    if best_return:
-                        lines.append(f"✅ **最佳返程日**: {best_return['weekday']} ({best_return['date']})")
-                        lines.append("")
-                        lines.append("💡 **返程时间建议**:")
-                        lines.append("- 周六返程：全天相对畅通")
-                        lines.append("- 周日返程：建议 12:00 前出发，避开下午返城高峰")
-                else:
-                    lines.append("💡 工作日返程通常比周末更畅通")
+            weekend_days = [d for d in calendar if d["weekday"] in ["周六", "周日"]]
+            if weekend_days:
+                # 找返程最佳日
+                best_return = min(weekend_days, key=lambda d: d["score"])
+                lines.append(f"✅ **最佳返程日**: {best_return['weekday']} ({best_return['date']})")
+                lines.append("")
+                lines.append("💡 **返程时间建议**:")
+                lines.append("- 周六返程：全天相对畅通")
+                lines.append("- 周日返程：建议 12:00 前出发，避开下午返城高峰")
+            else:
+                lines.append("💡 工作日返程通常比周末更畅通")
 
         # 添加重要警告
         important = [f for f in factors if f.impact in ["high", "very_high"]]
