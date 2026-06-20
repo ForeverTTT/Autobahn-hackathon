@@ -3,7 +3,16 @@ Agents 模块
 包含所有专职 Agent
 """
 from .base import BaseAgent
-from .intent_parser import IntentParser, ParsedIntent, DataRequirements
+from .intent_parser import (
+    IntentParser,
+    ParsedIntent,
+    DataRequirements,
+    TimeRange,
+    TimeRangeType,
+    DataGranularity,
+    TripType,
+    TripPlan,
+)
 from .forecast_agent import ForecastAgent
 from .context_agent import ContextAgent
 from .search_agent import SearchAgent
@@ -14,6 +23,11 @@ __all__ = [
     "IntentParser",
     "ParsedIntent",
     "DataRequirements",
+    "TimeRange",
+    "TimeRangeType",
+    "DataGranularity",
+    "TripType",
+    "TripPlan",
     "ForecastAgent",
     "ContextAgent",
     "SearchAgent",

@@ -1,6 +1,6 @@
 """
 Orchestrator - Agent 调度器
-根据用户画像智能调度 Agent，获取针对性数据
+根据用户画像和时间范围智能调度 Agent
 """
 import asyncio
 from typing import Dict, Any
@@ -9,6 +9,11 @@ from .models import AgentRequest, UserType
 from .personas import PersonaType
 from .agents import (
     IntentParser,
+    ParsedIntent,
+    TimeRangeType,
+    DataGranularity,
+    TripType,
+    TripPlan,
     ForecastAgent,
     ContextAgent,
     SearchAgent,
@@ -21,8 +26,8 @@ class Orchestrator:
     Agent 调度器
 
     核心流程:
-    1. IntentParser 识别用户画像 + 数据需求
-    2. 根据数据需求，智能调度 Agent
+    1. IntentParser 识别用户画像 + 时间范围 + 数据需求
+    2. 根据时间范围长度，智能调度 Agent
     3. 汇总结果给 GenerationAgent
     4. 返回针对用户画像的响应
     """
@@ -40,30 +45,38 @@ class Orchestrator:
 
         Args:
             query: 用户输入
-            user_type: 用户类型（可选，会被 LLM 识别覆盖）
+            user_type: 用户类型（可选）
 
         Returns:
             针对用户画像的响应
         """
-        # 1. 解析意图，识别用户画像和数据需求
+        # 1. 解析意图，识别用户画像、时间范围和数据需求
         parsed = await self.intent_parser.parse_async(query, user_type)
 
         # 打印调试信息
         print(f"[Orchestrator] Persona: {parsed.persona_type.value}")
         print(f"[Orchestrator] Core Question: {parsed.core_question}")
-        print(f"[Orchestrator] Data Needs: {parsed.data_requirements.granularity}, hours={parsed.data_requirements.hours[:3]}...")
+        print(f"[Orchestrator] Time Range: {parsed.time_range.type.value} ({parsed.time_range.description})")
+        print(f"[Orchestrator]   - Start: {parsed.time_range.start_date}")
+        print(f"[Orchestrator]   - End: {parsed.time_range.end_date}")
+        print(f"[Orchestrator]   - Duration: {parsed.time_range.duration_days} days")
+        print(f"[Orchestrator] Granularity: {parsed.data_requirements.granularity.value}")
+        if parsed.trip_plan:
+            print(f"[Orchestrator] Trip Type: {parsed.trip_plan.trip_type.value}")
+            if parsed.trip_plan.stay_days:
+                print(f"[Orchestrator] Stay Days: {parsed.trip_plan.stay_days}")
 
-        # 2. 创建请求（包含数据需求）
+        # 2. 创建请求
         request = AgentRequest(
             query=query,
-            date=parsed.date,
+            date=parsed.time_range.start_date,
             road=parsed.road,
-            hours=parsed.data_requirements.hours,  # 从数据需求获取
+            hours=parsed.data_requirements.hours,
             user_type=parsed.user_type,
             destination=parsed.destination,
         )
 
-        # 3. 根据画像决定需要哪些 Agent
+        # 3. 根据画像和时间范围决定需要哪些 Agent
         tasks = self._create_agent_tasks(parsed, request)
 
         # 4. 并行执行 Agent
@@ -78,6 +91,7 @@ class Orchestrator:
         # 6. 汇总给 GenerationAgent
         generation_result = await self.generation_agent.process(
             request=request,
+            parsed_intent=parsed,  # 传递完整的解析结果
             forecast=forecast_result.data.get("forecast") if forecast_result and forecast_result.success else None,
             context_factors=context_result.data.get("factors", []) if context_result and context_result.success else [],
             search_factors=search_result.data.get("factors", []) if search_result and search_result.success else [],
@@ -92,14 +106,31 @@ class Orchestrator:
             "persona": {
                 "type": parsed.persona_type.value,
                 "core_question": parsed.core_question,
-                "data_granularity": parsed.data_requirements.granularity,
-                "time_range": parsed.data_requirements.time_range,
             },
+
+            # 时间范围信息
+            "time_range": {
+                "type": parsed.time_range.type.value,
+                "start_date": parsed.time_range.start_date,
+                "end_date": parsed.time_range.end_date,
+                "duration_days": parsed.time_range.duration_days,
+                "description": parsed.time_range.description,
+                "granularity": parsed.data_requirements.granularity.value,
+            },
+
+            # 行程计划（往返）
+            "trip_plan": {
+                "trip_type": parsed.trip_plan.trip_type.value if parsed.trip_plan else "one_way",
+                "outbound_date": parsed.trip_plan.outbound_date if parsed.trip_plan else None,
+                "outbound_time": parsed.trip_plan.outbound_time if parsed.trip_plan else None,
+                "return_date": parsed.trip_plan.return_date if parsed.trip_plan else None,
+                "return_time": parsed.trip_plan.return_time if parsed.trip_plan else None,
+                "stay_days": parsed.trip_plan.stay_days if parsed.trip_plan else 0,
+            } if parsed.trip_plan else None,
 
             # 解析结果
             "parsed": {
                 "user_type": parsed.user_type.value,
-                "date": parsed.date,
                 "destination": parsed.destination,
                 "road": parsed.road,
                 "intent": parsed.intent,
@@ -110,7 +141,7 @@ class Orchestrator:
             "data": generation_result.data.get("data"),
             "factors": generation_result.data.get("factors"),
 
-            # 原始数据（调试用）
+            # 原始数据
             "raw": {
                 "forecast": forecast_result.data if forecast_result and forecast_result.success else None,
                 "context": context_result.data if context_result and context_result.success else None,
@@ -118,50 +149,53 @@ class Orchestrator:
             }
         }
 
-    def _create_agent_tasks(self, parsed, request) -> Dict[str, Any]:
+    def _create_agent_tasks(self, parsed: ParsedIntent, request: AgentRequest) -> Dict[str, Any]:
         """
-        根据用户画像决定需要调用哪些 Agent
+        根据用户画像和时间范围决定调用哪些 Agent
 
-        不同画像需要不同的数据:
-        - Commuter: 今日小时预测 (forecast)
-        - Traveler: 未来一周日历 (forecast + context)
-        - Logistics: 路段预测 (forecast + search for 施工)
-        - Tourist: 简化数据 (forecast)
-        - Operator: 全部数据 (forecast + context + search)
+        规则:
+        1. 短时间范围 (1-2天): 主要看 Forecast
+        2. 中等时间范围 (一周): Forecast + Context (假期)
+        3. 长时间范围 (月级): Forecast + Context + Search (全面)
+        4. Logistics: 总是需要 Search (施工信息)
+        5. Operator: 总是需要全部 Agent
         """
         tasks = {}
         persona = parsed.persona_type
+        duration = parsed.time_range.duration_days
         granularity = parsed.data_requirements.granularity
 
-        # Forecast Agent - 几乎都需要
-        if granularity in ["hourly", "daily", "segment", "simple", "detailed"]:
-            tasks["forecast"] = asyncio.create_task(
-                self.forecast_agent.process(request)
-            )
+        # Forecast Agent - 几乎总是需要
+        tasks["forecast"] = asyncio.create_task(
+            self.forecast_agent.process(request)
+        )
 
-        # Context Agent - 需要离线因素（假期、季节等）
-        if persona in [
-            PersonaType.FAMILY_TRAVELER,  # 需要假期信息
-            PersonaType.OPERATOR,         # 需要全部因素
-        ] or granularity == "detailed":
+        # Context Agent - 假期、季节等离线因素
+        need_context = (
+            persona == PersonaType.OPERATOR or  # 管理者需要全部
+            persona == PersonaType.FAMILY_TRAVELER or  # 旅行者关心假期
+            duration > 3 or  # 超过3天需要假期信息
+            granularity in [DataGranularity.WEEKLY, DataGranularity.MONTHLY]  # 周/月级需要
+        )
+        if need_context:
             tasks["context"] = asyncio.create_task(
                 self.context_agent.process(request)
             )
 
-        # Search Agent - 需要实时信息（施工、天气等）
-        if persona in [
-            PersonaType.LOGISTICS,        # 需要施工信息
-            PersonaType.FAMILY_TRAVELER,  # 需要天气预报
-            PersonaType.OPERATOR,         # 需要全部信息
-        ] or granularity == "detailed":
+        # Search Agent - 施工、活动等实时信息
+        need_search = (
+            persona == PersonaType.OPERATOR or  # 管理者需要全部
+            persona == PersonaType.LOGISTICS or  # 物流需要施工信息
+            duration > 7 or  # 超过一周需要活动信息
+            parsed.time_range.type in [  # 特殊时期需要活动信息
+                TimeRangeType.SUMMER,
+                TimeRangeType.CHRISTMAS,
+                TimeRangeType.EASTER,
+            ]
+        )
+        if need_search:
             tasks["search"] = asyncio.create_task(
                 self.search_agent.process(request)
-            )
-
-        # 至少要有 forecast
-        if not tasks:
-            tasks["forecast"] = asyncio.create_task(
-                self.forecast_agent.process(request)
             )
 
         print(f"[Orchestrator] Running agents: {list(tasks.keys())}")
@@ -176,16 +210,7 @@ class Orchestrator:
 # ============ 便捷函数 ============
 
 def ask(query: str, user_type: str = None) -> str:
-    """
-    快速查询
-
-    Args:
-        query: 用户问题
-        user_type: 用户类型 (可选)
-
-    Returns:
-        个性化建议（Markdown格式）
-    """
+    """快速查询"""
     orchestrator = Orchestrator()
     user_type_enum = UserType(user_type) if user_type else None
     result = orchestrator.process_sync(query, user_type_enum)
@@ -197,17 +222,7 @@ def get_plan(
     destination: str = "salzburg",
     user_type: str = "traveler"
 ) -> Dict[str, Any]:
-    """
-    获取出行计划
-
-    Args:
-        date: 日期 YYYY-MM-DD
-        destination: 目的地
-        user_type: 用户类型
-
-    Returns:
-        完整计划
-    """
+    """获取出行计划"""
     query = f"我想在 {date} 去 {destination}"
     orchestrator = Orchestrator()
     user_type_enum = UserType(user_type)
