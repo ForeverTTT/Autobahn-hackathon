@@ -235,6 +235,24 @@ a:focus-visible {
   padding: 58px 0 68px;
 }
 
+/* Calendar always fits exactly one screen — never scrolls and never collides
+   with the fixed nav, on any viewport. The day grid flexes to fill whatever
+   vertical space is left after the toolbar / weekday row. */
+.calendar-page {
+  height: calc(100vh - var(--nav-h, 78px));
+  padding: 22px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendar-page .calendar-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .page-heading {
   display: flex;
   align-items: flex-end;
@@ -371,7 +389,7 @@ a:focus-visible {
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid var(--line);
+  border: 2px solid #17201a;
   border-radius: 9999px;
   background: #ffffff;
   cursor: pointer;
@@ -591,6 +609,9 @@ a:focus-visible {
 }
 
 .days-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: repeat(6, 1fr);
   background: var(--line);
   gap: 1px;
 }
@@ -598,7 +619,9 @@ a:focus-visible {
 .day-cell {
   position: relative;
   min-width: 0;
-  height: clamp(92px, 9vw, 128px);
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
   padding: 12px;
   border: 0;
   background: #fff;
