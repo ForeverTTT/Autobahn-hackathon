@@ -297,12 +297,13 @@ function OpenStreetMap({
     });
 
     map.fitBounds(bounds, {
-      paddingTopLeft: [350, 70],
-      paddingBottomRight: [55, 55],
+      paddingTopLeft: [50, 50],
+      paddingBottomRight: [50, 50],
     });
 
     routeLayers.current = L.layerGroup().addTo(map);
     mapInstance.current = map;
+    setTimeout(() => map.invalidateSize(), 0);
 
     return () => {
       mapInstance.current = null;
@@ -449,10 +450,24 @@ export default function MapPage() {
   const selectedRoadDirections =
     selectedRoad === "all" ? null : ROAD_DIRECTIONS[selectedRoad];
 
+  const pageRef = useRef(null);
+  const toolbarRef = useRef(null);
+
   const selectRoad = (road) => {
     setSelectedRoad(road);
     setSelectedDirection("both");
   };
+
+  // expose the top toolbar height so the map can fill exactly below it
+  useEffect(() => {
+    const measure = () => {
+      const barH = toolbarRef.current?.offsetHeight ?? 56;
+      pageRef.current?.style.setProperty("--bar-h", `${barH}px`);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [selectedRoad]);
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -465,122 +480,80 @@ export default function MapPage() {
   }, [selectedDate, selectedDirection, selectedHour, selectedRoad]);
 
   return (
-    <section className="map-page page-container">
-      <div className="map-top-tools">
-        <div className="map-location-chip">
-          <LocationIcon />
-          <span>
-            <small>Region</small>
-            <strong>Upper Bavaria · Tyrol</strong>
-          </span>
-        </div>
-      </div>
-
-      <div className="map-card">
-        <div className="map-overlay-panel">
-          <span className="panel-kicker">LIVE CORRIDORS</span>
-          <h2>
-            {selectedRoad === "all"
-              ? "A8 East & A93 South"
-              : `${selectedRoad} corridor`}
-          </h2>
-          <p>
-            {selectedRoad === "all"
-              ? "Both highways and all directions are visible."
-              : "Both directions are shown until one is selected."}
-          </p>
-
-          <div className="map-time-controls">
-            <label>
-              <span className="map-filter-label">Date</span>
-              <input
-                type="date"
-                min="2023-01-01"
-                max="2029-12-31"
-                value={selectedDate}
-                onChange={(event) => {
-                  if (event.target.value) setSelectedDate(event.target.value);
-                }}
-              />
-            </label>
-            <label>
-              <span className="map-filter-label">Hour</span>
-              <select
-                value={selectedHour}
-                onChange={(event) => setSelectedHour(Number(event.target.value))}
+    <section className="map-fullpage" ref={pageRef}>
+      <div className="map-toolbar" ref={toolbarRef}>
+        <span className="panel-kicker">LIVE CORRIDOR</span>
+        <label className="map-control">
+          <span>Date</span>
+          <input
+            type="date"
+            min="2023-01-01"
+            max="2029-12-31"
+            value={selectedDate}
+            onChange={(event) => {
+              if (event.target.value) setSelectedDate(event.target.value);
+            }}
+          />
+        </label>
+        <label className="map-control">
+          <span>Hour</span>
+          <select
+            value={selectedHour}
+            onChange={(event) => setSelectedHour(Number(event.target.value))}
+          >
+            {HOURS.map((hour) => (
+              <option value={hour} key={hour}>
+                {formatHourRange(hour)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="map-toolbar-group">
+          <span className="map-filter-label">Highway</span>
+          <div className="map-pills">
+            {[
+              ["all", "All"],
+              ["A8", "A8"],
+              ["A93", "A93"],
+            ].map(([value, label]) => (
+              <button
+                className={selectedRoad === value ? "active" : ""}
+                type="button"
+                key={value}
+                onClick={() => selectRoad(value)}
               >
-                {HOURS.map((hour) => (
-                  <option value={hour} key={hour}>
-                    {formatHourRange(hour)}
-                  </option>
-                ))}
-              </select>
-            </label>
+                {label}
+              </button>
+            ))}
           </div>
-
-          <div className="map-filter-group">
-            <span className="map-filter-label">Highway</span>
-            <div className="map-filter-options highway-options">
-              {[
-                ["all", "All"],
-                ["A8", "A8"],
-                ["A93", "A93"],
-              ].map(([value, label]) => (
+        </div>
+        {selectedRoadDirections && (
+          <div className="map-toolbar-group map-toolbar-dir">
+            <span className="map-filter-label">Direction</span>
+            <div className="map-dir-pills">
+              <button
+                className={selectedDirection === "both" ? "active" : ""}
+                type="button"
+                onClick={() => setSelectedDirection("both")}
+              >
+                Both
+              </button>
+              {selectedRoadDirections.map((direction, index) => (
                 <button
-                  className={selectedRoad === value ? "active" : ""}
+                  className={selectedDirection === index + 1 ? "active" : ""}
                   type="button"
-                  key={value}
-                  onClick={() => selectRoad(value)}
-                  aria-pressed={selectedRoad === value}
+                  key={direction}
+                  onClick={() => setSelectedDirection(index + 1)}
                 >
-                  {label}
+                  {direction}
                 </button>
               ))}
             </div>
           </div>
+        )}
+      </div>
 
-          {selectedRoadDirections && (
-            <div className="map-filter-group direction-filter">
-              <span className="map-filter-label">Direction</span>
-              <div className="map-filter-options direction-options">
-                <button
-                  className={selectedDirection === "both" ? "active" : ""}
-                  type="button"
-                  onClick={() => setSelectedDirection("both")}
-                  aria-pressed={selectedDirection === "both"}
-                >
-                  Both directions
-                </button>
-                {selectedRoadDirections.map((direction, index) => (
-                  <button
-                    className={
-                      selectedDirection === index + 1 ? "active" : ""
-                    }
-                    type="button"
-                    key={direction}
-                    onClick={() => setSelectedDirection(index + 1)}
-                    aria-pressed={selectedDirection === index + 1}
-                  >
-                    {direction}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="map-legend">
-            <span>
-              <i className="legend-dot smooth" /> Smooth
-            </span>
-            <span>
-              <i className="legend-dot busy" /> Busy
-            </span>
-            <span>
-              <i className="legend-dot heavy" /> Heavy
-            </span>
-          </div>
-        </div>
-
+      <div className="map-fill">
         <OpenStreetMap
           selectedRoad={selectedRoad}
           selectedDirection={selectedDirection}

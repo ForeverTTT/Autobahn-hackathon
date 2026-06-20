@@ -932,7 +932,7 @@ export default function HourlyMapPage() {
 
   return (
     <div className="map-page-shell" ref={shellRef}>
-      <div className="map-toolbar" ref={toolbarRef}>
+      <div className="map-toolbar map-toolbar--float" ref={toolbarRef}>
         <span className="panel-kicker">LIVE CORRIDOR</span>
         <label className="map-control">
           <span>Date</span>

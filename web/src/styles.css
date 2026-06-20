@@ -1486,7 +1486,7 @@ button.day-cell.selected {
   gap: 14px 26px;
   padding: 12px 4.5vw;
   border-bottom: 1px solid rgba(207, 214, 205, 0.85);
-  background: rgba(248, 249, 246, 0.94);
+  background: #ffffff;
   backdrop-filter: blur(16px);
 }
 
@@ -1512,6 +1512,105 @@ button.day-cell.selected {
   flex: 0 0 auto;
 }
 
+/* Hourly: float the LIVE CORRIDOR controls up into the nav band (same height
+   as the top-right PillNav menu) and dress them in the menu's pill style. */
+.map-toolbar--float {
+  top: 0;
+  right: auto;
+  width: max-content;
+  max-width: 72vw;
+  height: var(--nav-h, 70px);
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 0 0 0 2.4vw;
+  border-bottom: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.map-toolbar--float .panel-kicker {
+  color: #17201a;
+  font-size: 10px;
+}
+
+/* compact, single-line controls */
+.map-toolbar--float .map-control {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+.map-toolbar--float .map-control > span {
+  font-size: 9px;
+}
+.map-toolbar--float .map-control input,
+.map-toolbar--float .map-control select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  border: 1px solid #d8ded6;
+  background: #fff;
+  color: #17201a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.map-toolbar--float .map-toolbar-group {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+
+/* segmented selectors in the menu (PillNav) language: black track, white pill */
+.map-toolbar--float .map-pills,
+.map-toolbar--float .map-dir-pills {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: none;
+  border-radius: 9999px;
+  background: #000000;
+}
+.map-toolbar--float .map-pills button,
+.map-toolbar--float .map-dir-pills button {
+  height: 26px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+.map-toolbar--float .map-pills button.active,
+.map-toolbar--float .map-dir-pills button.active {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Map page (Leaflet): same top toolbar form as Hourly, map fills below it */
+.map-fullpage {
+  position: relative;
+  width: 100%;
+}
+
+.map-fill {
+  margin-top: var(--bar-h, 56px);
+  width: 100%;
+  height: calc(100vh - var(--nav-h, 70px) - var(--bar-h, 56px));
+}
+
+.map-fill .leaflet-map {
+  width: 100%;
+  height: 100%;
+}
+
 .map-scroll {
   position: relative;
   left: 0;
@@ -1525,9 +1624,9 @@ button.day-cell.selected {
   position: fixed;
   left: 0;
   right: 0;
-  top: calc(var(--nav-h, 78px) + var(--bar-h, 60px));
+  top: var(--nav-h, 70px);
   z-index: 1;
-  height: calc(100vh - var(--nav-h, 78px) - var(--bar-h, 60px));
+  height: calc(100vh - var(--nav-h, 70px));
 }
 
 .map-spacer {
@@ -1540,8 +1639,8 @@ button.day-cell.selected {
   left: 0;
   top: 0;
   z-index: 1;
-  width: 50%;
-  max-width: 50%;
+  width: 62%;
+  max-width: 62%;
   height: 100%;
   background: #e9ebe6;
   overflow: hidden;
@@ -1600,9 +1699,9 @@ button.day-cell.selected {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  width: 50%;
+  width: 38%;
   height: 100%;
-  padding: 4.5% 5% 3.5%;
+  padding: 4.5% 4% 3.5%;
   background: #000000;
   color: #ffffff;
 }
