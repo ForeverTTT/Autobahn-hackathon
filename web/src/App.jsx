@@ -75,7 +75,7 @@ export default function App() {
     <div className="app-shell" ref={shellRef}>
       <header className="topbar" ref={navRef}>
         <div className="topbar-inner">
-          {page === "calendar" && (
+          {page !== "map" && (
             <a className="app-brand" href="#/calendar" aria-label="AlpineFlow">
               <img
                 className="app-brand-logo"
