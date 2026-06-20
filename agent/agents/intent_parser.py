@@ -173,7 +173,7 @@ class IntentParser:
         """延迟加载 LLM 客户端"""
         if self._llm_client is None:
             try:
-                from ..llm import LLMClient
+                from ..tools import LLMClient
                 self._llm_client = LLMClient()
             except Exception as e:
                 print(f"Warning: LLM client init failed: {e}")

@@ -712,7 +712,231 @@ class ContextLoader:
             "construction": self.query_construction(start_date, end_date, road),
             "temperature_road": self.query_temperature_road(start_date, end_date, hours),
             "hourly_traffic": self.query_hourly_traffic(start_date, end_date, road, hours),
+            "historical_same_period": self.get_historical_same_period(
+                start_date=start_date,
+                end_date=end_date,
+                road=road,
+                hours=hours,
+            ),
         }
+
+    def get_historical_same_period(
+        self,
+        start_date: str,
+        end_date: str = None,
+        road: str = None,
+        hours: List[int] = None,
+        years_back: int = 3,
+    ) -> Dict[str, Any]:
+        """读取往年同月同日/同时间段的上下文数据。"""
+        end_date = end_date or start_date
+        date_map = self._historical_date_map(start_date, end_date, years_back)
+
+        return {
+            "weather": self._query_historical_daily_rows(
+                self._load_semicolon_records("合并表格，weather日级.csv"),
+                date_map,
+            ),
+            "holiday": self._query_historical_daily_rows(
+                self._load_semicolon_records("合并表格，holiday日级.csv"),
+                date_map,
+            ),
+            "events": self._query_historical_daily_rows(
+                self._filter_road_context(
+                    self._load_semicolon_records("合并表格，special_events日级.csv"),
+                    road,
+                ),
+                date_map,
+            ),
+            "construction": self._query_historical_daily_rows(
+                self._filter_road_context(
+                    self._load_semicolon_records("合并表格，construction日级.csv"),
+                    road,
+                ),
+                date_map,
+            ),
+            "temperature_road": self.query_temperature_road_historical_same_period(
+                start_date=start_date,
+                end_date=end_date,
+                hours=hours,
+                years_back=years_back,
+            ),
+            "hourly_traffic": self.query_hourly_traffic_historical_same_period(
+                start_date=start_date,
+                end_date=end_date,
+                road=road,
+                hours=hours,
+                years_back=years_back,
+            ),
+        }
+
+    def _query_historical_daily_rows(
+        self,
+        records: List[Dict[str, Any]],
+        date_map: Dict[str, List[str]],
+    ) -> List[Dict[str, Any]]:
+        """按 source_date -> target_date 映射复制日级历史同期记录。"""
+        rows = []
+        for record in records:
+            source_date = str(record.get("date", ""))
+            target_dates = date_map.get(source_date, [])
+            for target_date in target_dates:
+                row = dict(record)
+                row["date"] = target_date
+                row["source_date"] = source_date
+                row["source_year"] = source_date[:4]
+                row["historical_reference"] = True
+                rows.append(row)
+
+        return sorted(rows, key=lambda item: (item.get("date", ""), item.get("source_date", "")))
+
+    def query_temperature_road_historical_same_period(
+        self,
+        start_date: str,
+        end_date: str = None,
+        hours: List[int] = None,
+        years_back: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """读取往年同月同日同小时的气温/路温。"""
+        end_date = end_date or start_date
+        date_map = self._historical_date_map(start_date, end_date, years_back)
+        hour_set = set(hours) if hours else None
+        path = DATA_DIR / "合并表格，时间，气温，路温.csv"
+        if not path.exists():
+            return []
+
+        buckets: Dict[tuple, Dict[str, Any]] = {}
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as file_obj:
+                for record in csv.DictReader(file_obj, delimiter=";"):
+                    timestamp = str(record.get("t_start", ""))
+                    if len(timestamp) < 13:
+                        continue
+                    source_date = timestamp[:10]
+                    target_dates = date_map.get(source_date, [])
+                    if not target_dates:
+                        continue
+                    try:
+                        hour = int(timestamp[11:13])
+                    except ValueError:
+                        continue
+                    if hour_set is not None and hour not in hour_set:
+                        continue
+
+                    for target_date in target_dates:
+                        key = (target_date, source_date, hour)
+                        bucket = buckets.setdefault(
+                            key,
+                            {
+                                "date": target_date,
+                                "source_date": source_date,
+                                "source_year": source_date[:4],
+                                "historical_reference": True,
+                                "hour": hour,
+                                "lt": [],
+                                "fbt": [],
+                            },
+                        )
+                        air_temp = self._to_float(record.get("lt"))
+                        road_temp = self._to_float(record.get("fbt"))
+                        if air_temp is not None:
+                            bucket["lt"].append(air_temp)
+                        if road_temp is not None:
+                            bucket["fbt"].append(road_temp)
+        except Exception as error:
+            print(f"Error scanning same-period historical temperature CSV: {error}")
+            return []
+
+        result = []
+        for bucket in buckets.values():
+            air_values = bucket.pop("lt")
+            road_values = bucket.pop("fbt")
+            bucket["air_temp_c"] = round(sum(air_values) / len(air_values), 1) if air_values else None
+            bucket["road_temp_c"] = round(sum(road_values) / len(road_values), 1) if road_values else None
+            result.append(bucket)
+
+        return sorted(result, key=lambda item: (item["date"], item["source_date"], item["hour"]))
+
+    def query_hourly_traffic_historical_same_period(
+        self,
+        start_date: str,
+        end_date: str = None,
+        road: str = None,
+        hours: List[int] = None,
+        years_back: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """读取往年同月同日同小时的交通流量。"""
+        end_date = end_date or start_date
+        date_map = self._historical_date_map(start_date, end_date, years_back)
+        hour_set = set(hours) if hours else None
+        path = DATA_DIR / "合并表格，小时交通流量.csv"
+        if not path.exists():
+            return []
+
+        rows = []
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as file_obj:
+                for record in csv.DictReader(file_obj, delimiter=";"):
+                    if self._is_description_row(record):
+                        continue
+                    source_date = self._parse_german_date(record.get("datum"))
+                    if not source_date:
+                        continue
+                    target_dates = date_map.get(source_date, [])
+                    if not target_dates:
+                        continue
+                    if road and record.get("road") != road:
+                        continue
+                    try:
+                        hour = int(str(record.get("t_start", "00:00:00"))[:2])
+                    except ValueError:
+                        continue
+                    if hour_set is not None and hour not in hour_set:
+                        continue
+
+                    for target_date in target_dates:
+                        rows.append({
+                            "date": target_date,
+                            "source_date": source_date,
+                            "source_year": source_date[:4],
+                            "historical_reference": True,
+                            "hour": hour,
+                            "road": record.get("road"),
+                            "direction": record.get("direction"),
+                            "site_name": record.get("site_name"),
+                            "kfz_h": self._to_float(record.get("kfz_h")),
+                            "sv_h": self._to_float(record.get("sv_h")),
+                            "v_kfz": self._to_float(record.get("v_kfz")),
+                        })
+        except Exception as error:
+            print(f"Error scanning same-period historical traffic CSV: {error}")
+            return []
+
+        return sorted(rows, key=lambda item: (item["date"], item["source_date"], item["hour"], item.get("site_name") or ""))
+
+    def _historical_date_map(
+        self,
+        start_date: str,
+        end_date: str,
+        years_back: int,
+    ) -> Dict[str, List[str]]:
+        """生成 source_date -> target_date 映射，用于读取往年同期。"""
+        date_map: Dict[str, List[str]] = {}
+        for target_date in self._date_range(start_date, end_date):
+            for year_offset in range(1, years_back + 1):
+                source_date = self._shift_year(target_date, -year_offset)
+                if source_date:
+                    date_map.setdefault(source_date, []).append(target_date)
+        return date_map
+
+    def _shift_year(self, date: str, offset: int) -> Optional[str]:
+        """按年份平移日期，自动跳过 2 月 29 日等无效日期。"""
+        try:
+            date_obj = datetime.strptime(date, "%Y-%m-%d")
+            shifted = date_obj.replace(year=date_obj.year + offset)
+            return shifted.strftime("%Y-%m-%d")
+        except ValueError:
+            return None
 
     def _parse_german_date(self, value: Any) -> Optional[str]:
         try:

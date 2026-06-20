@@ -58,6 +58,9 @@ class ContextAgent(BaseAgent):
         """生成前端/调试友好的上下文摘要。"""
         traffic = context.get("hourly_traffic", [])
         temperature = context.get("temperature_road", [])
+        historical = context.get("historical_same_period", {})
+        historical_traffic = historical.get("hourly_traffic", []) if isinstance(historical, dict) else []
+        historical_temperature = historical.get("temperature_road", []) if isinstance(historical, dict) else []
 
         speeds = [self._to_float(row.get("v_kfz")) for row in traffic]
         speeds = [value for value in speeds if value is not None]
@@ -67,6 +70,10 @@ class ContextAgent(BaseAgent):
         air_temps = [value for value in air_temps if value is not None]
         road_temps = [self._to_float(row.get("road_temp_c")) for row in temperature]
         road_temps = [value for value in road_temps if value is not None]
+        historical_speeds = [self._to_float(row.get("v_kfz")) for row in historical_traffic]
+        historical_speeds = [value for value in historical_speeds if value is not None]
+        historical_volumes = [self._to_float(row.get("kfz_h")) for row in historical_traffic]
+        historical_volumes = [value for value in historical_volumes if value is not None]
 
         return {
             "weather_days": len(context.get("weather", [])),
@@ -81,6 +88,17 @@ class ContextAgent(BaseAgent):
             "max_air_temp_c": max(air_temps) if air_temps else None,
             "min_road_temp_c": min(road_temps) if road_temps else None,
             "max_road_temp_c": max(road_temps) if road_temps else None,
+            "historical_same_period": {
+                "years": self._source_years(historical),
+                "weather_days": len(historical.get("weather", [])) if isinstance(historical, dict) else 0,
+                "holiday_days": len(historical.get("holiday", [])) if isinstance(historical, dict) else 0,
+                "construction_days": len(historical.get("construction", [])) if isinstance(historical, dict) else 0,
+                "event_days": len(historical.get("events", [])) if isinstance(historical, dict) else 0,
+                "temperature_hours": len(historical_temperature),
+                "traffic_records": len(historical_traffic),
+                "avg_speed_kmh": round(sum(historical_speeds) / len(historical_speeds), 1) if historical_speeds else None,
+                "max_hourly_volume": max(historical_volumes) if historical_volumes else None,
+            },
         }
 
     def _build_factors(self, context: Dict[str, List[Dict[str, Any]]], road: str) -> List[ExternalFactor]:
@@ -92,6 +110,7 @@ class ContextAgent(BaseAgent):
         factors.extend(self._construction_factors(context.get("construction", []), road))
         factors.extend(self._event_factors(context.get("events", [])))
         factors.extend(self._traffic_factors(context.get("hourly_traffic", []), road))
+        factors.extend(self._historical_same_period_factors(context.get("historical_same_period", {}), road))
         return factors
 
     def _weather_factors(self, rows: List[Dict[str, Any]]) -> List[ExternalFactor]:
@@ -286,6 +305,86 @@ class ContextAgent(BaseAgent):
             ))
         return factors
 
+    def _historical_same_period_factors(self, historical: Dict[str, List[Dict[str, Any]]], road: str) -> List[ExternalFactor]:
+        """从往年同期数据中生成参考因素。"""
+        if not isinstance(historical, dict):
+            return []
+
+        traffic = historical.get("hourly_traffic", [])
+        temperature = historical.get("temperature_road", [])
+        construction = historical.get("construction", [])
+        events = historical.get("events", [])
+        factors = []
+
+        traffic_speeds = [self._to_float(row.get("v_kfz")) for row in traffic]
+        traffic_speeds = [value for value in traffic_speeds if value is not None]
+        traffic_volumes = [self._to_float(row.get("kfz_h")) for row in traffic]
+        traffic_volumes = [value for value in traffic_volumes if value is not None]
+        years = self._source_years(historical)
+        year_text = ", ".join(years) if years else "往年"
+
+        if traffic_speeds or traffic_volumes:
+            avg_speed = round(sum(traffic_speeds) / len(traffic_speeds), 1) if traffic_speeds else None
+            max_volume = max(traffic_volumes) if traffic_volumes else None
+            details = []
+            if avg_speed is not None:
+                details.append(f"平均速度约 {avg_speed:g} km/h")
+            if max_volume is not None:
+                details.append(f"最高小时流量约 {max_volume:g} 辆/小时")
+
+            impact = "moderate"
+            if (avg_speed is not None and avg_speed <= 80) or (max_volume is not None and max_volume >= 3000):
+                impact = "high"
+
+            factors.append(ExternalFactor(
+                type="historical_same_period",
+                name="往年同期交通参考",
+                description=f"{year_text} 同期 {road} 共有 {len(traffic)} 条小时交通记录，" + "，".join(details),
+                impact=impact,
+                source="context_history",
+            ))
+
+        hot_rows = [row for row in temperature if self._to_float(row.get("air_temp_c"), -99) >= 35]
+        cold_rows = [row for row in temperature if self._to_float(row.get("road_temp_c"), 99) <= 0]
+        if hot_rows:
+            first = hot_rows[0]
+            factors.append(ExternalFactor(
+                type="historical_same_period_weather",
+                name="往年同期高温参考",
+                description=f"{first.get('source_date')} {first.get('hour'):02d}:00 同期气温较高，目标日期映射为 {first.get('date')}",
+                impact="moderate",
+                source="context_history",
+            ))
+        if cold_rows:
+            first = cold_rows[0]
+            factors.append(ExternalFactor(
+                type="historical_same_period_weather",
+                name="往年同期低路温参考",
+                description=f"{first.get('source_date')} {first.get('hour'):02d}:00 同期路温接近或低于 0°C",
+                impact="high",
+                source="context_history",
+            ))
+
+        if construction:
+            factors.append(ExternalFactor(
+                type="historical_same_period_construction",
+                name="往年同期施工参考",
+                description=f"{year_text} 同期找到 {len(construction)} 条施工日级记录，可作为季节性道路施工参考",
+                impact="moderate",
+                source="context_history",
+            ))
+
+        if events:
+            factors.append(ExternalFactor(
+                type="historical_same_period_event",
+                name="往年同期活动参考",
+                description=f"{year_text} 同期找到 {len(events)} 条活动日级记录，可辅助判断旅游季活动影响",
+                impact="moderate",
+                source="context_history",
+            ))
+
+        return factors
+
     def _count_active_days(self, rows: List[Dict[str, Any]], flag: str) -> int:
         return sum(1 for row in rows if self._truthy(row.get(flag)))
 
@@ -314,3 +413,17 @@ class ContextAgent(BaseAgent):
             if value and value not in names:
                 names.append(value)
         return "; ".join(names)
+
+    def _source_years(self, historical: Dict[str, List[Dict[str, Any]]]) -> List[str]:
+        if not isinstance(historical, dict):
+            return []
+
+        years = set()
+        for rows in historical.values():
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                year = row.get("source_year") or str(row.get("source_date", ""))[:4]
+                if year:
+                    years.add(str(year))
+        return sorted(years)
