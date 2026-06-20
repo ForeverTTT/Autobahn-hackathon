@@ -4,6 +4,7 @@ from __future__ import annotations
 数据加载工具
 渐进式加载预测数据，不一次性读取全部
 """
+import csv
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from datetime import datetime
@@ -31,9 +32,15 @@ class PredictionLoader:
 
     def __init__(self, file_path: str = None):
         self.file_path = file_path or str(DATA_DIR / "forecast_2026_2029.csv")
+        self.daily_file_path = str(DATA_DIR / "forecast_2026_2029_daily.csv")
+        self.factor_file_path = str(DATA_DIR / "factor_attribution_daily.csv")
         self._cache: Dict[str, pd.DataFrame] = {}
         self._cache_order: List[str] = []
         self._cache_max_days = 7
+        self._daily_df: Optional[pd.DataFrame] = None
+        self._factor_df: Optional[pd.DataFrame] = None
+        self._daily_records: Optional[List[Dict[str, Any]]] = None
+        self._factor_records: Optional[List[Dict[str, Any]]] = None
         self._initialized = False
 
     def _init_file(self) -> bool:
@@ -105,6 +112,50 @@ class PredictionLoader:
             print(f"Error loading data for {date}: {e}")
             return None
 
+    def _query_hourly_records_csv(
+        self,
+        date: str,
+        road: str = None,
+        site_id: str = None,
+        hours: List[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """使用标准库按需扫描小时级 CSV，供无 pandas 环境使用。"""
+        path = Path(self.file_path)
+        if not path.exists():
+            alt_path = path.with_suffix(".csv")
+            if alt_path.exists():
+                path = alt_path
+            else:
+                return []
+
+        if path.suffix != ".csv":
+            return []
+
+        hour_set = set(hours) if hours else None
+        records = []
+
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                for record in csv.DictReader(f):
+                    if record.get("date") != date:
+                        continue
+                    if road and record.get("road") != road:
+                        continue
+                    if site_id and record.get("site_id") != site_id:
+                        continue
+                    if hour_set is not None:
+                        try:
+                            if int(record.get("hour", -1)) not in hour_set:
+                                continue
+                        except ValueError:
+                            continue
+                    records.append(record)
+        except Exception as e:
+            print(f"Error scanning hourly forecast CSV: {e}")
+            return []
+
+        return sorted(records, key=lambda x: int(x.get("hour", 0)))
+
     def query(
         self,
         date: str,
@@ -126,7 +177,10 @@ class PredictionLoader:
         """
         df = self._load_date(date)
 
-        if df is None or len(df) == 0:
+        if df is None:
+            return self._query_hourly_records_csv(date, road, site_id, hours)
+
+        if len(df) == 0:
             return []
 
         mask = pd.Series([True] * len(df))
@@ -152,10 +206,173 @@ class PredictionLoader:
 
         return result.to_dict("records")
 
+    def _load_daily_forecast(self) -> Optional[pd.DataFrame]:
+        """加载日级预测表。"""
+        if self._daily_df is not None:
+            return self._daily_df
+
+        if not HAS_PANDAS:
+            return None
+
+        path = Path(self.daily_file_path)
+        if not path.exists():
+            return None
+
+        try:
+            df = pd.read_csv(path)
+            df["date"] = df["date"].astype(str)
+            self._daily_df = df
+            return self._daily_df
+        except Exception as e:
+            print(f"Error loading daily forecast: {e}")
+            return None
+
+    def _load_daily_forecast_records(self) -> List[Dict[str, Any]]:
+        """使用标准库加载日级预测表，供无 pandas 环境使用。"""
+        if self._daily_records is not None:
+            return self._daily_records
+
+        path = Path(self.daily_file_path)
+        if not path.exists():
+            self._daily_records = []
+            return self._daily_records
+
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                self._daily_records = list(csv.DictReader(f))
+        except Exception as e:
+            print(f"Error loading daily forecast records: {e}")
+            self._daily_records = []
+
+        return self._daily_records
+
+    def _load_factor_attribution(self) -> Optional[pd.DataFrame]:
+        """加载日级因子归因表。"""
+        if self._factor_df is not None:
+            return self._factor_df
+
+        if not HAS_PANDAS:
+            return None
+
+        path = Path(self.factor_file_path)
+        if not path.exists():
+            return None
+
+        try:
+            df = pd.read_csv(path)
+            df["date"] = df["date"].astype(str)
+            self._factor_df = df
+            return self._factor_df
+        except Exception as e:
+            print(f"Error loading factor attribution: {e}")
+            return None
+
+    def _load_factor_attribution_records(self) -> List[Dict[str, Any]]:
+        """使用标准库加载日级因子归因表，供无 pandas 环境使用。"""
+        if self._factor_records is not None:
+            return self._factor_records
+
+        path = Path(self.factor_file_path)
+        if not path.exists():
+            self._factor_records = []
+            return self._factor_records
+
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                self._factor_records = list(csv.DictReader(f))
+        except Exception as e:
+            print(f"Error loading factor attribution records: {e}")
+            self._factor_records = []
+
+        return self._factor_records
+
+    def query_daily(
+        self,
+        start_date: str,
+        end_date: str = None,
+        road: str = None,
+        site_id: str = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        查询日级预测数据。
+
+        Args:
+            start_date: 开始日期 YYYY-MM-DD
+            end_date: 结束日期 YYYY-MM-DD，默认等于 start_date
+            road: 高速公路 A8/A93
+            site_id: 站点ID
+
+        Returns:
+            日级预测记录列表
+        """
+        df = self._load_daily_forecast()
+        if df is None:
+            records = self._load_daily_forecast_records()
+            end_date = end_date or start_date
+            result = [
+                record for record in records
+                if start_date <= record.get("date", "") <= end_date
+                and (not road or record.get("road") == road)
+                and (not site_id or record.get("site_id") == site_id)
+            ]
+            return sorted(result, key=lambda x: (x.get("date", ""), x.get("site_id", "")))
+
+        if len(df) == 0:
+            return []
+
+        end_date = end_date or start_date
+        mask = (df["date"] >= start_date) & (df["date"] <= end_date)
+
+        if road:
+            mask &= df["road"] == road
+        if site_id:
+            mask &= df["site_id"] == site_id
+
+        result = df[mask].sort_values(["date", "site_id"])
+        return result.to_dict("records")
+
+    def query_factor_attribution(
+        self,
+        start_date: str,
+        end_date: str = None,
+        road: str = None,
+        site_id: str = None,
+    ) -> List[Dict[str, Any]]:
+        """查询日级因子归因数据。"""
+        df = self._load_factor_attribution()
+        if df is None:
+            records = self._load_factor_attribution_records()
+            end_date = end_date or start_date
+            result = [
+                record for record in records
+                if start_date <= record.get("date", "") <= end_date
+                and (not road or record.get("road") == road)
+                and (not site_id or record.get("site_id") == site_id)
+            ]
+            return sorted(result, key=lambda x: (x.get("date", ""), x.get("site_id", "")))
+
+        if len(df) == 0:
+            return []
+
+        end_date = end_date or start_date
+        mask = (df["date"] >= start_date) & (df["date"] <= end_date)
+
+        if road:
+            mask &= df["road"] == road
+        if site_id:
+            mask &= df["site_id"] == site_id
+
+        result = df[mask].sort_values(["date", "site_id"])
+        return result.to_dict("records")
+
     def clear_cache(self):
         """清空缓存"""
         self._cache.clear()
         self._cache_order.clear()
+        self._daily_df = None
+        self._factor_df = None
+        self._daily_records = None
+        self._factor_records = None
 
 
 class ContextLoader:

@@ -109,6 +109,10 @@ class AgentRequest:
     hours: List[int] = field(default_factory=lambda: list(range(6, 22)))
     user_type: UserType = UserType.TRAVELER
     destination: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    granularity: str = "hourly"       # hourly / daily
+    include_factors: bool = True
 
 
 @dataclass
