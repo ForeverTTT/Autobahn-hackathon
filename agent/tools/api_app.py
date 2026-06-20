@@ -16,6 +16,8 @@ from .api_handlers import (
     handle_forecast,
     handle_options,
     handle_plan,
+    handle_hourly_explanation,
+    handle_batch_explanations,
 )
 from .calendar_data import calendar_traffic_loader
 
@@ -131,6 +133,74 @@ def create_app() -> FastAPI:
         """返回多个出发时间的方案对比。"""
         try:
             return await handle_options(orchestrator, date, destination, user_type)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/explain/{date}/{hour}")
+    async def explain_hour(
+        date: str,
+        hour: int,
+        road: str = "A8",
+        lang: str = "zh",
+    ):
+        """
+        生成某小时交通状况的自然语言解释。
+
+        Args:
+            date: 日期 (YYYY-MM-DD)
+            hour: 小时 (0-23)
+            road: 道路 (A8, A93)
+            lang: 语言 (zh=中文, en=English, de=Deutsch)
+
+        Returns:
+            {
+                "date": "2026-07-25",
+                "hour": 8,
+                "road": "A8",
+                "congestion_level": "moderate",
+                "congestion_level_name": "中度拥堵",
+                "congestion_score": 45,
+                "flow": 2500,
+                "speed": 95.5,
+                "explanation": "8点交通中等拥堵，主要因为...",
+                "factors": [...]
+            }
+        """
+        try:
+            return await handle_hourly_explanation(date, hour, road, lang)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/explain/{date}")
+    async def explain_day(
+        date: str,
+        road: str = "A8",
+        lang: str = "zh",
+        hours: str = "6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21",
+    ):
+        """
+        批量生成一天多个小时的交通解释。
+
+        Args:
+            date: 日期 (YYYY-MM-DD)
+            road: 道路 (A8, A93)
+            lang: 语言 (zh, en, de)
+            hours: 小时列表，逗号分隔 (默认 6-21)
+
+        Returns:
+            {
+                "date": "2026-07-25",
+                "road": "A8",
+                "explanations": [
+                    {"hour": 6, "explanation": "...", ...},
+                    {"hour": 7, "explanation": "...", ...},
+                    ...
+                ]
+            }
+        """
+        try:
+            hour_list = [int(h.strip()) for h in hours.split(",")]
+            return await handle_batch_explanations(date, hour_list, road, lang)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
