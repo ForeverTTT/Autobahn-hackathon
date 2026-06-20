@@ -273,12 +273,6 @@ export default function MyPlanPage() {
       <section className="status-section">
         <div className="status-main">
           <div className="status-content">
-            <div className="avatar-container">
-              <div className="avatar">
-                <span className="avatar-icon">🚗</span>
-              </div>
-              <span className="status-indicator"></span>
-            </div>
             <div className="status-text">
               <h2 className="status-title">
                 My Current Plan:{" "}
