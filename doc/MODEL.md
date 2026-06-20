@@ -1,12 +1,12 @@
 # 模型说明
 
-当前可交付预测由 **CatBoost v2** 生成。TFT 已完成训练实验并保存 checkpoint，但尚未与 CatBoost 融合，也没有生成当前 Agent 使用的交付文件。
+当前可交付预测由 **CatBoost v3** 生成（v2 → v3 变动：模型复用 bugfix、因子归因重构为逐日表、进度条修复）。TFT 已完成训练实验并保存 checkpoint，但尚未与 CatBoost 融合。
 
 ## 1. 文件与角色
 
 | 文件/目录 | 角色 |
 |---|---|
-| `model/model_notebook.ipynb` | 当前 CatBoost v2 训练、评估和 2026–2029 推理 |
+| `model/model_notebook.ipynb` | 当前 CatBoost v3 训练、评估和 2026–2029 推理（v3: 模型复用 bugfix + 因子归因重构） |
 | `model/tft.ipynb` | 多目标 Temporal Fusion Transformer 实验 |
 | `model/model.md` | 模型设计背景和特征方案 |
 | `model/compressed_notebook.md` | `model_notebook.ipynb` 的文本化审阅副本 |
@@ -17,11 +17,14 @@
 | `models/v_kfz/speed_drop.cbm` | 速度下降模型 |
 | `models/snapshots/` | CatBoost 训练快照和训练日志 |
 | `models/tft/` | TFT 日志和 checkpoint |
-| `data_autobahn/forecast_2026_2029.csv` | 当前交付预测，Agent 默认读取 |
+| `data_autobahn/forecast_2026_2029.csv` | 当前交付预测（小时级，13 列，不含因子列），Agent 默认读取 |
+| `data_autobahn/forecast_2026_2029_daily.csv` | 逐日预测 + 因子归因表（17,532 行，SHAP 兼容格式），Agent 可解释性输入 |
+| `doc/FACTOR_CONTRIBUTIONS.md` | 因子归因的 Agent + 人工阅读指南 |
+| `doc/FACTOR_GROUPING_REVIEW.md` | v4 7组方案的设计理由与 SHAP 对比分析 |
 
 `processed/` 是 notebook 的中间产物目录，已被 `.gitignore` 忽略，因此不能假定其中的 parquet、profile 或 conformal JSON 存在于其他机器。
 
-## 2. CatBoost v2
+## 2. CatBoost v3
 
 ### 2.1 预测任务
 
@@ -65,7 +68,7 @@
 
 历史画像是主信号；条件特征主要用于在画像上做可解释偏移。
 
-因子归因表 `data_autobahn/factor_attribution_daily.csv`（17,532 行 × 5 列）用缩略码给出逐日（按站点）的 6 个因子贡献百分比，通过特征组消融按流量加权聚合。详见 `doc/FACTOR_CONTRIBUTIONS.md`。
+因子归因通过特征组消融（feature-group ablation）按流量加权聚合为逐日字符串，写入 `data_autobahn/forecast_2026_2029_daily.csv` 的 `原因` 列（17,532 行）。格式为 SHAP 兼容的完整名称（如 `"Historical Traffic Baseline: 68.0%；Holiday Effect: 12.3%；..."`），包含 7 个因子组：Historical Traffic Baseline / Road Segment and Detector Attributes / Date and Time Pattern / Holiday Effect / Weather and Temperature / Special Events / Construction Impact。Agent 使用指南见 `doc/FACTOR_CONTRIBUTIONS.md`，设计理由见 `doc/FACTOR_GROUPING_REVIEW.md`。
 
 ## 3. 训练与校准
 
@@ -132,7 +135,7 @@ sv_h_pred, v_kfz_pred, interval_width, relative_interval_width
 ```
 
 - `relative_interval_width = interval_width / (p50 + 1)`，供 Agent 解释预测不确定性。
-- 因子归因不再放在主表中。紧凑的逐日因子表位于 `data_autobahn/factor_attribution_daily.csv`（17,532 行）；缩略码 `TT/CA/HO/WE/EV/CO` 对应 6 个因子组，每行格式如 `"TT:76;CA:12;HO:10;WE:2"`。Agent 使用指南见 `doc/FACTOR_CONTRIBUTIONS.md`。
+- 因子归因不再放在主表中。逐日预测 + 因子归因位于 `data_autobahn/forecast_2026_2029_daily.csv`（17,532 行）；`原因` 列为 SHAP 兼容格式（如 `"Historical Traffic Baseline: 68.0%；Holiday Effect: 7.2%；..."`），7 个因子组按贡献降序排列。Agent 使用指南见 `doc/FACTOR_CONTRIBUTIONS.md`。
 
 ## 6. TFT 实验
 
@@ -209,10 +212,11 @@ TFT 需要额外安装 notebook 中列出的 `torch`、`lightning` 和 `pytorch-
 
 建议执行顺序：
 
-1. 运行数据加载与检查。
-2. 构建训练段画像。
-3. 训练 CatBoost 三个任务。
-4. 在 2025 验证并执行 split conformal。
-5. 生成 2026–2029 全网格。
-6. 检查行数、主键、缺失和分位数单调性。
-7. 将最终 CSV 更新到 `data_autobahn/forecast_2026_2029.csv`。
+1. 运行数据加载与检查（§0–§2）。
+2. 构建训练段画像（§3）。
+3. 检查 `FORCE_RETRAIN` 开关（cell 6）：默认 `False`，已有 `.cbm` 模型时自动跳过训练，加载磁盘模型。
+4. 训练 CatBoost 三个任务（§4.1–§4.4 —— 如跳过则直接进入下一步）。
+5. 在 2025 验证并执行 split conformal（§5）。
+6. 生成 2026–2029 全网格 + 逐日因子归因表（§6）。
+7. 检查行数、主键、缺失和分位数单调性。
+8. 确认最终输出：`data_autobahn/forecast_2026_2029.csv`（小时级）和 `data_autobahn/forecast_2026_2029_daily.csv`（日级 + 因子归因）。
