@@ -58,20 +58,9 @@ class TimeRange:
 
 @dataclass
 class TripPlan:
-    """行程计划（支持往返）"""
+    """行程类型"""
     trip_type: TripType
-    # 去程
-    outbound_date: Optional[str] = None      # 出发日期
-    outbound_time: Optional[str] = None      # 建议出发时间
-    # 返程
-    return_date: Optional[str] = None        # 返回日期
-    return_time: Optional[str] = None        # 建议返回时间
-    # 停留
-    stay_days: int = 0                       # 停留天数
-    # LLM 分析结果
-    outbound_analysis: Optional[str] = None  # 去程分析
-    return_analysis: Optional[str] = None    # 返程分析
-    recommendation: Optional[str] = None     # 综合建议
+    stay_days: int = 0
 
 
 @dataclass
@@ -80,7 +69,6 @@ class DataRequirements:
     time_range: TimeRange
     granularity: DataGranularity
     hours: List[int]
-    features: List[str]
 
 
 @dataclass
@@ -108,60 +96,44 @@ class ParsedIntent:
 
 # ============ LLM System Prompt ============
 
-SYSTEM_PROMPT = """你是 AlpineFlow 交通智能助手。
-
-你的任务是**充分理解**用户的自然语言输入，进行**完整的意图分析**，包括：
-1. 识别用户画像
-2. 理解时间范围
-3. 判断是否需要往返
-4. 给出初步的出行建议
+SYSTEM_PROMPT = """你是意图识别助手。分析用户输入，识别以下信息：
 
 ## 1. persona (用户画像)
 
-| persona | 核心问题 | 特征 |
-|---------|----------|------|
-| commuter | 几点出发能准时？ | 上班、下班、通勤、每天 |
-| traveler | 哪天出行最好？ | 带家人、度假、自驾游、暑假 |
-| logistics | 哪段路会延误？ | 送货、货车、运输、物流 |
-| tourist | 告诉我怎么做 | 第一次来、不熟悉、游客 |
-| operator | 为什么会拥堵？ | 管理、监控、分析原因 |
+| persona | 特征关键词 |
+|---------|------------|
+| commuter | 上班、下班、通勤、每天 |
+| traveler | 带家人、度假、自驾游、暑假、旅行 |
+| logistics | 送货、货车、运输、物流 |
+| tourist | 第一次来、不熟悉、游客 |
+| operator | 管理、监控、为什么堵、分析 |
 
-## 2. trip_type (行程类型) - 重要！
+## 2. trip_type (行程类型)
 
-判断用户是否需要往返：
-
-| 类型 | 场景 | 示例 |
-|------|------|------|
-| round_trip | 旅行、度假、周末游 | "周末去萨尔茨堡" → 需要返程 |
-| commute | 每日通勤 | "上班" → 早去晚回 |
-| one_way | 单程、搬家、送人 | "送朋友去机场" → 单程 |
-
-**默认规则**：
-- 旅行/度假场景 → round_trip
-- 通勤场景 → commute
-- 明确说"去"但没说"回" → 推断为 round_trip
+| 类型 | 场景 |
+|------|------|
+| round_trip | 旅行、度假、周末游 |
+| commute | 每日通勤 |
+| one_way | 单程、送人 |
 
 ## 3. time_range (时间范围)
 
-| 类型 | 用户表达 | 计算规则 |
-|------|----------|----------|
-| today | 今天 | 当天 |
-| tomorrow | 明天 | 明天 |
-| this_weekend | 这周末 | 本周六-周日 |
-| next_weekend | 下周末 | 下周六-周日 |
-| summer | 暑假、夏天 | 7月1日-8月31日 |
-| winter | 寒假、滑雪 | 12月1日-2月28日 |
-| christmas | 圣诞节 | 12月20日-1月6日 |
+根据用户表达计算具体日期：
+- today/tomorrow/this_weekend/next_weekend
+- summer (7月1日-8月31日)
+- winter (12月1日-2月28日)
+- christmas (12月20日-1月6日)
+- custom (具体日期)
+- flexible (未指定)
 
-## 4. stay_days (停留天数)
+## 4. 其他字段
 
-根据场景推断：
-- "周末去" → 1-2天
-- "暑假旅行" → 用户可能停留3-7天，需要询问
-- "度假一周" → 7天
-- 通勤 → 0天（当天往返）
+- destination: salzburg / innsbruck / null
+- road: A8 (默认) / A93
+- intent: plan / forecast / compare / construction / events / general
+- stay_days: 根据场景推断停留天数
 
-## 输出格式
+## 输出 JSON
 
 ```json
 {
@@ -173,38 +145,14 @@ SYSTEM_PROMPT = """你是 AlpineFlow 交通智能助手。
         "end_date": "2026-08-31",
         "description": "暑假"
     },
-    "trip_plan": {
-        "outbound_date": "建议的出发日期或null",
-        "outbound_time": "建议的出发时间或null",
-        "return_date": "建议的返回日期或null",
-        "return_time": "建议的返回时间或null",
-        "stay_days": 3,
-        "outbound_analysis": "去程交通分析",
-        "return_analysis": "返程交通分析",
-        "recommendation": "综合建议"
-    },
+    "stay_days": 3,
     "destination": "salzburg",
     "road": "A8",
-    "intent": "plan",
-    "needs_clarification": false,
-    "clarification_question": null
+    "intent": "plan"
 }
 ```
 
-## 分析要点
-
-1. **往返分析**：去程和返程的交通状况通常不同
-   - 周五去程拥堵（大家出城）
-   - 周日返程拥堵（大家回城）
-   - 暑假期间双向都可能拥堵
-
-2. **时间建议**：
-   - 去程：建议避开出城高峰
-   - 返程：建议避开返城高峰
-   - 给出具体时间点
-
-3. **如果信息不足**：设置 needs_clarification=true，并提供 clarification_question
-"""
+只做意图识别，不做交通分析。"""
 
 
 class IntentParser:
@@ -251,33 +199,18 @@ class IntentParser:
         default_user_type: UserType,
         llm_client,
     ) -> ParsedIntent:
-        """使用 LLM 直接进行完整的意图分析"""
+        """使用 LLM 进行意图识别"""
         today = datetime.now()
         weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
-        # 构建上下文信息
-        context = f"""今天是 {today.strftime("%Y-%m-%d")} ({weekday_names[today.weekday()]})
-今年是 {today.year} 年
-
-已知的交通规律：
-- 周五下午/傍晚：出城方向拥堵（大家去度假）
-- 周日下午/傍晚：返城方向拥堵（大家回家）
-- 暑假期间（7-8月）：双向都可能拥堵，尤其是周末
-- 圣诞/新年：12月23-26日、1月1-2日是高峰
-- 滑雪季：周六早上去、周日下午回
+        # 只提供日期上下文，用于计算时间范围
+        prompt = f"""今天是 {today.strftime("%Y-%m-%d")} ({weekday_names[today.weekday()]})
 
 用户输入: "{query}"
 
-请进行完整的意图分析，包括：
-1. 识别用户画像
-2. 理解时间范围（计算具体日期）
-3. 判断是否需要往返
-4. 分析去程和返程的交通状况
-5. 给出具体的出行建议
+请识别用户意图，返回 JSON。"""
 
-返回 JSON 格式。"""
-
-        result = await llm_client.generate_json(context, SYSTEM_PROMPT)
+        result = await llm_client.generate_json(prompt, SYSTEM_PROMPT)
 
         # 解析 persona
         persona_str = result.get("persona", "tourist")
@@ -317,7 +250,7 @@ class IntentParser:
         )
 
     def _parse_trip_plan(self, result: Dict, persona_type: PersonaType) -> TripPlan:
-        """解析行程计划"""
+        """解析行程类型（分析由 GenerationAgent 完成）"""
         # 获取行程类型
         trip_type_str = result.get("trip_type", "round_trip")
         try:
@@ -331,19 +264,9 @@ class IntentParser:
             else:
                 trip_type = TripType.ONE_WAY
 
-        # 解析 LLM 返回的行程计划
-        plan_data = result.get("trip_plan", {})
-
         return TripPlan(
             trip_type=trip_type,
-            outbound_date=plan_data.get("outbound_date"),
-            outbound_time=plan_data.get("outbound_time"),
-            return_date=plan_data.get("return_date"),
-            return_time=plan_data.get("return_time"),
-            stay_days=plan_data.get("stay_days", 0),
-            outbound_analysis=plan_data.get("outbound_analysis"),
-            return_analysis=plan_data.get("return_analysis"),
-            recommendation=plan_data.get("recommendation"),
+            stay_days=result.get("stay_days", 0),
         )
 
     def _parse_time_range(self, time_range_data: Dict, today: datetime) -> TimeRange:
@@ -492,26 +415,14 @@ class IntentParser:
 
         # 根据画像和粒度确定小时
         if granularity == DataGranularity.HOURLY:
-            # 小时级：根据画像
             hours = persona.data_needs.get("hours", list(range(6, 22)))
         else:
-            # 日级/周级/月级：全天
             hours = list(range(6, 22))
-
-        # 功能列表
-        features = persona.data_needs.get("features", [])
-
-        # 根据时间跨度添加额外功能
-        if duration > 7:
-            features = features + ["holiday_calendar", "event_calendar", "best_windows"]
-        if duration > 30:
-            features = features + ["seasonal_analysis", "monthly_comparison"]
 
         return DataRequirements(
             time_range=time_range,
             granularity=granularity,
             hours=hours,
-            features=list(set(features)),  # 去重
         )
 
     def _str_to_persona(self, persona_str: str) -> PersonaType:

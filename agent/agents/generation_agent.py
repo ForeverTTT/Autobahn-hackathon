@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 
 from .base import BaseAgent
-from .intent_parser import ParsedIntent, TimeRangeType, DataGranularity, TripType, TripPlan
+from .intent_parser import ParsedIntent, TimeRangeType, DataGranularity, TripType
 from ..models import (
     AgentRequest, AgentResponse,
     DailyForecast, ExternalFactor, TravelOption, TravelPlan,
@@ -284,32 +284,16 @@ class GenerationAgent(BaseAgent):
                 "",
                 "#### 🔙 返程分析",
                 "",
+                "**返程规律**:",
+                "- 周日下午/傍晚：返城高峰，建议避开 15:00-19:00",
+                "- 假期最后一天：拥堵严重，建议提前一天或早上返回",
+                "- 工作日返程：相对畅通",
+                "",
+                "#### 💡 综合建议",
+                "",
+                "- 去程：选择工作日或周六早上出发",
+                "- 返程：避开周日下午高峰，可选择周日早上或周一返回",
             ])
-
-            # 返程分析（LLM 的分析）
-            if trip_plan.return_analysis:
-                lines.append(trip_plan.return_analysis)
-            else:
-                # 默认的返程分析
-                lines.extend([
-                    "**返程规律**:",
-                    "- 周日下午/傍晚：返城高峰，建议避开 15:00-19:00",
-                    "- 假期最后一天：拥堵严重，建议提前一天或早上返回",
-                    "- 工作日返程：相对畅通",
-                ])
-
-            lines.append("")
-
-            # 综合建议
-            if trip_plan.recommendation:
-                lines.append(f"#### 💡 综合建议")
-                lines.append("")
-                lines.append(trip_plan.recommendation)
-            else:
-                lines.append("#### 💡 综合建议")
-                lines.append("")
-                lines.append("- 去程：选择工作日或周六早上出发")
-                lines.append("- 返程：避开周日下午高峰，可选择周日早上或周一返回")
 
         # 找需要避开的时段
         avoid_windows = [w for w in windows if w["risk_level"] == "high"]
@@ -523,11 +507,6 @@ class GenerationAgent(BaseAgent):
                 else:
                     lines.append("💡 工作日返程通常比周末更畅通")
 
-            # 综合建议
-            if trip_plan.recommendation:
-                lines.append("")
-                lines.append(f"**综合建议**: {trip_plan.recommendation}")
-
         # 添加重要警告
         important = [f for f in factors if f.impact in ["high", "very_high"]]
         if important:
@@ -568,7 +547,7 @@ class GenerationAgent(BaseAgent):
         forecast: DailyForecast,
         factors: List[ExternalFactor],
         route,
-        trip_plan: TripPlan = None,
+        trip_plan = None,
     ) -> Dict[str, Any]:
         """通勤者响应（包含早晚通勤）"""
         # 分析早高峰（去程）
@@ -772,7 +751,7 @@ class GenerationAgent(BaseAgent):
         forecast: DailyForecast,
         factors: List[ExternalFactor],
         route,
-        trip_plan: TripPlan = None,
+        trip_plan = None,
     ) -> Dict[str, Any]:
         """游客响应"""
         level, recommended = self._simple_analysis(forecast, factors)
@@ -863,19 +842,10 @@ class GenerationAgent(BaseAgent):
                 "",
                 "#### 🔙 返程",
                 "",
+                "**返程时间建议**:",
+                "- 周日返程：建议 12:00 前出发",
+                "- 避开 15:00-19:00 返城高峰",
             ])
-
-            if trip_plan.return_analysis:
-                lines.append(trip_plan.return_analysis)
-            else:
-                # 默认返程建议
-                lines.append("**返程时间建议**:")
-                lines.append("- 周日返程：建议 12:00 前出发")
-                lines.append("- 避开 15:00-19:00 返城高峰")
-
-            if trip_plan.return_time:
-                lines.append("")
-                lines.append(f"✅ **建议返程时间**: {trip_plan.return_time}")
 
         return "\n".join(lines)
 

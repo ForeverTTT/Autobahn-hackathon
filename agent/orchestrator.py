@@ -113,13 +113,9 @@ class Orchestrator:
                 "granularity": parsed.data_requirements.granularity.value,
             },
 
-            # 行程计划（往返）
+            # 行程计划
             "trip_plan": {
                 "trip_type": parsed.trip_plan.trip_type.value if parsed.trip_plan else "one_way",
-                "outbound_date": parsed.trip_plan.outbound_date if parsed.trip_plan else None,
-                "outbound_time": parsed.trip_plan.outbound_time if parsed.trip_plan else None,
-                "return_date": parsed.trip_plan.return_date if parsed.trip_plan else None,
-                "return_time": parsed.trip_plan.return_time if parsed.trip_plan else None,
                 "stay_days": parsed.trip_plan.stay_days if parsed.trip_plan else 0,
             } if parsed.trip_plan else None,
 
