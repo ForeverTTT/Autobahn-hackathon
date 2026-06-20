@@ -74,10 +74,10 @@ function LiveMonitorBar({ changedCount }) {
 function HourCell({ hour, data, isSelected, isRecommended, onClick }) {
   const barColor =
     data.p > 1500
-      ? "var(--red)"
+      ? "#DD0000"
       : data.p > 800
-        ? "var(--orange)"
-        : "var(--green)";
+        ? "#666666"
+        : "#FFCC00";
   const height = (data.p / 2000) * 100;
 
   return (
