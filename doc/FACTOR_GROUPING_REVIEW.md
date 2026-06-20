@@ -1,8 +1,8 @@
 # Factor Grouping Review — 影响因子归因方案评审与改进
 
 > **Audience**: 模型开发者 & Agent 开发者
-> **Status**: ✅ 已实施 (2026-06-20) — notebook Cell 16/48/50 已更新，`forecast_2026_2029_daily.csv` 已生成
-> **依赖**: `model_notebook.ipynb` Cell 16 (特征定义 + FACTOR_DISPLAY), Cell 48 (ablation 函数), Cell 50 (日聚合 + 输出 forecast_2026_2029_daily.csv)
+> **Status**: ✅ 已实施 (2026-06-20) — notebook Cell 16/48/50 已更新，`forecast_2026_daily.csv` 已生成
+> **依赖**: `model_notebook.ipynb` Cell 16 (特征定义 + FACTOR_DISPLAY), Cell 48 (ablation 函数), Cell 50 (日聚合 + 输出 forecast_2026_daily.csv)
 
 ---
 
@@ -367,14 +367,14 @@ FACTOR_DISPLAY = {
 ### 6.3 修改 pipeline（Cell 50）
 
 - 新增日聚合步骤：从小时级 forecast groupby 到日级（sum/mean），四舍五入到 int/float
-- 输出文件名从 `factor_attribution_daily.csv` 改为 `forecast_2026_2029_daily.csv`
+- 输出文件名从 `factor_attribution_daily.csv` 改为 `forecast_2026_daily.csv`
 - 合并日聚合 + 因子归因 → 保持 Agent 读取的列顺序
 
 ### 6.4 验证清单
 
 - [x] Assert 完整性：82 特征恰好被覆盖一次
 - [x] 输出格式与 `add_daily_forecast_reasons.py` 的 `原因` 列一致（Agent 零改动）
-- [x] `forecast_2026_2029_daily.csv` 包含全部 13 列（日聚合 + `原因`）
+- [x] `forecast_2026_daily.csv` 包含全部 13 列（日聚合 + `原因`）
 - [x] `doc/FACTOR_CONTRIBUTIONS.md` 已全面重写为 7 组方案
 - [x] `doc/MODEL.md` 已更新文件引用
 - [x] `CLAUDE.md` 已更新项目状态
@@ -408,5 +408,5 @@ FACTOR_DISPLAY = {
 
 ## 9. 版本记录
 
-- **v2 (2026-06-20)**：方案已实施。Notebook Cell 16/48/50 已更新，新增 `FACTOR_DISPLAY` 映射，`daily_factor_attribution()` 输出 SHAP 兼容格式，Cell 50 新增日聚合并输出 `forecast_2026_2029_daily.csv`。`doc/FACTOR_CONTRIBUTIONS.md` 全面重写。`doc/MODEL.md` 和 `CLAUDE.md` 已同步更新。
+- **v2 (2026-06-20)**：方案已实施。Notebook Cell 16/48/50 已更新，新增 `FACTOR_DISPLAY` 映射，`daily_factor_attribution()` 输出 SHAP 兼容格式，Cell 50 新增日聚合并输出 `forecast_2026_daily.csv`。`doc/FACTOR_CONTRIBUTIONS.md` 全面重写。`doc/MODEL.md` 和 `CLAUDE.md` 已同步更新。
 - **v1 (2026-06-20)**：初稿。提出 TT→SL+HP 拆分方案，tagestyp 归属修正，7组方案。

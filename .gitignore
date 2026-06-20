@@ -13,3 +13,5 @@ agent/config.py
 processed/
 __pycache__/
 *.pyc
+# Vite dep cache
+.vite/

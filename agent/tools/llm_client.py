@@ -5,7 +5,10 @@ LLM 客户端工具
 import json
 from typing import Any, Dict, Optional
 
-from .. import config
+try:
+    from .. import config
+except ImportError:
+    from .. import config_example as config
 
 
 class LLMClient:

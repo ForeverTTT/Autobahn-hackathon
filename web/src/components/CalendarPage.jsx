@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  fetchDailyTraffic,
   formatDateKey,
   formatHourRange,
-  getDailyStatus,
   getHourlyStatus,
   HOURS,
   ROAD_DIRECTIONS,
@@ -33,10 +33,12 @@ const ROADS = [
 ];
 const STATUS_SCORE = {
   smooth: 0,
-  busy: 1,
-  heavy: 2,
+  light: 1,
+  moderate: 2,
+  heavy: 3,
+  critical: 4,
 };
-const SCORE_STATUS = ["smooth", "busy", "heavy"];
+const SCORE_STATUS = ["smooth", "light", "moderate", "heavy", "critical"];
 
 function buildTrafficOverview(dateKey, road, direction) {
   return Array.from({ length: 6 }, (_, index) => {
@@ -57,23 +59,30 @@ function buildTrafficOverview(dateKey, road, direction) {
   });
 }
 
-function buildMonth(year, month, road) {
+function buildMonth(year, month, trafficDays) {
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const mondayOffset = (firstDay.getDay() + 6) % 7;
+  const trafficByDate = new Map(
+    trafficDays.map((item) => [item.date, item.directions]),
+  );
 
   return Array.from({ length: 42 }, (_, index) => {
     const day = index - mondayOffset + 1;
     if (day < 1 || day > daysInMonth) return null;
 
     const dateKey = formatDateKey(year, month, day);
+    const directionData = trafficByDate.get(dateKey) || [];
     return {
       day,
       dateKey,
-      directions: [
-        getDailyStatus(dateKey, road, 1),
-        getDailyStatus(dateKey, road, 2),
-      ],
+      directions: [0, 1].map(
+        (directionIndex) =>
+          directionData[directionIndex]?.level || "unavailable",
+      ),
+      scores: [0, 1].map(
+        (directionIndex) => directionData[directionIndex]?.score ?? null,
+      ),
     };
   });
 }
@@ -110,8 +119,32 @@ export default function CalendarPage() {
   const [road, setRoad] = useState("A8");
   const [selectedDay, setSelectedDay] = useState(null);
   const [detailDirection, setDetailDirection] = useState(1);
+  const [trafficDays, setTrafficDays] = useState([]);
+  const [trafficState, setTrafficState] = useState("loading");
 
-  const days = useMemo(() => buildMonth(year, month, road), [year, month, road]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setTrafficDays([]);
+    setTrafficState("loading");
+
+    fetchDailyTraffic(year, month, road, controller.signal)
+      .then((payload) => {
+        setTrafficDays(payload.days || []);
+        setTrafficState("ready");
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+        console.error(error);
+        setTrafficState("error");
+      });
+
+    return () => controller.abort();
+  }, [year, month, road]);
+
+  const days = useMemo(
+    () => buildMonth(year, month, trafficDays),
+    [year, month, trafficDays],
+  );
   const selected = selectedDay
     ? days.find((item) => item?.day === selectedDay)
     : null;
@@ -160,12 +193,20 @@ export default function CalendarPage() {
               Smooth
             </span>
             <span className="legend-item">
-              <i className="legend-dot busy" />
-              Busy
+              <i className="legend-dot light" />
+              Light
+            </span>
+            <span className="legend-item">
+              <i className="legend-dot moderate" />
+              Moderate
             </span>
             <span className="legend-item">
               <i className="legend-dot heavy" />
               Heavy
+            </span>
+            <span className="legend-item">
+              <i className="legend-dot critical" />
+              Critical
             </span>
           </div>
         </div>
@@ -273,7 +314,7 @@ export default function CalendarPage() {
                   }`}
                   key={item.dateKey}
                   onClick={() => toggleDay(item.day)}
-                  aria-label={`${MONTHS[month]} ${item.day}, ${year}. ${directions[0]} ${statusLabel(item.directions[0])}, ${directions[1]} ${statusLabel(item.directions[1])}.`}
+                  aria-label={`${MONTHS[month]} ${item.day}, ${year}. ${directions[0]} ${statusLabel(item.directions[0])}${item.scores[0] === null ? "" : `, score ${item.scores[0]}`}; ${directions[1]} ${statusLabel(item.directions[1])}${item.scores[1] === null ? "" : `, score ${item.scores[1]}`}.`}
                 >
                   <span className="day-number">{item.day}</span>
                   <span
@@ -283,13 +324,13 @@ export default function CalendarPage() {
                       road={road}
                       direction={1}
                       status={item.directions[0]}
-                      label={`${directions[0]}: ${statusLabel(item.directions[0])}`}
+                      label={`${directions[0]}: ${statusLabel(item.directions[0])}${item.scores[0] === null ? "" : ` (${item.scores[0]})`}`}
                     />
                     <RouteArrow
                       road={road}
                       direction={2}
                       status={item.directions[1]}
-                      label={`${directions[1]}: ${statusLabel(item.directions[1])}`}
+                      label={`${directions[1]}: ${statusLabel(item.directions[1])}${item.scores[1] === null ? "" : ` (${item.scores[1]})`}`}
                     />
                   </span>
                 </button>
@@ -300,7 +341,16 @@ export default function CalendarPage() {
           </div>
 
           <div className="calendar-help">
-            Click a date to open its 24-hour traffic profile.
+            {trafficState === "loading" &&
+              "Loading daily congestion scores…"}
+            {trafficState === "error" &&
+              "Daily scores could not be loaded. Start the backend on port 8000."}
+            {trafficState === "ready" &&
+              year < 2026 &&
+              "Daily forecast data is available from 2026 to 2029."}
+            {trafficState === "ready" &&
+              year >= 2026 &&
+              "Colors use the daily average score across the three stations in each direction."}
           </div>
         </div>
       </section>

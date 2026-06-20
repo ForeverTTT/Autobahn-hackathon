@@ -12,7 +12,7 @@ import pandas as pd
 import re
 
 # Read the daily forecast file — 原因 column has factor attribution
-daily = pd.read_csv("data_autobahn/forecast_2026_2029_daily.csv", parse_dates=["date"])
+daily = pd.read_csv("data_autobahn/forecast_2026_daily.csv", parse_dates=["date"])
 # Columns: site_id, road, direction, site_name, date,
 #           kfz_h_p10, kfz_h_p50, kfz_h_p90, sv_h_pred, v_kfz_pred,
 #           interval_width, relative_interval_width, 原因
@@ -41,7 +41,7 @@ parsed = parse_reasons(row['原因'])
 
 ## File Format
 
-**`data_autobahn/forecast_2026_2029_daily.csv`**
+**`data_autobahn/forecast_2026_daily.csv`**
 
 This is the primary Agent deliverable — daily traffic forecasts with per-day factor attribution.
 
@@ -68,7 +68,7 @@ Historical Traffic Baseline: 68.0%；Date and Time Pattern: 11.6%；Holiday Effe
 ```
 
 **Rules**:
-- Every station-day has exactly one row. 12 stations × 1,461 days (2026–2029) = **17,532 rows**.
+- Every station-day has exactly one row. 12 stations × 365 days (2026) = **4,380 rows**.
 - Display names are full English names (matching the Agent's existing parsing code from `add_daily_forecast_reasons.py`).
 - Each percentage has **1 decimal place** with a `%` sign (e.g. `68.0%`).
 - Chinese semicolon `；` separates groups.
@@ -162,7 +162,7 @@ Historical Traffic Baseline: 68.0%；Date and Time Pattern: 11.6%；Holiday Effe
 
 > **Display name**: `Weather and Temperature`
 > **Human-readable**: Temperature, precipitation, road conditions
-> **What it captures**: Air temperature (daily min/max, hourly mean), road surface temperature, precipitation, snow, low visibility, ice risk. **For future dates (2026–2029), these values are climatological averages** (what's typical for that month and hour), not actual forecasts.
+> **What it captures**: Air temperature (daily min/max, hourly mean), road surface temperature, precipitation, snow, low visibility, ice risk. **For future dates (2026), these values are climatological averages** (what's typical for that month and hour), not actual forecasts.
 
 **Features included**: `w_precip`, `w_snow`, `w_lowvis`, `w_tmin`, `w_tmax`, `w_ice`, `weather_source`, `lt_mean` (air temp), `fbt_mean` (road temp), `fbt_min`.
 
@@ -171,7 +171,7 @@ Historical Traffic Baseline: 68.0%；Date and Time Pattern: 11.6%；Holiday Effe
 - 🟡 **8–15%** in winter (cold/snow/ice) — weather deviates from climatology's neutral state
 
 **Interpretation**:
-- In the training data (2023–2025), weather was a real observation. **In the forecast (2026–2029), it's climatology** — so WE captures how this month/hour's average weather differs from the model's unconditional baseline.
+- In the training data (2023–2025), weather was a real observation. **In the forecast (2026), it's climatology** — so WE captures how this month/hour's average weather differs from the model's unconditional baseline.
 - **Don't interpret high WE as "bad weather coming." It means "this month/hour's typical weather matters for traffic."**
 
 ---
@@ -317,7 +317,7 @@ The attribution uses **feature-group ablation**:
 5. Aggregate to per-day by summing the absolute deltas over 24 hours (implicitly volume-weighted).
 6. Format with SHAP-compatible display names, sorted descending, with 1 decimal place.
 
-This runs over all 420,768 forecast rows. The resulting 17,532-row daily table is what the Agent reads.
+This runs over all 105,120 forecast rows (2026 only). The resulting 4,380-row daily table is what the Agent reads.
 
 **Why ablation, not feature importance?** CatBoost feature importance is *global* — the same number for every row. Ablation is **per-row**, so August 1 (departure Saturday) and March 10 (normal Tuesday) get different Holiday shares — which is what explainability needs.
 
@@ -327,6 +327,6 @@ This runs over all 420,768 forecast rows. The resulting 17,532-row daily table i
 
 ## Version Notes
 
-- **v4 (2026-06-20)**: Major revision. Split "Typical Traffic" (TT) into "Historical Traffic Baseline" and "Road Segment and Detector Attributes" (7 groups). Moved `tagestyp` from Calendar to Holiday Effect to capture the complete holiday signal. Changed output format to SHAP-compatible full names with 1 decimal place (e.g. `Historical Traffic Baseline: 68.0%；...`) in the `原因` column. Output file is now `forecast_2026_2029_daily.csv` (replaces both the SHAP script's output and the old `factor_attribution_daily.csv`). See `doc/FACTOR_GROUPING_REVIEW.md` for design rationale.
+- **v4 (2026-06-20)**: Major revision. Split "Typical Traffic" (TT) into "Historical Traffic Baseline" and "Road Segment and Detector Attributes" (7 groups). Moved `tagestyp` from Calendar to Holiday Effect to capture the complete holiday signal. Changed output format to SHAP-compatible full names with 1 decimal place (e.g. `Historical Traffic Baseline: 68.0%；...`) in the `原因` column. Output file is now `forecast_2026_daily.csv` (replaces both the SHAP script's output and the old `factor_attribution_daily.csv`). See `doc/FACTOR_GROUPING_REVIEW.md` for design rationale.
 - **v3 (earlier)**: 6 groups (TT/CA/HO/WE/EV/CO). `factor_attribution_daily.csv` with abbreviated codes (`TT:74;CA:12`).
 - **See also**: `doc/MODEL.md` for the full model architecture and feature inventory. `doc/FACTOR_GROUPING_REVIEW.md` for the v4 design rationale and comparison with SHAP.

@@ -1,5 +1,5 @@
 """
-Compare old SHAP 原因 vs new ablation 原因 in forecast_2026_2029_daily.csv.
+Compare old SHAP 原因 vs new ablation 原因 in forecast_2026_daily.csv.
 
 Usage (after running the notebook to generate new daily file):
     python compare_reasons.py
@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 
 ROOT = "../data_autobahn"
-OLD = f"{ROOT}/forecast_2026_2029_daily_SHAP_BACKUP.csv"
-NEW = f"{ROOT}/forecast_2026_2029_daily.csv"
+OLD = f"{ROOT}/forecast_2026_2029_daily.csv"
+NEW = f"{ROOT}/forecast_2026_daily.csv"
 
 
 def parse_reasons(s: str) -> dict:

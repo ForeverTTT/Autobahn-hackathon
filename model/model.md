@@ -1,7 +1,8 @@
-# 小时级交通预测 — 已实现方案
+# 小时级交通预测 — 已实现方案 (v4 Final Retrain)
 
 > **对应 notebook**：`model/model_notebook.ipynb`  
-> **状态**：已训练，已生成 2026–2029 预测  
+> **状态**：v4 Final Retrain 模式 — 全量 2023–2025 训练，周期性抽样验证  
+> **推理引擎**：`model/agent_inference.py` — 解耦式按需推理（2027–2029）  
 > 本文档描述**实际实现的代码**，不是设计草案。过时的设计文档见 `doc/SOLUTION.md`。
 
 基于 `data_autobahn/` 内全部数据，预测 **2026–2029 年每天每小时**、**12 个站点**的三个目标：
@@ -27,9 +28,14 @@ data_autobahn/
   合并表格，construction日级.csv ──→ ┤
   合并表格，special_events日级.csv ─→ ┘
                                         ↓
-                              CatBoost 训练 / 推理
+                              CatBoost 训练 (2023–2025 full)
                                         ↓
-                              forecast_2026_2029.csv (420,768 rows)
+                          ┌─ 2026: notebook Cell 50 预生成 ─────────┐
+                          │  forecast_2026_hourly.csv (含 reason 列) │
+                          └──────────────────────────────────────────┘
+                          ┌─ 2027–2029: agent_inference.py 按需推理 ─┐
+                          │  python agent_inference.py --start ...    │
+                          └──────────────────────────────────────────┘
 ```
 
 所有表分隔符 `;`，第 2 行是中文说明（`skiprows=[1]` 跳过），部分列用逗号小数。主表 `kfz_h < 0` 置 NaN，`v_kfz` 仅在 `kfz_h > 0` 时有效。
@@ -68,12 +74,12 @@ FEATURES_SPD = CALENDAR + STATIC_NUM + STATIC_CAT + PROF_KFZ + PROF_V + COND + [
 
 ### 2.2 历史画像（核心信号，~64% 重要性）
 
-画像从**训练集**（2023–2024）聚合，不触碰验证集，防止泄漏：
+画像从**训练集**（2023–2025 full，~90% 天）聚合，不触碰验证集，防止泄漏：
 
 ```python
-profiles = build_profiles(train_df)        # 只用 2023-2024
+profiles = build_profiles(train_df)        # 只用 train_df（~90% 天数，覆盖全季）
 train_df = apply_profiles(train_df, profiles)
-val_df   = apply_profiles(val_df, profiles)  # val=2025，profiles 仍然来自训练集
+val_df   = apply_profiles(val_df, profiles)  # val=周期性抽出的 ~10% 天，profiles 仍然来自训练集
 ```
 
 每个画像是 groupby-median（或 quantile）的 lookup 表。缺失键用全局中位数兜底。画像键名遵循 `prof_{target}_{dimensions}` 约定：
@@ -143,34 +149,60 @@ CatBoostRegressor(
 
 ## 4. 训练 / 验证 / 推理
 
-### 4.1 时序切分
+### 4.1 时序切分（★ v4: 周期性间隔抽样）
 
+**v4 Final Retrain 策略**：全量 2023-01-01 ~ 2025-12-31 数据参与训练，通过周期性抽样产生验证集。
+
+```python
+TRAIN_END = pd.Timestamp("2025-12-31 23:59:59")
+VAL_EVERY_N = 10    # 每 10 天抽 1 天 → ~10% hold-out
+unique_dates = np.sort(base_filtered["date"].unique())
+val_dates = unique_dates[::10]
 ```
-训练集: 2023-01-01 ~ 2024-12-31  (210,528 rows)
-验证集: 2025-01-01 ~ 2025-12-31  (105,120 rows)
-推理:   2026-01-01 ~ 2029-12-31  (420,768 rows)
+
+- **训练集**：~32,850 天（~315,600 rows）— 覆盖全部 36 个月、所有季节
+- **验证集**：~365 天（~35,000 rows）— 均匀分布，每个季节/假期类型/天气模式都参与 Early Stopping
+- **推理**：2026-01-01 ~ 2029-12-31 (420,768 rows)
+
+**为什么不用时间切分（如留出 Q4）**：
+- 10-12 月缺少夏季出游高峰和春季换季特征 → Early Stopping 会在秋冬季过拟合
+- 假日分布不均（有圣诞节但无复活节/暑假）
+- 周期性抽样确保每个季节都有 ~10% 的天在验证集，模型在各季节均衡收敛
+
+禁止随机划分（相邻天高度相关会泄漏）。画像只用训练集构建。
+
+### 4.2 Conformal 校准（硬编码泛化量）
+
+因为 2025 年数据已全部并入训练，新的验证集（周期性抽样出的 ~10% 天）算出的 `conf_quantile` 仍是 In-sample 的，会偏窄。
+
+**v4 策略**：**硬编码**前期在 2025 完全 hold-out 实验中测出的泛化扩宽量：
+
+```python
+_cq = 23.3   # Hardcoded from 2025 fully held-out calibration
 ```
 
-禁止随机划分。画像只用训练集构建。
+- 此值来自 v2/v3 实验：2025 年作为完全独立的 hold-out 年，Split Conformal 测得
+- 原始 PICP：**71.4%** → 校准后 PICP：**81.5%**（诚实 held-out，命中 ≥80% 目标）
+- 未来重训若特征/模型大改，需重新在独立 hold-out 上测算此值
 
-### 4.2 Split Conformal 校准
+### 4.3 推理（解耦架构）
 
-验证集（2025）按时间切两半：前半算 `conf_quantile`，后半报 PICP。结果：
+**2026 年**：notebook Cell 50 在训练完成后自动生成 `forecast_2026_hourly.csv`（含小时级 `reason` 列），Agent 和前端直接加载。
 
-- 原始 PICP：**71.4%**
-- 校准后 PICP：**81.5%**（诚实 held-out，目标 80%）
-- `conf_quantile = +26.3 veh/h`，保存到 `processed/conformal.json`，推理时应用到 P10/P90
+**2027–2029 年**：由 `agent_inference.py` 按需推理。该脚本离 notebook 独立运行：
+1. 加载 3 个 `.cbm` 模型 + 预构建的特征网格 Parquet
+2. 对指定日期范围生成小时级预测 + 消融归因
+3. 输出格式对齐 2026 年大合表
 
-### 4.3 2026–2029 推理
+```bash
+# CLI 模式
+python agent_inference.py --start 2027-01-01 --end 2029-12-31 --out forecast_2729_hourly.csv
 
-`predict_grid()` 函数：
-1. 构建 12 站 × 1461 天 × 24h 网格
-2. 填入日历特征 → merge conditional（未来天气=气候态，施工/事件=0）
-3. `derive_tagestyp()` 重建 tagestyp
-4. `apply_profiles()` lookup 画像
-5. kfz 预测 → sv_h 预测（ratio × kfz_p50）→ speed 预测（需要 kfz_p50_pred）
-6. 应用 conformal 校准
-7. 计算 `interval_width`、`relative_interval_width`（置信度）；因子归因单独输出到 `data_autobahn/factor_attribution_daily.csv`
+# 作为模块内嵌
+from agent_inference import TrafficPredictor
+p = TrafficPredictor()
+df = p.predict_and_explain("2028-07-04", "2028-07-04")
+```
 
 ---
 
@@ -195,9 +227,9 @@ CatBoostRegressor(
 
 ## 6. 输出格式
 
-### 6.1 预测主表
+### 6.1 2026 年小时级大合表（★ v4 新格式）
 
-文件：`data_autobahn/forecast_2026_2029.csv`（420,768 rows × 13 columns）
+文件：`data_autobahn/forecast_2026_hourly.csv`（~105,000 rows × 14 columns）
 
 | 列 | 类型 | 说明 |
 |----|------|------|
@@ -205,53 +237,54 @@ CatBoostRegressor(
 | `road` | str | A8 / A93 |
 | `direction` | str | Mch / Sbg / Ro / Kff |
 | `site_name` | str | 站点名称 |
-| `date` | datetime | 日期 (2026-01-01 ~ 2029-12-31) |
+| `date` | str | 日期 (2026-01-01 ~ 2026-12-31) |
 | `hour` | int | 小时 (0–23) |
-| `kfz_h_p10` | float | 总流量 P10 (veh/h) |
-| `kfz_h_p50` | float | 总流量 P50 (veh/h) |
-| `kfz_h_p90` | float | 总流量 P90 (veh/h) |
-| `sv_h_pred` | float | 大车流量预测 (veh/h) |
+| `kfz_h_p10` | int | 总流量 P10 (veh/h) |
+| `kfz_h_p50` | int | 总流量 P50 (veh/h) |
+| `kfz_h_p90` | int | 总流量 P90 (veh/h) |
+| `sv_h_pred` | int | 大车流量预测 (veh/h) |
 | `v_kfz_pred` | float | 平均车速预测 (km/h) |
-| `interval_width` | float | 区间宽度 p90−p10 (veh/h) |
+| `interval_width` | int | 区间宽度 p90−p10 (veh/h) |
 | `relative_interval_width` | float | 归一化不确定性 width/(p50+1) |
+| **`reason`** | str | 🆕 **小时级**因子归因，格式 `"Historical Traffic Baseline: 67.2%；Holiday Effect: 10.7%..."` |
 
-> **v3 变更**：`factor_contributions` 列已从主表移除（原 107 MB 超 GitHub 限制）。
-> 因子归因改为紧凑的**逐日表** `data_autobahn/factor_attribution_daily.csv`（17,532 行, ~1.2 MB）。
+> **v4 变更**：`reason` 列从逐日汇总改为**小时级**输出。Agent 收到每一行数据时自带完整的因子归因解释。
+> `reason` 格式对齐原逐日表 — 全名 + 1 位小数百分比 + `%；` 分隔，Agent 已有解析代码无需改动。
 
-### 6.2 因子归因表
+### 6.2 逐日汇总表（向后兼容）
 
-文件：`data_autobahn/factor_attribution_daily.csv`（17,532 rows × 5 columns）
+文件：`data_autobahn/forecast_2026_daily.csv`（4,380 rows × 13 columns）
 
 | 列 | 类型 | 说明 |
 |----|------|------|
 | `site_id` | str | 站点标识 |
 | `road` | str | A8 / A93 |
 | `direction` | str | Mch / Sbg / Ro / Kff |
-| `date` | datetime | 日期 (2026-01-01 ~ 2029-12-31) |
-| `factors` | str | 缩略因子贡献，格式 `"TT:76;CA:12;HO:10;WE:2"` |
+| `date` | str | 日期 (2026-01-01 ~ 2026-12-31) |
+| … | … | 24h 汇总值（流量的 kfz_h_* / sv_h_pred 为 sum，车速/置信度为 mean） |
+| `原因` | str | 日级因子归因（流量加权小时消融汇总） |
 
-6 个因子缩略码（按重要性排序）：
+### 6.3 因子归因（7 组）
 
-| 缩略码 | 因子名 | 含义 |
-|--------|--------|------|
-| **TT** | Typical Traffic | 历史画像 + 站点位置 — 该站点此时此刻的正常流量水平 |
-| **CA** | Calendar | 时刻/星期/月份/季节的周期模式 |
-| **HO** | Holiday | 三州学校假期 + 公共假日 + 出发/返程波 |
-| **WE** | Weather | 气温/路温/降水/雪/冰/能见度（未来用气候态） |
-| **EV** | Events | 特殊活动（Oktoberfest、Salzburg Festival 等） |
-| **CO** | Construction | 道路施工 / 2+0 车道配置 |
+| 组名 | 显示名 | 所含特征 |
+|------|--------|---------|
+| Station & Location | Road Segment and Detector Attributes | site_id, road, direction, site_name, bab_km, longitude, latitude |
+| Historical Patterns | Historical Traffic Baseline | prof_kfz_shd, prof_kfz_sht, prof_kfz_shm, prof_kfz_p90, prof_kfz_shs |
+| Calendar & Season | Date and Time Pattern | CALENDAR (17 features) + season |
+| Holiday Effect | Holiday Effect | HOLIDAY (17) + HOLIDAY_CAT (4) + tagestyp |
+| Weather & Road | Weather and Temperature | WEATHER (6) + WEATHER_CAT (1) + TEMP (3) |
+| Special Events | Special Events | EVENTS (12) |
+| Construction | Construction Impact | CONSTRUCTION (9) |
 
-每行因子按贡献百分比降序排列，只显示 ≥1% 的因子。百分比是小时级消融贡献按 `kfz_h_p50` **流量加权**汇总到天的。详见 `doc/FACTOR_CONTRIBUTIONS.md`。
-
-计算方式：特征组消融（group ablation），轮流清零每个因子组 → 重预测 → |完整 − 消融| = 该组贡献 → 归一化到百分比。覆盖 82 个特征，分配到 6 个因子组（v3 将 Site Location 合并入 Typical Traffic）。
+计算方式：特征组消融（group ablation），轮流清零每个因子组 → 重预测 → |完整 − 消融| = 该组贡献 → 归一化到百分比。温度特征清零时填 `10.0°C`（春秋气候态），避免触发冰雪逻辑。覆盖 82 个特征，分配到 7 个因子组。
 
 ---
 
 ## 7. 已知限制
 
-- **最终模型未全量重训**：2025 用于验证，未并入最终交付模型。少用一年数据，对 2024 才上线的 Gletschergarten 站影响较大。
 - **施工特征训练信号为零**：训练期无 2+0 样本。即使修复了数据 pipeline bug，API 也没有历史数据。详见 `doc/CONSTRUCTION_DATA_ISSUE.md`。
 - **远期为纯条件预测**：天气用气候态、施工/事件未知置 0。预测区间只刻画模型误差，不含未来政策/事故不确定性。
+- **Conformal 校准量硬编码**：`conf_quantile = 23.3` 来自 2025 hold-out 实验。若未来重训时特征/模型架构大幅改动，需重新在独立 hold-out 上测算。
 
 ---
 
@@ -259,15 +292,21 @@ CatBoostRegressor(
 
 | 文件/目录 | 角色 |
 |-----------|------|
-| `model/model_notebook.ipynb` | 训练+评估+推理（当前主力） |
-| `model/tft.ipynb` | TFT 探索实验（队友） |
+| `model/model_notebook.ipynb` | ★ v4 Final Retrain 训练 + 2026 预生成（主力） |
+| `model/agent_inference.py` | ★ 解耦式推理引擎（2027–2029 按需 + CLI） |
+| `model/tft.ipynb` | TFT 探索实验（已废弃） |
 | `models/kfz_h/multi.cbm` | 总流量 MultiQuantile 模型 |
 | `models/sv_h/lkw_ratio.cbm` | 大车占比模型 |
 | `models/v_kfz/speed_drop.cbm` | 速度降速模型 |
 | `models/snapshots/` | CatBoost 训练快照 |
-| `models/tft/` | TFT checkpoint + 日志 |
-| `processed/` | 中间产物（.gitignore，可清空重跑） |
-| `data_autobahn/forecast_2026_2029.csv` | 交付预测文件 |
+| `processed/future_grid_2026_2029.parquet` | 全量特征网格（供 agent_inference.py 加载） |
+| `processed/future_grid_2027_2029.parquet` | 2027–2029 特征网格（按需推理用） |
+| `processed/forecast_2026.parquet` | 2026 预测（二进制快照） |
+| `processed/profiles.pkl` | 画像 lookup table |
+| `processed/site_meta.parquet` | 站点元信息 |
+| `processed/conformal.json` | Conformal 校准值（参考用，实际已硬编码 23.3） |
+| `data_autobahn/forecast_2026_hourly.csv` | ★ 2026 小时级大合表（Agent + 前端读取） |
+| `data_autobahn/forecast_2026_daily.csv` | 2026 逐日汇总（向后兼容） |
 | `doc/MODEL.md` | 项目层面的模型总览 |
 | `doc/CONSTRUCTION_DATA_ISSUE.md` | 施工数据问题调查 |
 | `clean_outputs.sh` | 一键清除训练输出（重跑前使用） |

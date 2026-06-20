@@ -12,7 +12,9 @@
   --green: #45aa72;
   --green-dark: #1d7a4a;
   --yellow: #e7b93f;
+  --orange: #ee8a36;
   --red: #ef554a;
+  --deep-red: #981f2b;
   --surface: #ffffff;
   --soft-green: #eef4e9;
   --accent: #3d5afe;
@@ -318,14 +320,24 @@ a:focus-visible {
   background: var(--green);
 }
 
-.legend-dot.busy,
-.map-status.busy {
+.legend-dot.light,
+.map-status.light {
   background: var(--yellow);
+}
+
+.legend-dot.moderate,
+.map-status.moderate {
+  background: var(--orange);
 }
 
 .legend-dot.heavy,
 .map-status.heavy {
   background: var(--red);
+}
+
+.legend-dot.critical,
+.map-status.critical {
+  background: var(--deep-red);
 }
 
 .calendar-card {
@@ -640,12 +652,24 @@ button.day-cell.selected {
   color: var(--green);
 }
 
-.route-direction-shape.busy {
+.route-direction-shape.light {
   color: var(--yellow);
+}
+
+.route-direction-shape.moderate {
+  color: var(--orange);
 }
 
 .route-direction-shape.heavy {
   color: var(--red);
+}
+
+.route-direction-shape.critical {
+  color: var(--deep-red);
+}
+
+.route-direction-shape.unavailable {
+  color: #b7beb8;
 }
 
 .route-direction-shape.neutral {
@@ -833,12 +857,20 @@ button.day-cell.selected {
   background: var(--green);
 }
 
-.traffic-overview-segment.busy {
+.traffic-overview-segment.light {
   background: var(--yellow);
+}
+
+.traffic-overview-segment.moderate {
+  background: var(--orange);
 }
 
 .traffic-overview-segment.heavy {
   background: var(--red);
+}
+
+.traffic-overview-segment.critical {
+  background: var(--deep-red);
 }
 
 .traffic-overview-labels {
@@ -920,17 +952,25 @@ button.day-cell.selected {
   background: var(--green);
 }
 
-.hour-status.busy {
+.hour-status.light {
   background: var(--yellow);
   color: #453a19;
 }
 
-.hour-status.busy i {
+.hour-status.light i {
   background: rgba(69, 58, 25, 0.45);
+}
+
+.hour-status.moderate {
+  background: var(--orange);
 }
 
 .hour-status.heavy {
   background: var(--red);
+}
+
+.hour-status.critical {
+  background: var(--deep-red);
 }
 
 .hour-arrow {
@@ -1940,11 +1980,17 @@ button.day-cell.selected {
 .status-word.smooth {
   color: var(--green-dark);
 }
-.status-word.busy {
+.status-word.light {
   color: #b3870f;
+}
+.status-word.moderate {
+  color: #c46518;
 }
 .status-word.heavy {
   color: var(--red);
+}
+.status-word.critical {
+  color: var(--deep-red);
 }
 
 .map-info-controls {
@@ -2109,11 +2155,17 @@ button.day-cell.selected {
 .seg-dot.smooth {
   background: var(--green);
 }
-.seg-dot.busy {
+.seg-dot.light {
   background: var(--yellow);
+}
+.seg-dot.moderate {
+  background: var(--orange);
 }
 .seg-dot.heavy {
   background: var(--red);
+}
+.seg-dot.critical {
+  background: var(--deep-red);
 }
 
 .seg-meta {
@@ -2369,4 +2421,59 @@ button.day-cell.selected {
 .tc-hour.sel {
   background: var(--accent);
   color: #ffffff;
+}
+
+/* ── Factor radar (Global mode, mock data) ───────────────────────────── */
+.radar {
+  display: block;
+  width: 100%;
+  max-width: 460px;
+  margin: clamp(20px, 6vh, 80px) auto 0;
+}
+
+.radar-grid polygon {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.34);
+  stroke-width: 0.7;
+}
+
+.radar-grid line {
+  stroke: rgba(255, 255, 255, 0.34);
+  stroke-width: 0.7;
+}
+
+.radar-area {
+  fill: rgba(61, 90, 254, 0.3);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.radar-dot {
+  fill: #ffffff;
+}
+
+.radar-label {
+  fill: #ffffff;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.radar--in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: radar-in 0.45s ease both;
+}
+
+@keyframes radar-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

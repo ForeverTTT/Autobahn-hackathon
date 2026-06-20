@@ -4,7 +4,10 @@ SearchAgent - Tavily-only Search-o1 Agent
 """
 from datetime import datetime
 
-from .. import config
+try:
+    from .. import config
+except ImportError:
+    from .. import config_example as config
 from .base import BaseAgent
 from ..models import AgentRequest, AgentResponse
 from ..tools import build_tavily_search_plan, run_tavily_search_plan

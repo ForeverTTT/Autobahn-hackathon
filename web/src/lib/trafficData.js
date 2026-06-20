@@ -3,13 +3,25 @@ export const TRAFFIC_LEVELS = {
     label: "Smooth",
     color: "#45aa72",
   },
-  busy: {
-    label: "Busy",
+  light: {
+    label: "Light",
     color: "#e7b93f",
+  },
+  moderate: {
+    label: "Moderate",
+    color: "#ee8a36",
   },
   heavy: {
     label: "Heavy",
     color: "#ef554a",
+  },
+  critical: {
+    label: "Critical",
+    color: "#981f2b",
+  },
+  unavailable: {
+    label: "No forecast data",
+    color: "#b7beb8",
   },
 };
 
@@ -19,6 +31,22 @@ export const ROAD_DIRECTIONS = {
 };
 
 export const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+
+export async function fetchDailyTraffic(year, month, road, signal) {
+  const params = new URLSearchParams({
+    year: String(year),
+    month: String(month + 1),
+    road,
+  });
+  const response = await fetch(`/api/calendar/daily?${params}`, { signal });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.detail || "Unable to load daily traffic scores.");
+  }
+
+  return response.json();
+}
 
 export function formatDateKey(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
@@ -85,23 +113,10 @@ export function getHourlyStatus(
   score += segmentIndex * 3;
   score -= nightRelief ? 20 : 0;
 
-  if (score >= 70) return "heavy";
-  if (score >= 42) return "busy";
-  return "smooth";
-}
-
-export function getDailyStatus(dateKey, road, direction) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const weekday = new Date(year, month - 1, day).getDay();
-  const isWeekend = weekday === 0 || weekday === 6;
-  const isPeakSeason = month === 2 || (month >= 6 && month <= 9) || month === 12;
-  const seed = stringSeed(`${dateKey}-${road}-${direction}-daily`);
-  let score = seed % 82;
-  score += isWeekend ? 7 : 0;
-  score += isPeakSeason ? 7 : 0;
-
-  if (score >= 72) return "heavy";
-  if (score >= 39) return "busy";
+  if (score >= 80) return "critical";
+  if (score >= 60) return "heavy";
+  if (score >= 40) return "moderate";
+  if (score >= 20) return "light";
   return "smooth";
 }
 
