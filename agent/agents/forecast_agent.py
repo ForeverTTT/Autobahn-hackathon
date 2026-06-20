@@ -1,323 +1,171 @@
 """
-Forecast Agent (预测Agent)
-负责调用CatBoost/TFT模型进行交通流量预测
+ForecastAgent - 预测Agent
+读取预测数据，计算拥堵分数
 """
-import os
-from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta
-import numpy as np
+from typing import Any, Dict, List
+from datetime import datetime
 
-from ..base import BaseAgent, AgentType, AgentResponse
-from ..config import AgentConfig, default_config
-from ..tools.data_loader import prediction_loader
-
-try:
-    from catboost import CatBoostRegressor
-    HAS_CATBOOST = True
-except ImportError:
-    HAS_CATBOOST = False
-
-try:
-    import pandas as pd
-    HAS_PANDAS = True
-except ImportError:
-    HAS_PANDAS = False
+from .base import BaseAgent
+from ..models import (
+    AgentRequest, AgentResponse,
+    HourlyPrediction, DailyForecast, CongestionLevel
+)
+from ..tools import (
+    prediction_loader,
+    calculate_congestion,
+    TrafficInput, RoadInput, ExternalInput,
+    score_to_stress_index
+)
 
 
 class ForecastAgent(BaseAgent):
     """
     预测Agent
-    - 改成直接调用我们已经跑完的模型数据
-    - 返回预测结果和置信区间
+
+    职责:
+    - 从 forecast_2026_2029.csv 读取预测数据
+    - 计算每小时拥堵分数
+    - 返回日度汇总
     """
 
-    def __init__(self, config: AgentConfig = None):
-        super().__init__(AgentType.FORECAST, config or default_config)
-        self.models: Dict[str, Dict[str, Any]] = {}
-        self._feature_columns: List[str] = []
+    @property
+    def name(self) -> str:
+        return "ForecastAgent"
 
-    async def initialize(self) -> bool:
-        """加载预测模型"""
-        if not HAS_CATBOOST:
-            print("Warning: CatBoost not installed. data_autobahn CSV forecasts will still be used when available.")
-            self._initialized = True
-            return True
-
-        models_dir = os.path.join(
-            os.path.dirname(__file__),
-            "..", "..",
-            self.config.model.models_dir
-        )
-
+    async def process(self, request: AgentRequest) -> AgentResponse:
+        """处理预测请求"""
         try:
-            # 加载各目标的分位数模型
-            for target in self.config.model.targets:
-                target_dir = os.path.join(models_dir, target)
-                if os.path.exists(target_dir):
-                    self.models[target] = {}
-                    for q in ["p10", "p50", "p90"]:
-                        model_path = os.path.join(target_dir, f"{q}.cbm")
-                        if os.path.exists(model_path):
-                            model = CatBoostRegressor()
-                            model.load_model(model_path)
-                            self.models[target][q] = model
+            date = request.date
+            road = request.road
+            hours = request.hours
 
-            self._initialized = True
-            return True
-        except Exception as e:
-            print(f"Error loading models: {e}")
-            self._initialized = False
-            return False
+            # 查询预测数据
+            records = prediction_loader.query(
+                date=date,
+                road=road,
+                site_id=request.site_id,
+                hours=hours
+            )
 
-    async def process(self, request: Dict[str, Any]) -> AgentResponse:
-        """
-        处理预测请求
-
-        Request格式:
-        {
-            "date": "2026-07-15",
-            "site_id": "A8_Rosenheim",
-            "direction": "east",  # east/west
-            "hours": [8, 9, 10, 11, 12]  # 可选，默认全天24小时
-        }
-
-        Response:
-        {
-            "predictions": [
-                {"hour": 8, "p10": 1200, "p50": 1500, "p90": 1800, "congestion_level": "moderate"},
-                ...
-            ],
-            "peak_hour": 10,
-            "daily_summary": {...}
-        }
-        """
-        try:
-            date_str = request.get("date", datetime.now().strftime("%Y-%m-%d"))
-            site_id = request.get("site_id", "A8_001")
-            road = request.get("road")
-            direction = request.get("direction", "east")
-            hours = request.get("hours", list(range(24)))
-
-            loaded_predictions = self._load_csv_predictions(date_str, site_id, road, hours)
-            if loaded_predictions:
-                predictions = loaded_predictions
+            if not records:
+                # 无数据时使用模拟
+                predictions = self._generate_mock(date, road, hours)
+                data_source = "mock"
             else:
-                # 构建特征
-                features = self._build_features(date_str, site_id, direction, hours)
+                predictions = self._process_records(records, date)
+                data_source = "forecast_csv"
 
-                # 进行预测
-                predictions = await self._predict(features, hours)
+            # 汇总
+            peak_hour = max(predictions, key=lambda x: x.congestion_score).hour
+            avg_score = sum(p.congestion_score for p in predictions) / len(predictions)
+            total_volume = sum(int(p.kfz_h_p50) for p in predictions)
 
-            # 计算峰值小时
-            peak_hour = self._find_peak_hour(predictions)
-
-            # 生成日度汇总
-            daily_summary = self._generate_daily_summary(predictions)
-
-            return AgentResponse(
-                success=True,
-                data={
-                    "predictions": predictions,
-                    "peak_hour": peak_hour,
-                    "daily_summary": daily_summary,
-                    "site_id": site_id,
-                    "date": date_str,
-                    "direction": direction,
-                    "data_source": "data_autobahn_csv" if loaded_predictions else "mock_or_model",
-                },
-                message="Forecast completed successfully",
-                agent_type=self.agent_type,
-                confidence=0.85
+            forecast = DailyForecast(
+                date=date,
+                road=road,
+                site_id=request.site_id or f"{road}_default",
+                predictions=predictions,
+                peak_hour=peak_hour,
+                avg_congestion_score=round(avg_score, 1),
+                total_volume=total_volume
             )
+
+            return self._success({
+                "forecast": forecast,
+                "data_source": data_source,
+            })
 
         except Exception as e:
-            return AgentResponse(
-                success=False,
-                data=None,
-                message=f"Forecast error: {str(e)}",
-                agent_type=self.agent_type,
-                confidence=0.0
-            )
+            return self._error(f"Forecast error: {str(e)}")
 
-    def get_capabilities(self) -> List[str]:
-        return [
-            "hourly_traffic_forecast",
-            "quantile_prediction",
-            "peak_hour_identification",
-            "congestion_level_assessment",
-        ]
-
-    def _load_csv_predictions(
+    def _process_records(
         self,
-        date_str: str,
-        site_id: str,
-        road: Optional[str],
-        hours: List[int],
-    ) -> List[Dict[str, Any]]:
-        """Load already generated forecasts from data_autobahn CSV files."""
-        records = prediction_loader.query(date=date_str, site_id=site_id, road=road, hours=hours)
-        if not records and road:
-            all_records = prediction_loader.query(date=date_str, road=road, hours=hours)
-            if all_records:
-                first_site = all_records[0]["site_id"]
-                records = [record for record in all_records if record["site_id"] == first_site]
+        records: List[Dict[str, Any]],
+        date: str
+    ) -> List[HourlyPrediction]:
+        """处理预测记录"""
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        is_weekend = date_obj.weekday() >= 5
 
         predictions = []
+
         for record in records:
-            p10 = float(record.get("kfz_h_p10", 0))
-            p50 = float(record.get("kfz_h_p50", 0))
-            p90 = float(record.get("kfz_h_p90", 0))
-            speed = float(record.get("v_kfz_p50", record.get("v_kfz_pred", 120)))
-            predictions.append({
-                "hour": int(record["hour"]),
-                "p10": p10,
-                "p50": p50,
-                "p90": p90,
-                "sv_h": float(record.get("sv_h_p50", record.get("sv_h_pred", p50 * 0.1))),
-                "v_kfz": round(speed, 1),
-                "congestion_level": self._get_congestion_level(p50),
-                "confidence": self._confidence_from_interval(p10, p50, p90),
-            })
-        return sorted(predictions, key=lambda row: row["hour"])
+            hour = record["hour"]
+            kfz_h = record.get("kfz_h_p50", record.get("kfz_h", 1000))
+            sv_h = record.get("sv_h_p50", record.get("sv_h_pred", kfz_h * 0.1))
+            v_kfz = record.get("v_kfz_p50", record.get("v_kfz_pred", 120))
 
-    def _confidence_from_interval(self, p10: float, p50: float, p90: float) -> float:
-        if p50 <= 0:
-            return 0.5
-        relative_width = max(0.0, (p90 - p10) / p50)
-        return round(max(0.55, min(0.95, 1.0 - relative_width / 2)), 2)
+            # 计算拥堵分数
+            traffic = TrafficInput(kfz_h=kfz_h, sv_h=sv_h, v_kfz=v_kfz)
+            road_input = RoadInput(capacity=4000, is_bottleneck=False)
+            external = ExternalInput(
+                is_weekend=is_weekend,
+                is_peak_hour=(7 <= hour <= 9) or (16 <= hour <= 18),
+                is_holiday=record.get("is_holiday", False),
+                is_school_holiday=record.get("is_school_holiday", False),
+            )
 
-    def _build_features(
+            result = calculate_congestion(traffic, road_input, external)
+
+            predictions.append(HourlyPrediction(
+                hour=hour,
+                kfz_h_p10=record.get("kfz_h_p10", kfz_h * 0.75),
+                kfz_h_p50=kfz_h,
+                kfz_h_p90=record.get("kfz_h_p90", kfz_h * 1.35),
+                sv_h=sv_h,
+                v_kfz=v_kfz,
+                congestion_score=result.total_score,
+                congestion_level=result.level,
+            ))
+
+        return sorted(predictions, key=lambda x: x.hour)
+
+    def _generate_mock(
         self,
-        date_str: str,
-        site_id: str,
-        direction: str,
+        date: str,
+        road: str,
         hours: List[int]
-    ) -> List[Dict[str, Any]]:
-        """构建预测特征"""
-        date = datetime.strptime(date_str, "%Y-%m-%d")
-        features = []
+    ) -> List[HourlyPrediction]:
+        """生成模拟数据"""
+        import numpy as np
+
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        is_weekend = date_obj.weekday() >= 5
+
+        predictions = []
 
         for hour in hours:
-            feat = {
-                "site_id": site_id,
-                "direction": direction,
-                "year": date.year,
-                "month": date.month,
-                "day": date.day,
-                "hour": hour,
-                "weekday": date.weekday(),
-                "is_weekend": 1 if date.weekday() >= 5 else 0,
-                # 周期性编码
-                "hour_sin": np.sin(2 * np.pi * hour / 24),
-                "hour_cos": np.cos(2 * np.pi * hour / 24),
-                "month_sin": np.sin(2 * np.pi * date.month / 12),
-                "month_cos": np.cos(2 * np.pi * date.month / 12),
-                "weekday_sin": np.sin(2 * np.pi * date.weekday() / 7),
-                "weekday_cos": np.cos(2 * np.pi * date.weekday() / 7),
-            }
-            features.append(feat)
-
-        return features
-
-    async def _predict(
-        self,
-        features: List[Dict[str, Any]],
-        hours: List[int]
-    ) -> List[Dict[str, Any]]:
-        """执行预测"""
-        predictions = []
-
-        for i, (feat, hour) in enumerate(zip(features, hours)):
-            if self.models and "kfz_h" in self.models:
-                # 使用真实模型预测
-                # TODO: 转换特征为模型输入格式
-                p10 = 1000 + hour * 50  # 占位
-                p50 = 1200 + hour * 60
-                p90 = 1500 + hour * 70
+            # 基于时段的流量模式
+            if 7 <= hour <= 9:
+                base = 1600 if not is_weekend else 1000
+            elif 16 <= hour <= 18:
+                base = 1800 if not is_weekend else 1200
+            elif 10 <= hour <= 15:
+                base = 1200
             else:
-                # Mock预测（基于时间的简单模式）
-                base = 800
-                # 早高峰 7-9, 晚高峰 16-18
-                if 7 <= hour <= 9:
-                    multiplier = 1.8
-                elif 16 <= hour <= 18:
-                    multiplier = 2.0
-                elif 10 <= hour <= 15:
-                    multiplier = 1.4
-                elif 5 <= hour <= 6:
-                    multiplier = 0.8
-                else:
-                    multiplier = 0.5
+                base = 600
 
-                # 周末调整
-                if feat.get("is_weekend"):
-                    if 9 <= hour <= 14:
-                        multiplier *= 1.3  # 周末出游高峰
-                    else:
-                        multiplier *= 0.8
+            # 添加随机波动
+            kfz_h = base + np.random.randint(-200, 200)
+            sv_h = kfz_h * np.random.uniform(0.08, 0.15)
+            v_kfz = max(60, 130 - kfz_h * 0.03)
 
-                p50 = int(base * multiplier)
-                p10 = int(p50 * 0.75)
-                p90 = int(p50 * 1.35)
+            traffic = TrafficInput(kfz_h=kfz_h, sv_h=sv_h, v_kfz=v_kfz)
+            external = ExternalInput(
+                is_weekend=is_weekend,
+                is_peak_hour=(7 <= hour <= 9) or (16 <= hour <= 18),
+            )
+            result = calculate_congestion(traffic, external=external)
 
-            # 计算拥堵等级
-            congestion = self._get_congestion_level(p50)
-
-            predictions.append({
-                "hour": hour,
-                "p10": p10,
-                "p50": p50,
-                "p90": p90,
-                "congestion_level": congestion,
-                "confidence": 0.85 - abs(hour - 12) * 0.01  # 中午预测更准
-            })
+            predictions.append(HourlyPrediction(
+                hour=hour,
+                kfz_h_p10=int(kfz_h * 0.75),
+                kfz_h_p50=kfz_h,
+                kfz_h_p90=int(kfz_h * 1.35),
+                sv_h=sv_h,
+                v_kfz=round(v_kfz, 1),
+                congestion_score=result.total_score,
+                congestion_level=result.level,
+            ))
 
         return predictions
-
-    def _get_congestion_level(self, traffic_volume: int) -> str:
-        """根据流量判断拥堵等级"""
-        if traffic_volume < 800:
-            return "smooth"
-        elif traffic_volume < 1200:
-            return "light"
-        elif traffic_volume < 1600:
-            return "moderate"
-        elif traffic_volume < 2000:
-            return "heavy"
-        else:
-            return "critical"
-
-    def _find_peak_hour(self, predictions: List[Dict[str, Any]]) -> int:
-        """找出峰值小时"""
-        if not predictions:
-            return 12
-        return max(predictions, key=lambda x: x["p50"])["hour"]
-
-    def _generate_daily_summary(self, predictions: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """生成日度汇总"""
-        if not predictions:
-            return {}
-
-        p50_values = [p["p50"] for p in predictions]
-        congestion_counts = {}
-        for p in predictions:
-            level = p["congestion_level"]
-            congestion_counts[level] = congestion_counts.get(level, 0) + 1
-
-        # 确定全天主要拥堵等级
-        main_congestion = max(congestion_counts, key=congestion_counts.get)
-
-        return {
-            "total_volume": sum(p50_values),
-            "avg_hourly_volume": int(np.mean(p50_values)),
-            "max_hourly_volume": max(p50_values),
-            "min_hourly_volume": min(p50_values),
-            "main_congestion_level": main_congestion,
-            "congestion_hours": {
-                "smooth": congestion_counts.get("smooth", 0),
-                "light": congestion_counts.get("light", 0),
-                "moderate": congestion_counts.get("moderate", 0),
-                "heavy": congestion_counts.get("heavy", 0),
-                "critical": congestion_counts.get("critical", 0),
-            }
-        }

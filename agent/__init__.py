@@ -1,65 +1,118 @@
-# AlpineFlow AI - Agent Layer
-# Personalized Travel Assistant
+"""
+AlpineFlow AI Agent 层
 
-__all__ = []
+个性化出行助手，支持:
+- 交通预测
+- 外部因素分析
+- 实时信息搜索
+- 个性化建议生成
 
-# ============ 核心模块 (推荐使用) ============
+使用方式:
+    from agent import ask, get_plan, Orchestrator
 
-# Travel Assistant - 个性化出行助手
-try:
-    from .tools.travel_assistant import (
-        TravelAssistant,
-        UserType,
-        TravelPlan,
-        TravelOption,
-        quick_plan,
-        create_assistant,
-        TOOLS_SCHEMA,
-    )
-    __all__.extend([
-        "TravelAssistant",
-        "UserType",
-        "TravelPlan",
-        "TravelOption",
-        "quick_plan",
-        "create_assistant",
-        "TOOLS_SCHEMA",
-    ])
-except ImportError as e:
-    print(f"Warning: Travel assistant imports failed: {e}")
+    # 快速查询
+    advice = ask("周六去萨尔茨堡，什么时候出发好？")
+    print(advice)
 
-# Data Loading - 数据加载
-try:
-    from .tools.data_loader import prediction_loader, external_loader, get_forecast
-    from .tools.congestion_score import CongestionScoreCalculator, calculate_congestion_score
-    from .graph_rag import GraphRAG
-    __all__.extend([
-        "prediction_loader", "external_loader", "get_forecast",
-        "CongestionScoreCalculator", "calculate_congestion_score", "GraphRAG"
-    ])
-except ImportError as e:
-    print(f"Warning: Data loader imports failed: {e}")
+    # 获取完整计划
+    plan = get_plan("2026-07-25", destination="salzburg", user_type="traveler")
+"""
 
-# ============ 可选模块 ============
+# 核心模型
+from .models import (
+    UserType,
+    CongestionLevel,
+    HourlyPrediction,
+    DailyForecast,
+    ExternalFactor,
+    TravelOption,
+    TravelPlan,
+    AgentRequest,
+    AgentResponse,
+    ROUTES,
+    USER_PROFILES,
+)
 
-# LangGraph Agent System (可选，用于复杂工作流)
-try:
-    from .langgraph import TrafficAgentGraph, create_traffic_graph, AgentState
-    __all__.extend(["TrafficAgentGraph", "create_traffic_graph", "AgentState"])
-except ImportError:
-    pass  # LangGraph optional
+# 调度器
+from .orchestrator import (
+    Orchestrator,
+    ask,
+    get_plan,
+)
 
-# Legacy Agent System (rule-based)
-try:
-    from .orchestrator import OrchestratorAgent
-    from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GenerationAgent
-    __all__.extend([
-        "OrchestratorAgent",
-        "ForecastAgent",
-        "ExplanationAgent",
-        "RetrievalAgent",
-        "SimulationAgent",
-        "GenerationAgent",
-    ])
-except ImportError:
-    pass  # Legacy modules optional
+# Agents
+from .agents import (
+    IntentParser,
+    ForecastAgent,
+    ContextAgent,
+    SearchAgent,
+    GenerationAgent,
+)
+
+# 工具
+from .tools import (
+    prediction_loader,
+    context_loader,
+    calculate_congestion,
+)
+
+# LLM
+from .llm import (
+    LLMClient,
+    get_llm_client,
+    generate,
+    generate_json,
+)
+
+# Personas
+from .personas import (
+    PersonaType,
+    PersonaProfile,
+    PERSONAS,
+    get_persona,
+    get_data_needs,
+    get_required_features,
+)
+
+__all__ = [
+    # 模型
+    "UserType",
+    "CongestionLevel",
+    "HourlyPrediction",
+    "DailyForecast",
+    "ExternalFactor",
+    "TravelOption",
+    "TravelPlan",
+    "AgentRequest",
+    "AgentResponse",
+    "ROUTES",
+    "USER_PROFILES",
+    # 调度器
+    "Orchestrator",
+    "ask",
+    "get_plan",
+    # Agents
+    "IntentParser",
+    "ForecastAgent",
+    "ContextAgent",
+    "SearchAgent",
+    "GenerationAgent",
+    # 工具
+    "prediction_loader",
+    "context_loader",
+    "calculate_congestion",
+    # LLM
+    "LLMClient",
+    "get_llm_client",
+    "generate",
+    "generate_json",
+    # Personas
+    "PersonaType",
+    "PersonaProfile",
+    "PERSONAS",
+    "get_persona",
+    "get_data_needs",
+    "get_required_features",
+]
+
+__version__ = "1.0.0"

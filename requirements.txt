@@ -6,3 +6,7 @@ tqdm
 pyarrow
 ipykernel
 jinja2
+fastapi>=0.100
+uvicorn>=0.20
+openai>=1.0
+anthropic>=0.20
