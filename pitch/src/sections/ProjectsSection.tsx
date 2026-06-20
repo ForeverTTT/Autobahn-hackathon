@@ -23,7 +23,7 @@ interface Project {
 const PROJECTS: Project[] = [
   {
     n: "01",
-    name: "CatBoost Model",
+    name: "CatBoost Decision Trees",
     category: "Model · boosted decision trees",
     href: DEMO.hourly,
     col1a: "/shots/catboost_model_architecture.png",
@@ -33,7 +33,7 @@ const PROJECTS: Project[] = [
   },
   {
     n: "01",
-    name: "CatBoost Model",
+    name: "CatBoost Validation",
     category: "Validation · forecast quality",
     href: DEMO.hourly,
     col1a: "/shots/1_best_fit_week.png",
@@ -43,7 +43,7 @@ const PROJECTS: Project[] = [
   },
   {
     n: "02",
-    name: "AI Agentic RAG Interaction System",
+    name: "Agentic RAG System",
     category: "AI Agent · retrieval augmented reasoning",
     href: DEMO.calendar,
     col1a: "/shots/alpineflow_agent_architecture.png",
@@ -53,7 +53,7 @@ const PROJECTS: Project[] = [
   },
   {
     n: "03",
-    name: "User Interactive Interface",
+    name: "Interactive User Interface",
     category: "Web · interactive forecast UI",
     href: DEMO.hourly,
     col1a: "/shots/ui3.jpeg",
@@ -116,10 +116,7 @@ function ProjectCard({
             >
               {project.n}
             </span>
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-[#D7E2EA]/60 font-medium uppercase tracking-widest text-[10px] sm:text-xs">
-                {project.category}
-              </span>
+            <div className="flex flex-col min-w-0">
               <span
                 className="text-[#D7E2EA] font-medium uppercase leading-none truncate"
                 style={{ fontSize: "clamp(0.9rem, 1.55vw, 1.35rem)" }}

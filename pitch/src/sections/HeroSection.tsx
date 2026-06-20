@@ -55,27 +55,26 @@ export default function HeroSection() {
       </div>
 
       <FadeIn
-        delay={0.3}
-        x={24}
-        className="absolute right-6 md:right-10 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-end gap-2 text-[#D7E2EA]/55 font-light tracking-wide"
-        style={{ fontSize: "clamp(0.7rem, 1vw, 0.95rem)" }}
+        as="p"
+        delay={0.25}
+        y={20}
+        className="mx-auto mt-1 text-center text-[#D7E2EA] font-light tracking-normal leading-snug px-6"
+        style={{ fontSize: "clamp(0.85rem, 1.35vw, 1.25rem)" }}
       >
-        {TEAM_NAMES.map((name) => (
-          <span key={name}>{name}</span>
-        ))}
+        Long-range, explainable traffic forecasting for the A8 east and A93 south alpine corridors
       </FadeIn>
 
       {/* Bottom bar */}
       <div className="mt-auto flex justify-between items-end px-6 md:px-10 pb-7 sm:pb-8 md:pb-10">
-        <FadeIn
-          as="p"
-          delay={0.35}
-          y={20}
-          className="text-[#D7E2EA] font-light tracking-normal leading-snug max-w-[190px] sm:max-w-[260px] md:max-w-[330px]"
-          style={{ fontSize: "clamp(0.75rem, 1.4vw, 1.5rem)" }}
-        >
-          Long-range, explainable traffic forecasting for the A8 east and A93
-          south alpine corridors
+        <FadeIn delay={0.35} y={20} className="flex flex-col items-start gap-1">
+          <div
+            className="flex flex-col gap-1 text-white font-light tracking-wide"
+            style={{ fontSize: "clamp(0.85rem, 1.25vw, 1.15rem)" }}
+          >
+            {TEAM_NAMES.map((name) => (
+              <span key={name}>{name}</span>
+            ))}
+          </div>
         </FadeIn>
 
         <FadeIn delay={0.5} y={20}>
@@ -86,7 +85,7 @@ export default function HeroSection() {
       {/* Floating product window — magnetic, centred, overlapping the heading.
           Centring transforms live on a plain wrapper so they don't fight
           Framer Motion's animation transform on the FadeIn element. */}
-      <div className="absolute left-1/2 -translate-x-1/2 z-10 top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-[6%] md:bottom-[8%] pointer-events-none">
+      <div className="absolute left-1/2 -translate-x-1/2 z-10 top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-[4%] md:bottom-[5%] pointer-events-none">
         <FadeIn delay={0.6} y={30}>
           <Magnet
             padding={150}
