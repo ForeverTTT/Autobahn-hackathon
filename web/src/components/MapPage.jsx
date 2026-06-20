@@ -1,12 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-polylineoffset";
+
+const ROAD_DIRECTIONS = {
+  A8: ["Munich → Salzburg", "Salzburg → Munich"],
+  A93: ["Rosenheim → Kufstein", "Kufstein → Rosenheim"],
+};
 
 const ROUTE_SEGMENTS = [
   {
     road: "A8",
     title: "Munich — Irschenberg",
     status: "smooth",
+    reverseStatus: "heavy",
     path: [
       [48.102985, 11.613309],
       [48.099703, 11.613585],
@@ -62,6 +69,7 @@ const ROUTE_SEGMENTS = [
     road: "A8",
     title: "Irschenberg — AD Inntal",
     status: "heavy",
+    reverseStatus: "smooth",
     path: [
       [47.827152, 11.946247],
       [47.827089, 11.949446],
@@ -81,6 +89,7 @@ const ROUTE_SEGMENTS = [
     road: "A8",
     title: "AD Inntal — Chiemsee",
     status: "smooth",
+    reverseStatus: "smooth",
     path: [
       [47.807581, 12.119656],
       [47.8047, 12.155214],
@@ -142,6 +151,7 @@ const ROUTE_SEGMENTS = [
     road: "A8",
     title: "Chiemsee — Salzburg",
     status: "heavy",
+    reverseStatus: "smooth",
     path: [
       [47.828473, 12.642107],
       [47.825269, 12.654488],
@@ -186,6 +196,7 @@ const ROUTE_SEGMENTS = [
     road: "A93",
     title: "AD Inntal — Brannenburg",
     status: "smooth",
+    reverseStatus: "heavy",
     path: [
       [47.807678, 12.119865],
       [47.809298, 12.101951],
@@ -214,6 +225,7 @@ const ROUTE_SEGMENTS = [
     road: "A93",
     title: "Brannenburg — Oberaudorf",
     status: "heavy",
+    reverseStatus: "smooth",
     path: [
       [47.739594, 12.126625],
       [47.723518, 12.138933],
@@ -232,6 +244,7 @@ const ROUTE_SEGMENTS = [
     road: "A93",
     title: "Oberaudorf — Kiefersfelden",
     status: "smooth",
+    reverseStatus: "heavy",
     path: [
       [47.66095, 12.183338],
       [47.65745, 12.184165],
@@ -257,8 +270,10 @@ function statusColor(status) {
   return status === "heavy" ? "#ef554a" : "#45aa72";
 }
 
-function OpenStreetMap() {
+function OpenStreetMap({ selectedRoad, selectedDirection }) {
   const mapElement = useRef(null);
+  const mapInstance = useRef(null);
+  const routeLayers = useRef(null);
 
   useEffect(() => {
     const map = L.map(mapElement.current, {
@@ -282,59 +297,109 @@ function OpenStreetMap() {
     }).addTo(map);
 
     const bounds = L.latLngBounds();
-
     ROUTE_SEGMENTS.forEach((segment) => {
-      const latLngs = segment.path;
-      latLngs.forEach((point) => bounds.extend(point));
-
-      L.polyline(latLngs, {
-        color: "#ffffff",
-        weight: 13,
-        opacity: 0.95,
-        interactive: false,
-      }).addTo(map);
-
-      const line = L.polyline(latLngs, {
-        color: statusColor(segment.status),
-        weight: 8,
-        opacity: 1,
-        lineCap: "round",
-        lineJoin: "round",
-      }).addTo(map);
-
-      const statusLabel =
-        segment.status === "heavy" ? "Heavy traffic" : "Smooth traffic";
-
-      line.bindTooltip(
-        `
-          <div class="leaflet-road-popup">
-            <div>
-              <span class="map-route-badge">${segment.road}</span>
-              <span class="map-status ${segment.status}">${statusLabel}</span>
-            </div>
-            <strong>${segment.title}</strong>
-            <small>Road segment information</small>
-          </div>
-        `,
-        {
-          className: "road-tooltip",
-          direction: "top",
-          sticky: true,
-          opacity: 1,
-        },
-      );
-
-      line.on("mouseover", () => line.setStyle({ weight: 11 }));
-      line.on("mouseout", () => line.setStyle({ weight: 8 }));
+      segment.path.forEach((point) => bounds.extend(point));
     });
 
     map.fitBounds(bounds, {
-      paddingTopLeft: [330, 70],
+      paddingTopLeft: [350, 70],
       paddingBottomRight: [55, 55],
     });
 
-    return () => map.remove();
+    routeLayers.current = L.layerGroup().addTo(map);
+    mapInstance.current = map;
+
+    return () => {
+      mapInstance.current = null;
+      routeLayers.current = null;
+      map.remove();
+    };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    const layerGroup = routeLayers.current;
+    if (!map || !layerGroup) return;
+
+    layerGroup.clearLayers();
+
+    const visibleSegments = ROUTE_SEGMENTS.filter(
+      (segment) => selectedRoad === "all" || segment.road === selectedRoad,
+    );
+
+    visibleSegments.forEach((segment) => {
+      const latLngs = segment.path;
+
+      const directionLines = [
+        {
+          label: ROAD_DIRECTIONS[segment.road][0],
+          status: segment.status,
+          offset: -4,
+          number: 1,
+        },
+        {
+          label: ROAD_DIRECTIONS[segment.road][1],
+          status: segment.reverseStatus,
+          offset: 4,
+          number: 2,
+        },
+      ].filter(
+        (direction) =>
+          selectedDirection === "both" ||
+          direction.number === selectedDirection,
+      );
+
+      directionLines.forEach((direction) => {
+        const offset =
+          selectedDirection === "both" ? direction.offset : 0;
+
+        L.polyline(latLngs, {
+          color: "#ffffff",
+          weight: 8,
+          opacity: 0.98,
+          offset,
+          interactive: false,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(layerGroup);
+
+        const line = L.polyline(latLngs, {
+          color: statusColor(direction.status),
+          weight: 5,
+          opacity: 1,
+          offset,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(layerGroup);
+
+        const statusLabel =
+          direction.status === "heavy" ? "Heavy traffic" : "Smooth traffic";
+
+        line.bindTooltip(
+          `
+            <div class="leaflet-road-popup">
+              <div>
+                <span class="map-route-badge">${segment.road}</span>
+                <span class="direction-number">Direction ${direction.number}</span>
+                <span class="map-status ${direction.status}">${statusLabel}</span>
+              </div>
+              <strong>${direction.label}</strong>
+              <small>${segment.title} · Road segment information</small>
+            </div>
+          `,
+          {
+            className: "road-tooltip",
+            direction: "top",
+            sticky: true,
+            opacity: 1,
+          },
+        );
+
+        line.on("mouseover", () => line.setStyle({ weight: 7 }));
+        line.on("mouseout", () => line.setStyle({ weight: 5 }));
+      });
+    });
+  }, [selectedDirection, selectedRoad]);
 
   return <div className="leaflet-map" ref={mapElement} />;
 }
@@ -349,6 +414,16 @@ function LocationIcon() {
 }
 
 export default function MapPage() {
+  const [selectedRoad, setSelectedRoad] = useState("all");
+  const [selectedDirection, setSelectedDirection] = useState("both");
+  const selectedRoadDirections =
+    selectedRoad === "all" ? null : ROAD_DIRECTIONS[selectedRoad];
+
+  const selectRoad = (road) => {
+    setSelectedRoad(road);
+    setSelectedDirection("both");
+  };
+
   return (
     <section className="map-page page-container">
       <div className="page-heading map-heading">
@@ -370,25 +445,66 @@ export default function MapPage() {
       <div className="map-card">
         <div className="map-overlay-panel">
           <span className="panel-kicker">LIVE CORRIDORS</span>
-          <h2>A8 East & A93 South</h2>
-          <p>Move your pointer over either route.</p>
+          <h2>
+            {selectedRoad === "all"
+              ? "A8 East & A93 South"
+              : `${selectedRoad} corridor`}
+          </h2>
+          <p>
+            {selectedRoad === "all"
+              ? "Both highways and all directions are visible."
+              : "Both directions are shown until one is selected."}
+          </p>
 
-          <div className="map-route-list">
-            <div>
-              <span className="route-badge a8">A8</span>
-              <span>
-                <strong>Munich ↔ Salzburg</strong>
-                <small>Bidirectional corridor</small>
-              </span>
-            </div>
-            <div>
-              <span className="route-badge a93">A93</span>
-              <span>
-                <strong>Rosenheim ↔ Kufstein</strong>
-                <small>Bidirectional corridor</small>
-              </span>
+          <div className="map-filter-group">
+            <span className="map-filter-label">Highway</span>
+            <div className="map-filter-options highway-options">
+              {[
+                ["all", "All"],
+                ["A8", "A8"],
+                ["A93", "A93"],
+              ].map(([value, label]) => (
+                <button
+                  className={selectedRoad === value ? "active" : ""}
+                  type="button"
+                  key={value}
+                  onClick={() => selectRoad(value)}
+                  aria-pressed={selectedRoad === value}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
+
+          {selectedRoadDirections && (
+            <div className="map-filter-group direction-filter">
+              <span className="map-filter-label">Direction</span>
+              <div className="map-filter-options direction-options">
+                <button
+                  className={selectedDirection === "both" ? "active" : ""}
+                  type="button"
+                  onClick={() => setSelectedDirection("both")}
+                  aria-pressed={selectedDirection === "both"}
+                >
+                  Both directions
+                </button>
+                {selectedRoadDirections.map((direction, index) => (
+                  <button
+                    className={
+                      selectedDirection === index + 1 ? "active" : ""
+                    }
+                    type="button"
+                    key={direction}
+                    onClick={() => setSelectedDirection(index + 1)}
+                    aria-pressed={selectedDirection === index + 1}
+                  >
+                    {direction}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="map-legend">
             <span>
@@ -400,7 +516,10 @@ export default function MapPage() {
           </div>
         </div>
 
-        <OpenStreetMap />
+        <OpenStreetMap
+          selectedRoad={selectedRoad}
+          selectedDirection={selectedDirection}
+        />
       </div>
     </section>
   );
