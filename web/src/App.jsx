@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import CalendarPage from "./components/CalendarPage";
 import MapPage from "./components/MapPage";
+import AgentBot from "../agent/AgentBot";
 
 const pages = new Set(["calendar", "map"]);
 
 function pageFromHash() {
-  const page = window.location.hash.replace("#/", "");
+  const page = window.location.hash.replace("#/", "").split("?")[0];
   return pages.has(page) ? page : "calendar";
 }
 
@@ -47,17 +48,6 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#/calendar" aria-label="AlpineFlow home">
-          <span className="brand-mark" aria-hidden="true">
-            <span />
-            <span />
-          </span>
-          <span>
-            <strong>AlpineFlow</strong>
-            <small>Autobahn intelligence</small>
-          </span>
-        </a>
-
         <nav className="page-tabs" aria-label="Primary navigation">
           <button
             className={page === "calendar" ? "active" : ""}
@@ -86,6 +76,7 @@ export default function App() {
       </header>
 
       <main>{page === "calendar" ? <CalendarPage /> : <MapPage />}</main>
+      <AgentBot />
     </div>
   );
 }
