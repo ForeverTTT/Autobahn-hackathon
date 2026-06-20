@@ -118,15 +118,7 @@ export default function CalendarPage() {
   return (
     <>
       <section className="calendar-page page-container">
-        <div className="page-heading">
-          <div>
-            <span className="eyebrow">TRAFFIC OUTLOOK · 2023–2029</span>
-            <h1>When will the road get busy?</h1>
-            <p>
-              Choose a highway and open any day for its hourly traffic profile.
-            </p>
-          </div>
-
+        <div className="calendar-top-tools">
           <div className="legend-card" aria-label="Traffic legend">
             <span className="legend-title">Traffic level</span>
             <span className="legend-item">

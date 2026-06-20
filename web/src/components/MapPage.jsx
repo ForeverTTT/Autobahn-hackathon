@@ -466,13 +466,7 @@ export default function MapPage() {
 
   return (
     <section className="map-page page-container">
-      <div className="page-heading map-heading">
-        <div>
-          <span className="eyebrow">CORRIDOR VIEW</span>
-          <h1>See where traffic slows down.</h1>
-          <p>Hover over a colored road segment to inspect its information.</p>
-        </div>
-
+      <div className="map-top-tools">
         <div className="map-location-chip">
           <LocationIcon />
           <span>
