@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import CalendarPage from "./components/CalendarPage";
 import MapPage from "./components/MapPage";
 import HourlyMapPage from "./components/HourlyMapPage";
-import GooeyNav from "./components/GooeyNav";
+import PillNav from "./components/PillNav";
 import AgentBot from "../agent/AgentBot";
 
 const pages = ["calendar", "map", "hourly"];
@@ -50,22 +50,15 @@ export default function App() {
   return (
     <div className="app-shell" ref={shellRef}>
       <header className="topbar" ref={navRef}>
-        <GooeyNav
+        <PillNav
           items={NAV_ITEMS}
-          initialActiveIndex={initialIndex.current}
-          currentIndex={Math.max(0, pages.indexOf(page))}
-          particleCount={15}
-          particleDistances={[90, 10]}
-          particleR={100}
-          animationTime={600}
-          timeVariance={300}
-          colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+          activeHref={`#/${page}`}
+          baseColor="#000000"
+          pillColor="#ffffff"
+          pillTextColor="#000000"
+          hoveredPillTextColor="#ffffff"
+          initialLoadAnimation={false}
         />
-
-        <div className="live-chip">
-          <span />
-          Demo forecast
-        </div>
       </header>
 
       <main>
