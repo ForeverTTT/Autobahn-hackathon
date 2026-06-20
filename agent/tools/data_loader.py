@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 数据加载工具
 渐进式加载预测数据，不一次性读取全部
