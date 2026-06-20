@@ -490,10 +490,7 @@ class GenerationAgent(BaseAgent):
                 "",
             ])
 
-            if trip_plan.return_analysis:
-                lines.append(trip_plan.return_analysis)
-            else:
-                # 根据日历数据分析返程
+            # 根据日历数据分析返程
                 weekend_days = [d for d in calendar if d["weekday"] in ["周六", "周日"]]
                 if weekend_days:
                     # 找返程最佳日

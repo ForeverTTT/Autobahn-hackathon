@@ -87,16 +87,24 @@ class Orchestrator:
         context_result = result_dict.get("context")
         search_result = result_dict.get("search")
 
-        # 6. 汇总给 GenerationAgent
+        # 6. 提取预测数据（兼容小时级和日级两种模式）
+        forecast_data = None
+        if forecast_result and forecast_result.success:
+            if forecast_result.data.get("mode") == "daily":
+                forecast_data = forecast_result.data.get("daily_forecasts")
+            else:
+                forecast_data = forecast_result.data.get("forecast")
+
+        # 7. 汇总给 GenerationAgent
         generation_result = await self.generation_agent.process(
             request=request,
             parsed_intent=parsed,  # 传递完整的解析结果
-            forecast=forecast_result.data.get("forecast") if forecast_result and forecast_result.success else None,
+            forecast=forecast_data,
             context_factors=context_result.data.get("factors", []) if context_result and context_result.success else [],
             search_factors=search_result.data.get("factors", []) if search_result and search_result.success else [],
         )
 
-        # 7. 返回结果
+        # 8. 返回结果
         return {
             "success": generation_result.success,
             "query": query,

@@ -859,3 +859,399 @@ DailyForecast  factors[]     factors[]               │
                    ▼
               用户响应
 ```
+
+---
+
+## 7. 完整工作流示例
+
+以下是一个完整的用户查询处理示例，展示每个 Agent 的输入输出和数据流转。
+
+### 示例查询
+
+```
+用户: "暑假想带家人去萨尔茨堡自驾游"
+```
+
+---
+
+### Step 1: IntentParser (意图解析)
+
+**输入**:
+```
+query = "暑假想带家人去萨尔茨堡自驾游"
+```
+
+**处理**: LLM 分析 → 关键词 fallback
+
+**输出**: `ParsedIntent`
+```python
+{
+    persona_type: PersonaType.FAMILY_TRAVELER,
+    user_type: UserType.TRAVELER,
+    destination: "salzburg",
+    road: "A8",
+    intent: "plan",
+    core_question: "When is the best time to travel?",
+
+    time_range: {
+        type: TimeRangeType.SUMMER,
+        start_date: "2026-07-01",
+        end_date: "2026-08-31",
+        duration_days: 62,
+        description: "暑假"
+    },
+
+    trip_plan: {
+        trip_type: TripType.ROUND_TRIP,
+        stay_days: 3
+    },
+
+    data_requirements: {
+        granularity: DataGranularity.WEEKLY,  # 因为 62 天 > 60
+        hours: [6, 7, 8, ..., 21]
+    }
+}
+```
+
+---
+
+### Step 2: Orchestrator (调度器)
+
+**创建 AgentRequest**:
+```python
+{
+    query: "暑假想带家人去萨尔茨堡自驾游",
+    date: "2026-07-01",           # 兼容字段
+    start_date: "2026-07-01",
+    end_date: "2026-08-31",
+    road: "A8",
+    destination: "salzburg",
+    user_type: UserType.TRAVELER,
+    granularity: "weekly",
+    hours: [6, 7, ..., 21],
+    include_factors: True
+}
+```
+
+**并行调度 3 个 Agent**:
+```python
+tasks = {
+    "forecast": asyncio.create_task(forecast_agent.process(request)),
+    "context": asyncio.create_task(context_agent.process(request)),
+    "search": asyncio.create_task(search_agent.process(request)),
+}
+results = await asyncio.gather(*tasks.values())
+```
+
+---
+
+### Step 3A: ForecastAgent (预测Agent)
+
+**输入**:
+```python
+AgentRequest {
+    start_date: "2026-07-01",
+    end_date: "2026-08-31",
+    road: "A8",
+    granularity: "weekly"
+}
+```
+
+**判断逻辑**:
+```python
+_should_use_daily_forecast() → True
+# 因为 start_date ≠ end_date 或 granularity = "daily"/"weekly"
+```
+
+**处理**: 查询日级预测表 (`prediction_daily.csv`)
+
+**输出**: `AgentResponse`
+```python
+{
+    success: True,
+    data: {
+        mode: "daily",
+        daily_forecasts: [
+            {
+                date: "2026-07-01",
+                road: "A8",
+                site_id: "A8_Mch_MQB25_Mch_H",
+                kfz_h_p50: 45000,        # 日总流量
+                sv_h_pred: 4500,         # 重车流量
+                v_kfz_pred: 95,          # 平均车速
+                congestion_score: 55,    # 拥堵分数 0-100
+                congestion_level: "moderate",
+                reasons: ["暑假高峰", "周末"],
+                factor_codes: {"TT": 30, "CA": 20, "HO": 50}
+            },
+            # ... 62 天的数据
+        ],
+        start_date: "2026-07-01",
+        end_date: "2026-08-31",
+        data_source: "forecast_daily_csv"
+    }
+}
+```
+
+---
+
+### Step 3B: ContextAgent (上下文因素Agent)
+
+**输入**:
+```python
+AgentRequest {
+    start_date: "2026-07-01",
+    end_date: "2026-08-31",
+    road: "A8"
+}
+```
+
+**处理**: 查询离线因素表 (holidays, school_holidays, seasonal_patterns)
+
+**输出**: `AgentResponse`
+```python
+{
+    success: True,
+    data: {
+        factors: [
+            {
+                type: "school_holiday",
+                name: "巴伐利亚暑假",
+                description: "7月29日-9月9日学校放假",
+                impact: "high",
+                source: "context"
+            },
+            {
+                type: "season",
+                name: "夏季旅游高峰",
+                description: "阿尔卑斯山区旅游旺季",
+                impact: "high",
+                source: "context"
+            },
+            {
+                type: "pattern",
+                name: "周末出行高峰",
+                description: "周六上午、周日下午为高峰时段",
+                impact: "moderate",
+                source: "context"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### Step 3C: SearchAgent (实时搜索Agent)
+
+**输入**:
+```python
+AgentRequest {
+    start_date: "2026-07-01",
+    end_date: "2026-08-31",
+    road: "A8",
+    destination: "salzburg"
+}
+```
+
+**处理**: 搜索实时信息 (施工、活动、特殊事件)
+
+**输出**: `AgentResponse`
+```python
+{
+    success: True,
+    data: {
+        factors: [
+            {
+                type: "event",
+                name: "萨尔茨堡音乐节",
+                description: "7月18日-8月31日，预计大量游客",
+                impact: "very_high",
+                source: "search"
+            },
+            {
+                type: "construction",
+                name: "A8 Rosenheim 路段维护",
+                description: "7月15-20日夜间施工",
+                impact: "moderate",
+                source: "search"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### Step 4: GenerationAgent (生成Agent)
+
+**输入**:
+```python
+{
+    request: AgentRequest,
+
+    parsed_intent: ParsedIntent {
+        persona_type: FAMILY_TRAVELER,
+        time_range: {duration_days: 62, type: SUMMER},
+        trip_plan: {trip_type: ROUND_TRIP, stay_days: 3}
+    },
+
+    forecast: [  # 来自 ForecastAgent
+        {date: "2026-07-01", congestion_score: 55, ...},
+        # ... 62 天的日级预测数据
+    ],
+
+    context_factors: [  # 来自 ContextAgent
+        {type: "school_holiday", name: "巴伐利亚暑假", impact: "high"},
+        {type: "season", name: "夏季旅游高峰", impact: "high"},
+        ...
+    ],
+
+    search_factors: [  # 来自 SearchAgent
+        {type: "event", name: "萨尔茨堡音乐节", impact: "very_high"},
+        {type: "construction", name: "A8 Rosenheim 路段维护", impact: "moderate"}
+    ]
+}
+```
+
+**策略选择** (根据 `duration_days`):
+```python
+if duration_days > 14:      # 62 > 14 ✓
+    → _generate_long_range_response()  # 最佳窗口推荐
+elif duration_days > 1:
+    → _generate_calendar_response()    # 日历视图
+else:
+    → _generate_persona_response()     # 按画像生成
+```
+
+**输出**: `AgentResponse`
+```python
+{
+    success: True,
+    data: {
+        persona: "family_traveler",
+        core_question: "When is the best time to travel?",
+        time_range_type: "long",
+
+        advice: """
+### 📅 暑假出行推荐
+**路线**: 慕尼黑 → 萨尔茨堡 (A8)
+**时间范围**: 2026-07-01 至 2026-08-31
+**行程类型**: 🔄 往返
+**预计停留**: 3 天
+
+#### 🚗 去程推荐
+
+| 时段 | 拥堵风险 | 原因 |
+|------|----------|------|
+| 7月上旬 | 🟠 medium | 夏季旅游高峰 |
+| 7月中旬 | 🔴 high | 萨尔茨堡音乐节 |
+| 7月下旬 | 🔴 high | 学校假期, 音乐节 |
+| 8月上旬 | 🔴 high | 学校假期 |
+| 8月中旬 | 🟠 medium | 学校假期 |
+| 8月下旬 | 🟢 low | - |
+
+✅ **去程推荐**: 8月下旬
+
+#### 🔙 返程分析
+
+**返程规律**:
+- 周日下午/傍晚：返城高峰，建议避开 15:00-19:00
+- 假期最后一天：拥堵严重，建议提前一天或早上返回
+- 工作日返程：相对畅通
+
+#### 💡 综合建议
+
+- 去程：选择工作日或周六早上出发
+- 返程：避开周日下午高峰，可选择周日早上或周一返回
+
+⚠️ **建议避开**: 7月中旬, 7月下旬
+
+#### 重要提醒
+- 🎭 **萨尔茨堡音乐节**: 7月18日-8月31日，预计大量游客
+        """,
+
+        data: {
+            windows: [
+                {start: "2026-07-01", end: "2026-07-07", risk_level: "medium", ...},
+                {start: "2026-07-08", end: "2026-07-14", risk_level: "high", ...},
+                # ...
+            ],
+            duration_days: 62
+        },
+
+        factors: [...]  # 所有影响因素
+    }
+}
+```
+
+---
+
+### 三种时间范围的输出对比
+
+| 时间范围 | 示例查询 | 预测模式 | 生成策略 | 输出特点 |
+|---------|---------|---------|---------|---------|
+| **短期** (1天) | "明天去萨尔茨堡" | hourly | `_generate_persona_response` | 具体小时建议，如 "08:30 出发" |
+| **中期** (2-14天) | "下周末去萨尔茨堡" | daily | `_generate_calendar_response` | 日历视图，标记每天风险等级 |
+| **长期** (>14天) | "暑假去萨尔茨堡" | daily | `_generate_long_range_response` | 周级窗口，推荐最佳时段 |
+
+---
+
+### 完整数据流图
+
+```
+┌──────────┐
+│  用户    │  "暑假想带家人去萨尔茨堡自驾游"
+│  查询    │
+└────┬─────┘
+     │
+     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                        IntentParser                              │
+│  输出: ParsedIntent                                              │
+│  - persona_type: FAMILY_TRAVELER                                 │
+│  - time_range: SUMMER (62 天)                                    │
+│  - trip_plan: ROUND_TRIP                                         │
+│  - granularity: WEEKLY                                           │
+└────┬─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                        Orchestrator                              │
+│  创建: AgentRequest (start_date, end_date, granularity...)       │
+│  调度: 3 个 Agent 并行                                            │
+└────┬─────────────────────────────────────────────────────────────┘
+     │
+     ├──────────────────┬──────────────────┐
+     ▼                  ▼                  ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│ Forecast    │  │ Context     │  │ Search      │
+│ Agent       │  │ Agent       │  │ Agent       │
+├─────────────┤  ├─────────────┤  ├─────────────┤
+│ 输出:       │  │ 输出:       │  │ 输出:       │
+│ - 62天日级  │  │ - 学校假期  │  │ - 音乐节    │
+│   预测数据  │  │ - 夏季旅游  │  │ - 施工信息  │
+│ - 拥堵分数  │  │ - 周末模式  │  │             │
+│ - 因子归因  │  │             │  │             │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       └────────────────┼────────────────┘
+                        │
+                        ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                      GenerationAgent                             │
+│  输入: request + parsed_intent + forecast + all_factors          │
+│  策略: duration_days=62 > 14 → _generate_long_range_response     │
+│  输出: 周级窗口推荐 + 往返建议                                     │
+└────┬─────────────────────────────────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                          最终响应                                 │
+│                                                                  │
+│  📅 暑假出行推荐                                                  │
+│  ✅ 去程推荐: 8月下旬                                             │
+│  🔙 返程分析: 避开周日下午高峰                                     │
+│  ⚠️ 建议避开: 7月中旬, 7月下旬 (音乐节 + 学校假期)                 │
+└──────────────────────────────────────────────────────────────────┘
+```
