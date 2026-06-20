@@ -8,7 +8,7 @@ from catboost import CatBoostRegressor, Pool
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data_autobahn"
 KFZ_MODEL_PATH = ROOT / "models" / "kfz_h" / "multi.cbm"
-DAILY_FORECAST_PATH = DATA_DIR / "forecast_2026_2029_daily.csv"
+DAILY_FORECAST_PATH = DATA_DIR / "forecast_2026_daily.csv"
 
 TRAIN_END = pd.Timestamp("2024-12-31 23:59:59")
 PROFILE_KFZ_P90 = 0.90
