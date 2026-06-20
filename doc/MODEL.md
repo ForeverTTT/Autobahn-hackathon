@@ -31,7 +31,7 @@
 | `sv_h` | 预测 `sv_h / kfz_h` 比例，再乘 `kfz_h_p50` | 重型车流量 |
 | `v_kfz` | 预测相对自由流速度画像的 `speed_drop` | 平均车速 |
 
-速度模型额外使用 `kfz_p50_pred`，显式表达流量升高与速度下降的关系。
+速度模型额外使用 `kfz_p50_pred`，显式表达流量升高与速度下降的关系（G3）。
 
 ### 2.2 核心思路
 
@@ -64,6 +64,8 @@
 | 活动 | 活动数量、影响等级、城市和走廊影响 |
 
 历史画像是主信号；条件特征主要用于在画像上做可解释偏移。
+
+因子归因表 `data_autobahn/factor_attribution_daily.csv`（17,532 行 × 5 列）用缩略码给出逐日（按站点）的 6 个因子贡献百分比，通过特征组消融按流量加权聚合。详见 `doc/FACTOR_CONTRIBUTIONS.md`。
 
 ## 3. 训练与校准
 
@@ -129,7 +131,8 @@ kfz_h_p10, kfz_h_p50, kfz_h_p90,
 sv_h_pred, v_kfz_pred, interval_width, relative_interval_width
 ```
 
-`relative_interval_width = interval_width / (p50 + 1)`，供 Agent 解释预测不确定性。Agent 代码也能用 P10/P50/P90 动态重算。
+- `relative_interval_width = interval_width / (p50 + 1)`，供 Agent 解释预测不确定性。
+- 因子归因不再放在主表中。紧凑的逐日因子表位于 `data_autobahn/factor_attribution_daily.csv`（17,532 行）；缩略码 `TT/CA/HO/WE/EV/CO` 对应 6 个因子组，每行格式如 `"TT:76;CA:12;HO:10;WE:2"`。Agent 使用指南见 `doc/FACTOR_CONTRIBUTIONS.md`。
 
 ## 6. TFT 实验
 
