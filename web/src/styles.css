@@ -12,7 +12,9 @@
   --green: #45aa72;
   --green-dark: #1d7a4a;
   --yellow: #e7b93f;
+  --orange: #ee8a36;
   --red: #ef554a;
+  --deep-red: #981f2b;
   --surface: #ffffff;
   --soft-green: #eef4e9;
   --accent: #3d5afe;
@@ -318,14 +320,24 @@ a:focus-visible {
   background: var(--green);
 }
 
-.legend-dot.busy,
-.map-status.busy {
+.legend-dot.light,
+.map-status.light {
   background: var(--yellow);
+}
+
+.legend-dot.moderate,
+.map-status.moderate {
+  background: var(--orange);
 }
 
 .legend-dot.heavy,
 .map-status.heavy {
   background: var(--red);
+}
+
+.legend-dot.critical,
+.map-status.critical {
+  background: var(--deep-red);
 }
 
 .calendar-card {
@@ -640,12 +652,24 @@ button.day-cell.selected {
   color: var(--green);
 }
 
-.route-direction-shape.busy {
+.route-direction-shape.light {
   color: var(--yellow);
+}
+
+.route-direction-shape.moderate {
+  color: var(--orange);
 }
 
 .route-direction-shape.heavy {
   color: var(--red);
+}
+
+.route-direction-shape.critical {
+  color: var(--deep-red);
+}
+
+.route-direction-shape.unavailable {
+  color: #b7beb8;
 }
 
 .route-direction-shape.neutral {
@@ -833,12 +857,20 @@ button.day-cell.selected {
   background: var(--green);
 }
 
-.traffic-overview-segment.busy {
+.traffic-overview-segment.light {
   background: var(--yellow);
+}
+
+.traffic-overview-segment.moderate {
+  background: var(--orange);
 }
 
 .traffic-overview-segment.heavy {
   background: var(--red);
+}
+
+.traffic-overview-segment.critical {
+  background: var(--deep-red);
 }
 
 .traffic-overview-labels {
@@ -920,17 +952,25 @@ button.day-cell.selected {
   background: var(--green);
 }
 
-.hour-status.busy {
+.hour-status.light {
   background: var(--yellow);
   color: #453a19;
 }
 
-.hour-status.busy i {
+.hour-status.light i {
   background: rgba(69, 58, 25, 0.45);
+}
+
+.hour-status.moderate {
+  background: var(--orange);
 }
 
 .hour-status.heavy {
   background: var(--red);
+}
+
+.hour-status.critical {
+  background: var(--deep-red);
 }
 
 .hour-arrow {
@@ -1940,11 +1980,17 @@ button.day-cell.selected {
 .status-word.smooth {
   color: var(--green-dark);
 }
-.status-word.busy {
+.status-word.light {
   color: #b3870f;
+}
+.status-word.moderate {
+  color: #c46518;
 }
 .status-word.heavy {
   color: var(--red);
+}
+.status-word.critical {
+  color: var(--deep-red);
 }
 
 .map-info-controls {
@@ -2109,11 +2155,17 @@ button.day-cell.selected {
 .seg-dot.smooth {
   background: var(--green);
 }
-.seg-dot.busy {
+.seg-dot.light {
   background: var(--yellow);
+}
+.seg-dot.moderate {
+  background: var(--orange);
 }
 .seg-dot.heavy {
   background: var(--red);
+}
+.seg-dot.critical {
+  background: var(--deep-red);
 }
 
 .seg-meta {

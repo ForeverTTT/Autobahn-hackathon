@@ -9,7 +9,13 @@ React/Vite demo frontend with:
 
 ## Run
 
+From the project root, start the complete local demo with:
+
 ```bash
-npm install
-npm run dev
+python run_demo.py
 ```
+
+This starts both the local calendar API and the Vite frontend, then opens the
+calendar in the browser. The API reads
+`data_autobahn/scored_traffic_2026_2029_daily.csv` directly. Press `Ctrl+C` to
+stop both services.

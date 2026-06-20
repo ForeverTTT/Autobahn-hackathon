@@ -17,6 +17,7 @@ from .api_handlers import (
     handle_options,
     handle_plan,
 )
+from .calendar_data import calendar_traffic_loader
 
 
 class ChatRequest(BaseModel):
@@ -102,6 +103,16 @@ def create_app() -> FastAPI:
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/calendar/daily")
+    async def calendar_daily(year: int, month: int, road: str = "A8"):
+        """Return daily average congestion scores for one calendar month."""
+        try:
+            return calendar_traffic_loader.query_month(year, month, road)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=503, detail=str(e))
 
     @app.get("/api/factors/{date}")
     async def get_factors(date: str, road: str = "A8"):

@@ -9,7 +9,10 @@ from typing import Any, Dict, List, Optional
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
-from .. import config
+try:
+    from .. import config
+except ImportError:
+    from .. import config_example as config
 from ..models import AgentRequest, ExternalFactor
 
 
