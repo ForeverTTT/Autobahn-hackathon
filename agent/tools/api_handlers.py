@@ -3,14 +3,142 @@ API 处理工具
 把 FastAPI 路由中的业务处理逻辑抽出来，供 api_app.py 调用。
 """
 import asyncio
+import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from ..models import AgentRequest, UserType
 from ..orchestrator import Orchestrator
-from .llm_client import generate
 from ..session import ChatSession
+
+
+# ============ 缓存配置 ============
+_explanation_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+CACHE_TTL_SECONDS = 300  # 缓存 5 分钟
+
+# 预生成的解释 CSV 缓存
+_pregenerated_explanations: Dict[str, Dict[str, Any]] = {}
+_pregenerated_loaded: bool = False
+
+
+def _load_pregenerated_explanations() -> None:
+    """加载预生成的解释 CSV 文件"""
+    global _pregenerated_explanations, _pregenerated_loaded
+
+    if _pregenerated_loaded:
+        return
+
+    import csv
+    from pathlib import Path
+
+    data_dir = Path(__file__).parent.parent.parent / "data_autobahn"
+
+    for lang in ["en", "zh", "de"]:
+        csv_path = data_dir / f"explanations_{lang}.csv"
+        if not csv_path.exists():
+            continue
+
+        try:
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # key: date:hour:road:lang
+                    key = f"{row['date']}:{row['hour']}:{row['road']}:{row['lang']}"
+                    _pregenerated_explanations[key] = {
+                        "date": row["date"],
+                        "hour": int(row["hour"]),
+                        "road": row["road"],
+                        "congestion_level": row["congestion_level"],
+                        "congestion_level_name": row["congestion_level_name"],
+                        "congestion_score": float(row["congestion_score"]),
+                        "flow": int(row["flow"]),
+                        "speed": float(row["speed"]),
+                        "explanation": row["explanation"],
+                        "factors": [],  # CSV 中不存储因素详情
+                    }
+            print(f"[api_handlers] 加载预生成解释: {csv_path.name} ({len([k for k in _pregenerated_explanations if k.endswith(f':{lang}')])} 条)")
+        except Exception as e:
+            print(f"[api_handlers] 加载 {csv_path} 失败: {e}")
+
+    _pregenerated_loaded = True
+
+
+def _get_pregenerated(date: str, hour: int, road: str, lang: str) -> Optional[Dict[str, Any]]:
+    """从预生成的 CSV 中获取解释"""
+    _load_pregenerated_explanations()
+    key = f"{date}:{hour}:{road}:{lang}"
+    return _pregenerated_explanations.get(key)
+
+
+def _get_cached(cache_key: str) -> Optional[Dict[str, Any]]:
+    """获取缓存，如果过期则返回 None"""
+    if cache_key in _explanation_cache:
+        cached_time, cached_data = _explanation_cache[cache_key]
+        if time.time() - cached_time < CACHE_TTL_SECONDS:
+            return cached_data
+        else:
+            del _explanation_cache[cache_key]
+    return None
+
+
+def _set_cache(cache_key: str, data: Dict[str, Any]) -> None:
+    """设置缓存"""
+    _explanation_cache[cache_key] = (time.time(), data)
+
+
+# ============ 模板生成解释（快速模式） ============
+def _generate_template_explanation(
+    lang: str,
+    level_name: str,
+    congestion_score: float,
+    flow: float,
+    speed: float,
+    factors: List[Dict[str, Any]],
+) -> str:
+    """用模板生成解释，不调用 LLM"""
+    lines = []
+
+    if lang == "en":
+        # 基于拥堵等级的描述
+        lines.append(f"• Traffic status: {level_name}, congestion score {congestion_score}/100")
+
+        # 流量和速度
+        if flow > 0:
+            lines.append(f"• Traffic flow: {flow:.0f} vehicles/hour, average speed {speed:.1f} km/h")
+
+        # 影响因素（最多3个）
+        for f in factors[:3]:
+            name = f.get("name", "")
+            desc = f.get("description", "")
+            if name and desc:
+                lines.append(f"• {name}: {desc[:100]}")
+
+    elif lang == "de":
+        lines.append(f"• Verkehrsstatus: {level_name}, Stauindex {congestion_score}/100")
+
+        if flow > 0:
+            lines.append(f"• Verkehrsfluss: {flow:.0f} Fahrzeuge/Stunde, Durchschnittsgeschwindigkeit {speed:.1f} km/h")
+
+        for f in factors[:3]:
+            name = f.get("name", "")
+            desc = f.get("description", "")
+            if name and desc:
+                lines.append(f"• {name}: {desc[:100]}")
+
+    else:  # zh
+        lines.append(f"• 交通状态：{level_name}，拥堵指数 {congestion_score}/100")
+
+        if flow > 0:
+            lines.append(f"• 流量 {flow:.0f} 辆/小时，平均车速 {speed:.1f} km/h")
+
+        for f in factors[:3]:
+            name = f.get("name", "")
+            desc = f.get("description", "")
+            if name and desc:
+                lines.append(f"• {name}：{desc[:100]}")
+
+    return "\n".join(lines) if lines else "• No data available"
 
 
 @dataclass
@@ -206,18 +334,45 @@ async def handle_hourly_explanation(
             "factors": [...]
         }
     """
+    # 1. 优先从预生成的 CSV 读取（最快）
+    pregenerated = _get_pregenerated(date, hour, road, lang)
+    if pregenerated:
+        return pregenerated
+
+    # 2. 检查内存缓存
+    cache_key = f"explain:{date}:{hour}:{road}:{lang}"
+    cached = _get_cached(cache_key)
+    if cached:
+        return cached
+
+    # 3. 实时生成（fallback）
     from ..agents import ForecastAgent, ContextAgent, SearchAgent
 
-    # 1. 获取该小时的预测数据
+    # 1. 并行获取预测数据和影响因素
     forecast_agent = ForecastAgent()
-    request = AgentRequest(
+    context_agent = ContextAgent()
+    search_agent = SearchAgent()
+
+    forecast_request = AgentRequest(
         query="hourly explain",
         date=date,
         road=road,
         hours=[hour],
         granularity="hourly",
     )
-    forecast_result = await forecast_agent.process(request)
+    context_request = AgentRequest(
+        query="context",
+        date=date,
+        road=road,
+        hours=[hour],
+    )
+
+    # 全部并行执行
+    forecast_result, context_result, search_result = await asyncio.gather(
+        forecast_agent.process(forecast_request),
+        context_agent.process(context_request),
+        search_agent.process(context_request),
+    )
 
     # 提取预测数据
     prediction = None
@@ -244,24 +399,8 @@ async def handle_hourly_explanation(
                     first = predictions[0]
                     prediction = first if isinstance(first, dict) else first.__dict__
 
-    # 2. 获取影响因素
-    context_request = AgentRequest(
-        query="context",
-        date=date,
-        road=road,
-        hours=[hour],
-    )
-    context_agent = ContextAgent()
-    search_agent = SearchAgent()
-
-    context_result, search_result = await asyncio.gather(
-        context_agent.process(context_request),
-        search_agent.process(context_request),
-    )
-
     # 整理因素
     factors = []
-    factor_descriptions = []
 
     if context_result.success:
         for f in context_result.data.get("factors", []):
@@ -272,7 +411,6 @@ async def handle_hourly_explanation(
                 "impact": getattr(f, "impact", "neutral"),
             }
             factors.append(factor_info)
-            factor_descriptions.append(f"{factor_info['name']}: {factor_info['description']}")
 
     if search_result.success:
         for f in search_result.data.get("factors", []):
@@ -283,7 +421,6 @@ async def handle_hourly_explanation(
                 "impact": getattr(f, "impact", "neutral"),
             }
             factors.append(factor_info)
-            factor_descriptions.append(f"{factor_info['name']}: {factor_info['description']}")
 
     # 3. 生成自然语言解释
     congestion_level = prediction.get("congestion_level", "unknown") if prediction else "unknown"
@@ -318,91 +455,17 @@ async def handle_hourly_explanation(
 
     level_name = level_names.get(lang, level_names["zh"]).get(congestion_level, congestion_level)
 
-    # 构建 prompt
-    if lang == "zh":
-        prompt = f"""请用要点形式解释以下交通状况原因：
+    # 使用模板生成解释（不调用 LLM，极速响应）
+    explanation = _generate_template_explanation(
+        lang=lang,
+        level_name=level_name,
+        congestion_score=congestion_score,
+        flow=flow,
+        speed=speed,
+        factors=factors,
+    )
 
-日期: {date}
-时间: {hour}:00
-道路: {road}
-拥堵等级: {level_name}
-拥堵指数: {congestion_score}/100
-流量: {flow:.0f} 辆/小时
-平均车速: {speed:.1f} km/h
-
-影响因素:
-{chr(10).join(factor_descriptions) if factor_descriptions else "无特殊因素"}
-
-要求:
-- 用 2-4 个要点解释原因
-- 每个要点以 "•" 开头
-- 每个要点一行，简洁明了
-- 提及具体数据（如流量、车速）
-- 提及主要影响因素
-
-示例格式:
-• 施工影响：A8多处施工封闭车道
-• 流量较高：4500辆/小时，接近高峰
-• 假期因素：暑假期间出行增多"""
-        system = "你是交通状况解释助手，用要点形式解释交通原因。每个要点简洁有力。"
-
-    elif lang == "en":
-        prompt = f"""Explain the following traffic condition in bullet points:
-
-Date: {date}
-Time: {hour}:00
-Road: {road}
-Congestion Level: {level_name}
-Congestion Score: {congestion_score}/100
-Traffic Flow: {flow:.0f} vehicles/hour
-Average Speed: {speed:.1f} km/h
-
-Factors:
-{chr(10).join(factor_descriptions) if factor_descriptions else "No special factors"}
-
-Requirements:
-- Use 2-4 bullet points to explain
-- Start each point with "•"
-- One point per line, concise
-- Include specific data (flow, speed)
-- Mention key factors
-
-Example format:
-• Construction: Multiple lane closures on A8
-• High volume: 4500 veh/h, near peak
-• Holiday effect: Summer vacation increases travel"""
-        system = "You are a traffic explanation assistant. Use bullet points to explain traffic conditions."
-
-    else:  # de
-        prompt = f"""Erklären Sie die folgende Verkehrssituation in Stichpunkten:
-
-Datum: {date}
-Zeit: {hour}:00
-Straße: {road}
-Staustufe: {level_name}
-Stauindex: {congestion_score}/100
-Verkehrsfluss: {flow:.0f} Fahrzeuge/Stunde
-Durchschnittsgeschwindigkeit: {speed:.1f} km/h
-
-Einflussfaktoren:
-{chr(10).join(factor_descriptions) if factor_descriptions else "Keine besonderen Faktoren"}
-
-Anforderungen:
-- Verwenden Sie 2-4 Stichpunkte
-- Beginnen Sie jeden Punkt mit "•"
-- Ein Punkt pro Zeile, prägnant
-- Nennen Sie konkrete Daten (Fluss, Geschwindigkeit)
-- Erwähnen Sie wichtige Faktoren
-
-Beispielformat:
-• Baustelle: Mehrere Fahrspuren auf A8 gesperrt
-• Hohes Volumen: 4500 Fzg/h, nahe Spitze
-• Ferieneffekt: Sommerferien erhöhen Reiseverkehr"""
-        system = "Sie sind ein Verkehrserklärungs-Assistent. Verwenden Sie Stichpunkte zur Erklärung."
-
-    explanation = await generate(prompt, system=system)
-
-    return {
+    result = {
         "date": date,
         "hour": hour,
         "road": road,
@@ -414,6 +477,10 @@ Beispielformat:
         "explanation": explanation.strip(),
         "factors": factors,
     }
+
+    # 存入缓存
+    _set_cache(cache_key, result)
+    return result
 
 
 async def handle_batch_explanations(
