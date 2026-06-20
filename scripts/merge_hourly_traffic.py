@@ -1,8 +1,7 @@
-"""Merge 12 DAUZ hourly traffic CSVs into one long-format table (Scheme A)."""
+"""Merge 12 DAUZ hourly traffic CSVs into one long-format table."""
 
 import csv
 import re
-from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,7 +9,6 @@ DATA_DIR = ROOT / "data" / "小时交通流量" / "DAUZ_2+0_1h_2023-2026"
 LOCATIONS = ROOT / "data" / "A8_A93_MQ_locations.csv"
 OUTPUT = ROOT / "data" / "小时交通流量" / "合并表格，小时交通流量.csv"
 
-# dauz_id + direction -> locations site name
 LOCATION_SITE_MAP = {
     ("9171", "Mch"): "MQB25_Mch_H",
     ("9171", "Sbg"): "MQQ37_Sbg_H",
@@ -26,17 +24,22 @@ LOCATION_SITE_MAP = {
     ("9191", "Ro"): "LVE_83399191_1_2",
 }
 
-CORRIDOR_MAP = {
-    ("A8", "Sbg"): "A8E_out",
-    ("A8", "Mch"): "A8E_in",
-    ("A93", "Kff"): "A93S_out",
-    ("A93", "Ro"): "A93S_in",
-}
-
 FILENAME_RE = re.compile(
     r"^FG1_Lang_(?P<dauz>\d+)_(?P<body>.+?),"
     r"(?P<de>DE[\d,]+)_agg1h_"
 )
+
+HEADER = [
+    "road", "direction", "site_name", "bab_km", "longitude", "latitude",
+    "devices", "datum", "t_start", "wochentag", "tagestyp", "kfz_h", "sv_h",
+]
+
+HEADER_CN = [
+    "高速路编号", "方向代码", "站点名称", "公里桩", "经度", "纬度",
+    "原始设备ID", "原始日期", "原始时刻", "星期(1-7)",
+    "日类型(w=工作日/s=周日及公共假日/u=学校假期等)",
+    "小时总车流量(辆)", "小时重型车流量(辆)",
+]
 
 
 def load_locations() -> dict[str, dict]:
@@ -46,14 +49,16 @@ def load_locations() -> dict[str, dict]:
             site = row["site"]
             if site in sites:
                 continue
-            km = row["BAB-Km"].replace(",", ".")
             sites[site] = {
-                "strecke": row["Strecke"],
-                "bab_km": km,
+                "bab_km": row["BAB-Km"].replace(",", "."),
                 "longitude": row["Longitude_WGS84"],
                 "latitude": row["Latitude_WGS84"],
             }
     return sites
+
+
+def null_to_empty(value: str) -> str:
+    return "" if value == "null" else value
 
 
 def parse_filename(fname: str) -> dict:
@@ -63,88 +68,72 @@ def parse_filename(fname: str) -> dict:
 
     dauz_id = m.group("dauz")
     body = m.group("body")
-    de_channels = m.group("de")
-
-    site_type = "MQDZ" if body.startswith("MQDZ") else "MQ"
 
     if body.endswith("_Mch_H"):
         direction = "Mch"
-        site_name = body
     elif body.endswith("_Sbg_H"):
         direction = "Sbg"
-        site_name = body
     elif body.endswith("_Kff"):
         direction = "Kff"
-        site_name = body
     elif body.endswith("_Ro"):
         direction = "Ro"
-        site_name = body
     else:
         raise ValueError(f"Unknown direction in: {body}")
 
     road = "A8" if direction in ("Mch", "Sbg") else "A93"
-    corridor_id = CORRIDOR_MAP[(road, direction)]
-    site_key = f"{dauz_id}_{direction}"
     loc_site = LOCATION_SITE_MAP[(dauz_id, direction)]
 
     return {
-        "dauz_id": dauz_id,
-        "site_key": site_key,
-        "site_name": site_name,
-        "site_type": site_type,
         "road": road,
         "direction": direction,
-        "corridor_id": corridor_id,
-        "de_channels": de_channels,
+        "site_name": body,
         "loc_site": loc_site,
     }
 
 
-def parse_datetime(datum: str, t_start: str) -> tuple[str, str, int]:
-    dt = datetime.strptime(f"{datum} {t_start}", "%d.%m.%Y %H:%M:%S")
-    return dt.strftime("%Y-%m-%d %H:%M"), dt.strftime("%Y-%m-%d"), dt.hour
+def file_sort_key(path: Path) -> tuple[str, str]:
+    meta = parse_filename(path.name)
+    return meta["road"], meta["direction"], meta["site_name"]
 
 
 def main() -> None:
     locations = load_locations()
-    header = [
-        "datetime", "date", "hour", "dauz_id", "site_key", "site_name",
-        "site_type", "road", "direction", "corridor_id", "strecke",
-        "de_channels", "bab_km", "longitude", "latitude",
-        "wochentag", "tagestyp", "kfz_h", "sv_h", "devices_raw",
-    ]
-
     rows_out: list[list] = []
-    for csv_path in sorted(DATA_DIR.glob("FG1_Lang_*.csv")):
+
+    for csv_path in sorted(DATA_DIR.glob("FG1_Lang_*.csv"), key=file_sort_key):
         meta = parse_filename(csv_path.name)
         loc = locations[meta["loc_site"]]
 
         with open(csv_path, newline="", encoding="utf-8") as fh:
             for row in csv.DictReader(fh, delimiter=";"):
-                dt_str, date_str, hour = parse_datetime(row["datum"], row["t_start"])
-                kfz = row["kfz_h"] if row["kfz_h"] != "null" else ""
-                sv = row["sv_h"] if row["sv_h"] != "null" else ""
-
                 rows_out.append([
-                    dt_str, date_str, hour,
-                    meta["dauz_id"], meta["site_key"], meta["site_name"],
-                    meta["site_type"], meta["road"], meta["direction"],
-                    meta["corridor_id"], loc["strecke"], meta["de_channels"],
-                    loc["bab_km"], loc["longitude"], loc["latitude"],
-                    row["wochentag"], row["tagestyp"], kfz, sv, row["devices"],
+                    meta["road"],
+                    meta["direction"],
+                    meta["site_name"],
+                    loc["bab_km"],
+                    loc["longitude"],
+                    loc["latitude"],
+                    row["devices"],
+                    row["datum"],
+                    row["t_start"],
+                    row["wochentag"],
+                    row["tagestyp"],
+                    null_to_empty(row["kfz_h"]),
+                    null_to_empty(row["sv_h"]),
                 ])
 
-    rows_out.sort(key=lambda r: (r[0], r[3], r[8]))
+    rows_out.sort(key=lambda r: (r[7], r[8], r[0], r[1], r[2]))
 
     with open(OUTPUT, "w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh, delimiter=";")
-        writer.writerow(header)
+        writer.writerow(HEADER)
+        writer.writerow(HEADER_CN)
         writer.writerows(rows_out)
 
     print(f"Saved: {OUTPUT}")
-    print(f"Rows: {len(rows_out)}")
-    print(f"Sites: {len(set(r[4] for r in rows_out))}")
-    print(f"Date range: {rows_out[0][0]} -> {rows_out[-1][0]}")
+    print(f"Rows: {len(rows_out):,}")
+    print(f"Sites: {len(set(r[2] for r in rows_out))}")
+    print(f"Date range: {rows_out[0][7]} {rows_out[0][8]} -> {rows_out[-1][7]} {rows_out[-1][8]}")
 
 
 if __name__ == "__main__":
