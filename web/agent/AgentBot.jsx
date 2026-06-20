@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import agentImage from "./assets/bot.webp";
 import "./AgentBot.css";
 
 const ROLE_STORAGE_KEY = `alpineflow-agent-role:${import.meta.env.VITE_AGENT_SESSION_ID}`;
 const POSITION_STORAGE_KEY = "alpineflow-agent-position";
+const CHAT_STORAGE_KEY_PREFIX = "alpineflow-agent-chat:";
+const MAX_STORED_MESSAGES = 200;
 const AVATAR_SIZE = 92;
 const EDGE_GAP = 18;
 
@@ -129,7 +133,160 @@ function RolePicker({ onSelect, currentRole }) {
   );
 }
 
+function createSessionId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function chatStorageKey(roleId) {
+  return `${CHAT_STORAGE_KEY_PREFIX}${roleId}`;
+}
+
+function readStoredConversation(roleId) {
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(chatStorageKey(roleId)),
+    );
+    const messages = Array.isArray(stored?.messages)
+      ? stored.messages
+          .filter(
+            (message) =>
+              (message?.role === "user" || message?.role === "assistant") &&
+              typeof message.content === "string",
+          )
+          .map((message) => ({
+            id:
+              typeof message.id === "string"
+                ? message.id
+                : createSessionId(),
+            role: message.role,
+            content: message.content,
+            createdAt:
+              typeof message.createdAt === "string"
+                ? message.createdAt
+                : null,
+          }))
+      : [];
+
+    return {
+      sessionId:
+        typeof stored?.sessionId === "string" && stored.sessionId
+          ? stored.sessionId
+          : createSessionId(),
+      messages,
+    };
+  } catch {
+    return {
+      sessionId: createSessionId(),
+      messages: [],
+    };
+  }
+}
+
 function ChatPanel({ role, onChangeRole }) {
+  const bodyRef = useRef(null);
+  const [storedConversation] = useState(() =>
+    readStoredConversation(role.id),
+  );
+  const [sessionId, setSessionId] = useState(storedConversation.sessionId);
+  const [messages, setMessages] = useState(storedConversation.messages);
+  const [draft, setDraft] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        chatStorageKey(role.id),
+        JSON.stringify({
+          sessionId,
+          messages: messages.slice(-MAX_STORED_MESSAGES),
+        }),
+      );
+    } catch {
+      // Ignore storage quota/privacy errors; the active chat still works.
+    }
+  }, [messages, role.id, sessionId]);
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({
+      top: bodyRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, isLoading, error]);
+
+  const clearRemoteSession = (id = sessionId) =>
+    fetch(`/api/chat/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }).catch(() => {
+      // The local UI can still reset if the backend has already restarted.
+    });
+
+  const resetConversation = () => {
+    void clearRemoteSession();
+    window.localStorage.removeItem(chatStorageKey(role.id));
+    setSessionId(createSessionId());
+    setMessages([]);
+    setDraft("");
+    setError("");
+  };
+
+  const sendMessage = async (event) => {
+    event.preventDefault();
+    const query = draft.trim();
+    if (!query || isLoading) return;
+
+    setDraft("");
+    setError("");
+    setMessages((current) => [
+      ...current,
+      {
+        id: createSessionId(),
+        role: "user",
+        content: query,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          user_type: role.id,
+          session_id: sessionId,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.detail || "The planning agent is unavailable.");
+      }
+
+      if (payload.session_id) setSessionId(payload.session_id);
+      setMessages((current) => [
+        ...current,
+        {
+          id: createSessionId(),
+          role: "assistant",
+          content: payload.message || payload.advice || "No response returned.",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "The planning agent is unavailable.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="agent-chat">
       <div className="agent-chat-header">
@@ -143,28 +300,71 @@ function ChatPanel({ role, onChangeRole }) {
         </button>
       </div>
 
-      <div className="agent-chat-body">
+      <div className="agent-chat-body" ref={bodyRef} aria-live="polite">
         <div className="agent-message assistant">
           <img src={agentImage} alt="" />
-          <p>{role.welcome}</p>
+          <div className="agent-message-content">
+            <p>{role.welcome}</p>
+          </div>
         </div>
-        <div className="agent-coming-soon">
-          <span>✦</span>
-          Full agent capabilities will be connected here next.
-        </div>
+
+        {messages.map((message) => (
+          <div className={`agent-message ${message.role}`} key={message.id}>
+            {message.role === "assistant" && <img src={agentImage} alt="" />}
+            <div className="agent-message-content">
+              {message.role === "assistant" ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {message.content}
+                </ReactMarkdown>
+              ) : (
+                <p>{message.content}</p>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="agent-message assistant">
+            <img src={agentImage} alt="" />
+            <div className="agent-message-content agent-typing">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="agent-error">
+            <span>{error}</span>
+            <button type="button" onClick={() => setError("")}>
+              Dismiss
+            </button>
+          </div>
+        )}
       </div>
 
-      <form
-        className="agent-composer"
-        onSubmit={(event) => event.preventDefault()}
-      >
+      <div className="agent-chat-actions">
+        <span>Follow-ups remember your current plan.</span>
+        <button type="button" onClick={resetConversation}>
+          New chat
+        </button>
+      </div>
+
+      <form className="agent-composer" onSubmit={sendMessage}>
         <input
           type="text"
           placeholder="Ask about your journey…"
           aria-label="Chat message"
-          disabled
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          disabled={isLoading}
         />
-        <button type="submit" disabled aria-label="Send message">
+        <button
+          type="submit"
+          disabled={isLoading || !draft.trim()}
+          aria-label="Send message"
+        >
           ↑
         </button>
       </form>
@@ -198,8 +398,8 @@ export default function AgentBot() {
   }, [position]);
 
   const panelStyle = useMemo(() => {
-    const panelWidth = Math.min(354, window.innerWidth - 24);
-    const panelHeight = isChoosingRole ? 510 : 438;
+    const panelWidth = Math.min(430, window.innerWidth - 24);
+    const panelHeight = isChoosingRole ? 510 : 540;
     const openOnLeft =
       position.x + AVATAR_SIZE + 14 + panelWidth > window.innerWidth;
     const left = openOnLeft
@@ -279,6 +479,7 @@ export default function AgentBot() {
             <RolePicker onSelect={selectRole} currentRole={roleId} />
           ) : (
             <ChatPanel
+              key={selectedRole.id}
               role={selectedRole}
               onChangeRole={() => setIsChoosingRole(true)}
             />

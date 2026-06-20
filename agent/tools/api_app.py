@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from ..orchestrator import Orchestrator
 from .api_handlers import (
+    ChatSessionRegistry,
     handle_chat,
     handle_factors,
     handle_forecast,
@@ -24,6 +25,7 @@ class ChatRequest(BaseModel):
     """对话请求。"""
     query: str
     user_type: Optional[str] = "traveler"
+    session_id: Optional[str] = None
 
 
 class PlanRequest(BaseModel):
@@ -59,6 +61,7 @@ def create_app() -> FastAPI:
     )
 
     orchestrator = Orchestrator()
+    chat_sessions = ChatSessionRegistry()
 
     @app.get("/")
     async def root():
@@ -72,11 +75,24 @@ def create_app() -> FastAPI:
 
     @app.post("/api/chat")
     async def chat(request: ChatRequest):
-        """自然语言查询，返回个性化建议。"""
+        """多轮自然语言查询，返回个性化出行计划或追问回答。"""
         try:
-            return await handle_chat(orchestrator, request.query, request.user_type)
+            return await handle_chat(
+                chat_sessions,
+                request.query,
+                request.user_type,
+                request.session_id,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+    @app.delete("/api/chat/{session_id}")
+    async def clear_chat(session_id: str):
+        """清除一个浏览器会话的聊天历史和计划上下文。"""
+        cleared = await chat_sessions.clear(session_id)
+        return {"success": True, "cleared": cleared, "session_id": session_id}
 
     @app.post("/api/plan")
     async def plan(request: PlanRequest):

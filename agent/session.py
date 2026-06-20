@@ -81,6 +81,7 @@ class ChatSession:
         self.verbose = verbose
         self.history: List[Message] = []
         self.context: Optional[SessionContext] = None
+        self.user_type: Optional[UserType] = None
 
         # Agents
         self.intent_parser = IntentParser()
@@ -273,7 +274,7 @@ class ChatSession:
 
         # 用新查询重新获取建议
         new_query = modify_info.get("new_query", query)
-        new_advice = await self._process_new_query(new_query)
+        new_advice = await self._process_new_query(new_query, self.user_type)
 
         # 生成对比说明
         comparison = f"""### 计划对比
@@ -426,8 +427,15 @@ class ChatSession:
 
         return "\n".join(lines) if lines else "无因素数据"
 
-    async def chat_async(self, query: str) -> str:
+    async def chat_async(
+        self,
+        query: str,
+        user_type: Optional[UserType] = None,
+    ) -> str:
         """异步对话"""
+        if user_type is not None:
+            self.user_type = user_type
+
         # 添加用户消息到历史
         self.history.append(Message(role="user", content=query))
 
@@ -440,7 +448,7 @@ class ChatSession:
 
         # 根据类型处理
         if follow_up_type == FollowUpType.NEW_QUERY:
-            response = await self._process_new_query(query)
+            response = await self._process_new_query(query, self.user_type)
         elif follow_up_type == FollowUpType.ASK_REASON:
             response = await self._process_ask_reason(query)
         elif follow_up_type == FollowUpType.MODIFY_PLAN:
@@ -453,7 +461,7 @@ class ChatSession:
             response = "好的，祝您旅途愉快！如有其他问题随时问我。"
         else:
             # COMPARE 或其他情况，作为新查询处理
-            response = await self._process_new_query(query)
+            response = await self._process_new_query(query, self.user_type)
 
         # 添加助手消息到历史
         self.history.append(Message(role="assistant", content=response))
@@ -475,6 +483,7 @@ class ChatSession:
         """清除对话历史和上下文"""
         self.history = []
         self.context = None
+        self.user_type = None
         self._log("[Session] Cleared")
 
     @property
