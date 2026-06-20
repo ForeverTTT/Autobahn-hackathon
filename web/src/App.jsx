@@ -5,7 +5,7 @@ import MapPage from "./components/MapPage";
 const pages = new Set(["calendar", "map"]);
 
 function pageFromHash() {
-  const page = window.location.hash.replace("#/", "");
+  const page = window.location.hash.replace("#/", "").split("?")[0];
   return pages.has(page) ? page : "calendar";
 }
 
