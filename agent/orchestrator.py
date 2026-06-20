@@ -9,7 +9,7 @@ from enum import Enum
 
 from .base import BaseAgent, AgentType, AgentResponse, AgentMessage
 from .config import AgentConfig, default_config
-from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent
+from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GraphRAGAgent
 
 
 class QueryIntent(Enum):
@@ -39,12 +39,14 @@ class OrchestratorAgent(BaseAgent):
         self.explanation_agent = ExplanationAgent(self.config)
         self.retrieval_agent = RetrievalAgent(self.config)
         self.simulation_agent = SimulationAgent(self.config)
+        self.graph_rag_agent = GraphRAGAgent(self.config)
 
         self._agents = {
             AgentType.FORECAST: self.forecast_agent,
             AgentType.EXPLANATION: self.explanation_agent,
             AgentType.RETRIEVAL: self.retrieval_agent,
             AgentType.SIMULATION: self.simulation_agent,
+            AgentType.GRAPH_RAG: self.graph_rag_agent,
         }
 
     async def initialize(self) -> bool:
@@ -56,6 +58,7 @@ class OrchestratorAgent(BaseAgent):
                 self.explanation_agent.initialize(),
                 self.retrieval_agent.initialize(),
                 self.simulation_agent.initialize(),
+                self.graph_rag_agent.initialize(),
             ]
             results = await asyncio.gather(*init_tasks)
 
@@ -187,6 +190,7 @@ class OrchestratorAgent(BaseAgent):
         # 并行执行预测和检索
         forecast_task = self.forecast_agent.process({
             "date": params["date"],
+            "road": params["road"],
             "site_id": params["site_id"],
             "direction": params["direction"],
             "hours": params["hours"],
@@ -198,8 +202,16 @@ class OrchestratorAgent(BaseAgent):
             "query_types": ["construction", "events"],
         })
 
-        forecast_result, retrieval_result = await asyncio.gather(
-            forecast_task, retrieval_task
+        graph_task = self.graph_rag_agent.process({
+            "action": "explain",
+            "date": params["date"],
+            "road": params["road"],
+            "site_id": params["site_id"],
+            "hour": params["hours"][0] if params.get("hours") else 8,
+        })
+
+        forecast_result, retrieval_result, graph_result = await asyncio.gather(
+            forecast_task, retrieval_task, graph_task
         )
 
         # 获取解释
@@ -213,11 +225,13 @@ class OrchestratorAgent(BaseAgent):
             "type": "forecast",
             "forecast": forecast_result.data if forecast_result.success else None,
             "external_factors": retrieval_result.data if retrieval_result.success else None,
+            "graph_context": graph_result.data if graph_result.success else None,
             "explanation": explanation_result.data if explanation_result.success else None,
             "confidence": min(
                 forecast_result.confidence,
                 retrieval_result.confidence,
-                explanation_result.confidence
+                explanation_result.confidence,
+                graph_result.confidence
             )
         }
 
@@ -226,6 +240,7 @@ class OrchestratorAgent(BaseAgent):
         # 先获取预测
         forecast_result = await self.forecast_agent.process({
             "date": params["date"],
+            "road": params["road"],
             "site_id": params["site_id"],
             "direction": params["direction"],
             "hours": params["hours"],
@@ -238,11 +253,20 @@ class OrchestratorAgent(BaseAgent):
             "prediction": forecast_result.data if forecast_result.success else {},
         })
 
+        graph_result = await self.graph_rag_agent.process({
+            "action": "explain",
+            "date": params["date"],
+            "road": params["road"],
+            "site_id": params["site_id"],
+            "hour": params["hours"][0] if params.get("hours") else 8,
+        })
+
         return {
             "type": "explanation",
             "forecast": forecast_result.data if forecast_result.success else None,
             "explanation": explanation_result.data if explanation_result.success else None,
-            "confidence": explanation_result.confidence
+            "graph_context": graph_result.data if graph_result.success else None,
+            "confidence": min(explanation_result.confidence, graph_result.confidence)
         }
 
     async def _handle_what_if(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -278,6 +302,7 @@ class OrchestratorAgent(BaseAgent):
         tasks = [
             self.forecast_agent.process({
                 "date": params["date"],
+                "road": params["road"],
                 "site_id": params["site_id"],
                 "direction": params["direction"],
                 "hours": list(range(5, 23)),  # 更宽的时间范围
@@ -291,10 +316,16 @@ class OrchestratorAgent(BaseAgent):
                 "date": params["date"],
                 "site_id": params["site_id"],
             }),
+            self.graph_rag_agent.process({
+                "action": "context",
+                "date": params["date"],
+                "road": params["road"],
+                "user_type": params.get("user_type", "tourist"),
+            }),
         ]
 
         results = await asyncio.gather(*tasks)
-        forecast_result, retrieval_result, explanation_result = results
+        forecast_result, retrieval_result, explanation_result, graph_result = results
 
         # 生成出行计划
         plan = self._generate_trip_plan(
@@ -310,6 +341,7 @@ class OrchestratorAgent(BaseAgent):
             "forecast": forecast_result.data if forecast_result.success else None,
             "external_factors": retrieval_result.data if retrieval_result.success else None,
             "explanation": explanation_result.data if explanation_result.success else None,
+            "graph_context": graph_result.data if graph_result.success else None,
             "confidence": 0.85
         }
 

@@ -9,6 +9,7 @@ import numpy as np
 
 from ..base import BaseAgent, AgentType, AgentResponse
 from ..config import AgentConfig, default_config
+from ..data_loader import prediction_loader
 
 try:
     from catboost import CatBoostRegressor
@@ -38,7 +39,7 @@ class ForecastAgent(BaseAgent):
     async def initialize(self) -> bool:
         """加载预测模型"""
         if not HAS_CATBOOST:
-            print("Warning: CatBoost not installed. Using mock predictions.")
+            print("Warning: CatBoost not installed. Processed forecasts will still be used when available.")
             self._initialized = True
             return True
 
@@ -93,14 +94,19 @@ class ForecastAgent(BaseAgent):
         try:
             date_str = request.get("date", datetime.now().strftime("%Y-%m-%d"))
             site_id = request.get("site_id", "A8_001")
+            road = request.get("road")
             direction = request.get("direction", "east")
             hours = request.get("hours", list(range(24)))
 
-            # 构建特征
-            features = self._build_features(date_str, site_id, direction, hours)
+            loaded_predictions = self._load_processed_predictions(date_str, site_id, road, hours)
+            if loaded_predictions:
+                predictions = loaded_predictions
+            else:
+                # 构建特征
+                features = self._build_features(date_str, site_id, direction, hours)
 
-            # 进行预测
-            predictions = await self._predict(features, hours)
+                # 进行预测
+                predictions = await self._predict(features, hours)
 
             # 计算峰值小时
             peak_hour = self._find_peak_hour(predictions)
@@ -117,6 +123,7 @@ class ForecastAgent(BaseAgent):
                     "site_id": site_id,
                     "date": date_str,
                     "direction": direction,
+                    "data_source": "processed_forecast" if loaded_predictions else "mock_or_model",
                 },
                 message="Forecast completed successfully",
                 agent_type=self.agent_type,
@@ -139,6 +146,45 @@ class ForecastAgent(BaseAgent):
             "peak_hour_identification",
             "congestion_level_assessment",
         ]
+
+    def _load_processed_predictions(
+        self,
+        date_str: str,
+        site_id: str,
+        road: Optional[str],
+        hours: List[int],
+    ) -> List[Dict[str, Any]]:
+        """Load already generated forecasts from processed parquet files."""
+        records = prediction_loader.query(date=date_str, site_id=site_id, road=road, hours=hours)
+        if not records and road:
+            all_records = prediction_loader.query(date=date_str, road=road, hours=hours)
+            if all_records:
+                first_site = all_records[0]["site_id"]
+                records = [record for record in all_records if record["site_id"] == first_site]
+
+        predictions = []
+        for record in records:
+            p10 = float(record.get("kfz_h_p10", 0))
+            p50 = float(record.get("kfz_h_p50", 0))
+            p90 = float(record.get("kfz_h_p90", 0))
+            speed = float(record.get("v_kfz_p50", record.get("v_kfz_pred", 120)))
+            predictions.append({
+                "hour": int(record["hour"]),
+                "p10": p10,
+                "p50": p50,
+                "p90": p90,
+                "sv_h": float(record.get("sv_h_p50", record.get("sv_h_pred", p50 * 0.1))),
+                "v_kfz": round(speed, 1),
+                "congestion_level": self._get_congestion_level(p50),
+                "confidence": self._confidence_from_interval(p10, p50, p90),
+            })
+        return sorted(predictions, key=lambda row: row["hour"])
+
+    def _confidence_from_interval(self, p10: float, p50: float, p90: float) -> float:
+        if p50 <= 0:
+            return 0.5
+        relative_width = max(0.0, (p90 - p10) / p50)
+        return round(max(0.55, min(0.95, 1.0 - relative_width / 2)), 2)
 
     def _build_features(
         self,

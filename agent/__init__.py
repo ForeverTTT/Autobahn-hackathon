@@ -32,9 +32,10 @@ except ImportError as e:
 try:
     from .data_loader import prediction_loader, external_loader, get_forecast
     from .congestion_score import CongestionScoreCalculator, calculate_congestion_score
+    from .graph_rag import GraphRAG
     __all__.extend([
         "prediction_loader", "external_loader", "get_forecast",
-        "CongestionScoreCalculator", "calculate_congestion_score"
+        "CongestionScoreCalculator", "calculate_congestion_score", "GraphRAG"
     ])
 except ImportError as e:
     print(f"Warning: Data loader imports failed: {e}")
@@ -51,13 +52,14 @@ except ImportError:
 # Legacy Agent System (rule-based)
 try:
     from .orchestrator import OrchestratorAgent
-    from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent
+    from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GraphRAGAgent
     __all__.extend([
         "OrchestratorAgent",
         "ForecastAgent",
         "ExplanationAgent",
         "RetrievalAgent",
         "SimulationAgent",
+        "GraphRAGAgent",
     ])
 except ImportError:
     pass  # Legacy modules optional

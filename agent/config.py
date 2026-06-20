@@ -27,11 +27,8 @@ class ModelConfig:
 @dataclass
 class GraphRAGConfig:
     """Graph RAG配置"""
-    # 可选: neo4j, networkx (内存图)
-    backend: str = "networkx"
-    neo4j_uri: Optional[str] = field(default_factory=lambda: os.getenv("NEO4J_URI"))
-    neo4j_user: Optional[str] = field(default_factory=lambda: os.getenv("NEO4J_USER"))
-    neo4j_password: Optional[str] = field(default_factory=lambda: os.getenv("NEO4J_PASSWORD"))
+    backend: str = "local_table_graph"
+    require_date_for_forecast: bool = True
 
 
 @dataclass

@@ -18,8 +18,8 @@ async def example_forecast():
     result = await orchestrator.process({
         "date": "2026-07-15",
         "road": "A8",
-        "site_id": "A8_Rosenheim",
-        "direction": "east",
+        "site_id": "A8_Mch_MQB25_Mch_H",
+        "direction": "Mch",
         "hours": [8, 9, 10, 11, 12],
     })
 
@@ -76,7 +76,7 @@ async def example_what_if():
     # 模拟暴雨场景
     result = await orchestrator.process({
         "date": "2026-07-15",
-        "site_id": "A8_Rosenheim",
+        "site_id": "A8_Mch_MQB25_Mch_H",
         "scenario": {
             "type": "weather_change",
             "parameters": {"weather": "heavy_rain"}
@@ -115,20 +115,36 @@ async def example_graph_rag():
 
     # 查询图谱统计
     stats = graph_rag.get_statistics()
-    print(f"Total nodes: {stats['total_nodes']}")
-    print(f"Total edges: {stats['total_edges']}")
-    print(f"Node types: {stats['node_types']}")
+    print(f"Backend: {stats['backend']}")
+    print(f"Sites: {stats['site_count']}")
+    print(f"Roads: {stats['roads']}")
+
+    # Cypher-like 查询
+    rows = graph_rag.query_cypher(
+        """
+        MATCH (f:Forecast)
+        WHERE f.date = $date AND f.road = $road AND f.hour IN $hours
+        RETURN f.hour AS hour, f.kfz_h_p50 AS flow, f.v_kfz_p50 AS speed
+        ORDER BY f.hour
+        LIMIT 3
+        """,
+        {"date": "2026-08-01", "road": "A8", "hours": [8, 9, 10]},
+    )
+    print("\nForecast rows from Graph RAG:")
+    for row in rows:
+        print(f"  {row['hour']:02d}:00 flow={row['flow']:.0f}, speed={row['speed']:.1f}")
 
     # 查询影响因素
-    factors = graph_rag.query_factors("A8_ROS", "2026-08-01")
-    print(f"\nFactors affecting A8_ROS on 2026-08-01:")
-    print(f"  Segment: {factors.get('segment', {}).get('properties', {}).get('name')}")
-    print(f"  Events: {[e['properties']['name'] for e in factors.get('events', [])]}")
+    factors = graph_rag.query_factors("A8_Mch_MQB25_Mch_H", "2026-08-01")
+    print(f"\nFactors affecting A8_Mch_MQB25_Mch_H on 2026-08-01:")
+    for factor in factors.get("factors", [])[:3]:
+        print(f"  - {factor.get('type')}: {factor.get('description')}")
 
     # 获取用户相关信息
     user_info = graph_rag.get_user_relevant_info("tourist", "2026-08-01", "A8")
     print(f"\nInfo for tourist:")
-    print(f"  Priorities: {user_info.get('priorities', [])}")
+    print(f"  Best hour: {user_info.get('best_hour')}")
+    print(f"  Peak hour: {user_info.get('peak_hour')}")
 
 
 async def example_all():

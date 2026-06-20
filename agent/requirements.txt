@@ -3,6 +3,8 @@
 # Core
 python-dotenv>=1.0.0
 numpy
+pandas>=2.0
+pyarrow>=14.0
 
 # API Framework
 fastapi>=0.100.0
@@ -17,12 +19,5 @@ langchain-core>=0.3.0
 langchain-openai>=0.2.0      # OpenAI GPT-4
 # langchain-anthropic>=0.2.0  # Anthropic Claude
 
-# Graph Database
-networkx>=3.0
-
-# Optional: Neo4j support
-# neo4j>=5.0.0
-
 # ML Models (should already be in parent requirements)
 # catboost>=1.2
-# pandas>=2.0

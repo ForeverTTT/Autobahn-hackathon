@@ -15,6 +15,10 @@ from ..congestion_score import (
     calculate_congestion_score,
 )
 from ..data_loader import prediction_loader, external_loader
+from ..graph_rag import GraphRAG
+
+
+_GRAPH_RAG = GraphRAG()
 
 
 # ============ Intent Parser Node ============
@@ -182,8 +186,8 @@ def _process_loaded_predictions(
         p10 = record.get("kfz_h_p10", 0)
         p50 = record.get("kfz_h_p50", 0)
         p90 = record.get("kfz_h_p90", 0)
-        sv_h = record.get("sv_h_p50", int(p50 * 0.1))
-        v_kfz = record.get("v_kfz_p50", 120)
+        sv_h = record.get("sv_h_p50", record.get("sv_h_pred", int(p50 * 0.1)))
+        v_kfz = record.get("v_kfz_p50", record.get("v_kfz_pred", 120))
 
         is_holiday = record.get("is_holiday", False)
         is_school_holiday = record.get("is_school_holiday", False)
@@ -363,11 +367,18 @@ def explain_node(state: AgentState) -> Dict[str, Any]:
     分析影响因素
     """
     date_str = state["date"]
+    site_id = state["site_id"]
+    hours = state["hours"]
     date = datetime.strptime(date_str, "%Y-%m-%d")
 
-    factors = []
+    graph_context = _GRAPH_RAG.explain_congestion(
+        segment_id=site_id,
+        date=date_str,
+        hour=hours[0] if hours else 8,
+    )
+    factors = list(graph_context.get("factors", []))
 
-    # 检查假期
+    # Fallback calendar factors if GraphRAG has no factor for this date.
     holidays_2026 = {
         "2026-01-01": "New Year's Day",
         "2026-01-06": "Epiphany",
@@ -384,8 +395,16 @@ def explain_node(state: AgentState) -> Dict[str, Any]:
             "description": f"Public holiday ({holidays_2026[date_str]}) - expect higher traffic"
         })
 
-    # 检查周末
-    if date.weekday() == 4:  # Friday
+    if date_str in holidays_2026 and not any(f.get("type") == "public_holiday" for f in factors):
+        factors.append({
+            "type": "public_holiday",
+            "name": holidays_2026[date_str],
+            "impact": "high",
+            "magnitude": 0.4,
+            "description": f"Public holiday ({holidays_2026[date_str]}) - expect higher traffic"
+        })
+
+    if date.weekday() == 4 and not any(f.get("type") == "friday_departure" for f in factors):
         factors.append({
             "type": "weekend",
             "name": "Friday",
@@ -393,7 +412,7 @@ def explain_node(state: AgentState) -> Dict[str, Any]:
             "magnitude": 0.15,
             "description": "Friday afternoon - weekend departure traffic"
         })
-    elif date.weekday() == 6:  # Sunday
+    elif date.weekday() == 6 and not any(f.get("type") == "sunday_return" for f in factors):
         factors.append({
             "type": "weekend",
             "name": "Sunday",
@@ -402,9 +421,8 @@ def explain_node(state: AgentState) -> Dict[str, Any]:
             "description": "Sunday afternoon - weekend return traffic"
         })
 
-    # 季节因素
     month = date.month
-    if month in [6, 7, 8]:
+    if month in [6, 7, 8] and not any(f.get("type") == "summer_tourism" for f in factors):
         factors.append({
             "type": "season",
             "name": "Summer",
@@ -421,17 +439,17 @@ def explain_node(state: AgentState) -> Dict[str, Any]:
             "description": "Winter season - ski traffic towards Austria"
         })
 
-    # 生成解释文本
     if factors:
         explanation = f"On {date.strftime('%A, %B %d, %Y')}:\n"
         for f in factors[:3]:
-            explanation += f"• {f['description']}\n"
+            explanation += f"- {f.get('description', f.get('name', 'Traffic factor detected'))}\n"
     else:
         explanation = f"On {date.strftime('%A, %B %d, %Y')}: Normal traffic conditions expected."
 
     result = {
         "factors": factors,
         "explanation": explanation,
+        "graph_context": graph_context,
         "date": date_str,
     }
 
@@ -450,58 +468,35 @@ def retrieve_node(state: AgentState) -> Dict[str, Any]:
     """
     date_str = state["date"]
     road = state["road"]
-    date = datetime.strptime(date_str, "%Y-%m-%d")
+    factors = _GRAPH_RAG.query_factors(state["site_id"], date_str).get("factors", [])
 
-    # Mock施工数据
-    constructions = []
-    if datetime(2026, 6, 1) <= date <= datetime(2026, 9, 30):
-        constructions.append({
-            "id": "C001",
-            "road": "A8",
-            "description": "Bridge renovation - right lane closed",
-            "impact": "moderate"
-        })
+    constructions = [factor for factor in factors if factor.get("type") == "construction"]
+    events = [factor for factor in factors if factor.get("type") not in {"construction", "weather", "weather_climatology"}]
+    weather = [factor for factor in factors if factor.get("type") in {"weather", "weather_climatology"}]
 
-    # Mock活动数据
-    events = []
-    if datetime(2026, 7, 18) <= date <= datetime(2026, 8, 31):
-        events.append({
-            "id": "E001",
-            "name": "Salzburg Festival",
-            "type": "cultural",
-            "impact_level": "high",
-        })
-
-    if datetime(2026, 9, 19) <= date <= datetime(2026, 10, 4):
-        events.append({
-            "id": "E002",
-            "name": "Oktoberfest",
-            "type": "festival",
-            "impact_level": "very_high",
-        })
-
-    # 生成警告
     warnings = []
     for c in constructions:
-        if c["impact"] == "high":
+        if c.get("impact") in {"high", "very_high"}:
             warnings.append({
                 "type": "construction",
-                "severity": "high",
-                "message": f"⚠️ {c['road']}: {c['description']}"
+                "severity": c.get("impact", "moderate"),
+                "message": f"{c.get('road', road)}: {c.get('description', 'Active construction')}"
             })
 
     for e in events:
-        if e["impact_level"] in ["high", "very_high"]:
+        if e.get("impact") in {"high", "very_high"}:
             warnings.append({
                 "type": "event",
-                "severity": "moderate",
-                "message": f"🎭 {e['name']} in progress - high traffic expected"
+                "severity": e.get("impact", "moderate"),
+                "message": e.get("description", e.get("name", "Traffic-impacting event"))
             })
 
     result = {
         "constructions": constructions,
         "events": events,
+        "weather": weather,
         "warnings": warnings,
+        "factors": factors,
         "date": date_str,
         "road": road,
     }

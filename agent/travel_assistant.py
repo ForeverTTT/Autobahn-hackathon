@@ -214,8 +214,8 @@ class TravelAssistant:
         for record in site_records:
             hour = record["hour"]
             kfz_h = record.get("kfz_h_p50", 1000)
-            v_kfz = record.get("v_kfz_p50", 120)
-            sv_h = record.get("sv_h_p50", int(kfz_h * 0.1))
+            v_kfz = record.get("v_kfz_p50", record.get("v_kfz_pred", 120))
+            sv_h = record.get("sv_h_p50", record.get("sv_h_pred", int(kfz_h * 0.1)))
 
             # 计算拥堵分数
             traffic = TrafficData(kfz_h=kfz_h, sv_h=sv_h, v_kfz=v_kfz)
