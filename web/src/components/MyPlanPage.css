@@ -6,6 +6,13 @@
   min-height: 100vh;
 }
 
+/* ========== German Flag Colors ========== */
+:root {
+  --german-black: #000000;
+  --german-red: #DD0000;
+  --german-gold: #FFCC00;
+}
+
 /* ========== Live Monitor Bar ========== */
 .live-monitor-bar {
   display: flex;
@@ -13,9 +20,11 @@
   justify-content: space-between;
   padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border-bottom: 3px solid;
+  border-image: linear-gradient(90deg, var(--german-red) 0%, var(--german-red) 50%, var(--german-gold) 50%, var(--german-gold) 100%) 1;
 }
 
 .monitor-left {
@@ -28,20 +37,20 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: var(--red, #ef554a);
-  box-shadow: 0 0 0 0 rgba(239, 85, 74, 0.7);
+  background-color: var(--german-red, #DD0000);
+  box-shadow: 0 0 0 0 rgba(221, 0, 0, 0.7);
   animation: pulse-animation 1.5s infinite;
 }
 
 @keyframes pulse-animation {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 85, 74, 0.7);
+    box-shadow: 0 0 0 0 rgba(221, 0, 0, 0.7);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(239, 85, 74, 0);
+    box-shadow: 0 0 0 10px rgba(221, 0, 0, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 85, 74, 0);
+    box-shadow: 0 0 0 0 rgba(221, 0, 0, 0);
   }
 }
 
@@ -59,7 +68,7 @@
 }
 
 .highlight-number {
-  color: var(--yellow, #e7b93f);
+  color: var(--german-gold, #FFCC00);
   font-weight: 700;
 }
 
@@ -84,7 +93,7 @@
 }
 
 .clock-seconds {
-  color: var(--accent, #3d5afe);
+  color: var(--german-gold, #FFCC00);
 }
 
 /* ========== Status Section ========== */
@@ -233,19 +242,31 @@
   font-weight: 700;
 }
 
-/* ========== Savings Card (Dark Blue) ========== */
+/* ========== Savings Card (German Flag) ========== */
 .savings-card {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(180deg, #000000 0%, #000000 33%, #DD0000 33%, #DD0000 66%, #FFCC00 66%, #FFCC00 100%);
   border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.savings-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(1px);
 }
 
 .savings-label {
-  color: rgba(255, 255, 255, 0.7);
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 0.75rem;
   margin: 0 0 0.25rem;
   font-weight: 700;
@@ -254,18 +275,23 @@
 }
 
 .savings-value {
+  position: relative;
+  z-index: 1;
   font-size: 1.4rem;
   font-weight: 800;
   color: white;
   margin: 0;
   letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .savings-badge {
+  position: relative;
+  z-index: 1;
   margin-top: 0.5rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.75);
-  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.15);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   width: fit-content;
