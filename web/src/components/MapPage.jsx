@@ -2,18 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-polylineoffset";
-
-const ROAD_DIRECTIONS = {
-  A8: ["Munich → Salzburg", "Salzburg → Munich"],
-  A93: ["Rosenheim → Kufstein", "Kufstein → Rosenheim"],
-};
+import {
+  formatHourRange,
+  getDefaultDateKey,
+  getHourlyStatus,
+  HOURS,
+  ROAD_DIRECTIONS,
+  statusLabel as getStatusLabel,
+  TRAFFIC_LEVELS,
+} from "../lib/trafficData";
 
 const ROUTE_SEGMENTS = [
   {
     road: "A8",
     title: "Munich — Irschenberg",
-    status: "smooth",
-    reverseStatus: "heavy",
     path: [
       [48.102985, 11.613309],
       [48.099703, 11.613585],
@@ -68,8 +70,6 @@ const ROUTE_SEGMENTS = [
   {
     road: "A8",
     title: "Irschenberg — AD Inntal",
-    status: "heavy",
-    reverseStatus: "smooth",
     path: [
       [47.827152, 11.946247],
       [47.827089, 11.949446],
@@ -88,8 +88,6 @@ const ROUTE_SEGMENTS = [
   {
     road: "A8",
     title: "AD Inntal — Chiemsee",
-    status: "smooth",
-    reverseStatus: "smooth",
     path: [
       [47.807581, 12.119656],
       [47.8047, 12.155214],
@@ -150,8 +148,6 @@ const ROUTE_SEGMENTS = [
   {
     road: "A8",
     title: "Chiemsee — Salzburg",
-    status: "heavy",
-    reverseStatus: "smooth",
     path: [
       [47.828473, 12.642107],
       [47.825269, 12.654488],
@@ -195,8 +191,6 @@ const ROUTE_SEGMENTS = [
   {
     road: "A93",
     title: "AD Inntal — Brannenburg",
-    status: "smooth",
-    reverseStatus: "heavy",
     path: [
       [47.807678, 12.119865],
       [47.809298, 12.101951],
@@ -224,8 +218,6 @@ const ROUTE_SEGMENTS = [
   {
     road: "A93",
     title: "Brannenburg — Oberaudorf",
-    status: "heavy",
-    reverseStatus: "smooth",
     path: [
       [47.739594, 12.126625],
       [47.723518, 12.138933],
@@ -243,8 +235,6 @@ const ROUTE_SEGMENTS = [
   {
     road: "A93",
     title: "Oberaudorf — Kiefersfelden",
-    status: "smooth",
-    reverseStatus: "heavy",
     path: [
       [47.66095, 12.183338],
       [47.65745, 12.184165],
@@ -267,10 +257,15 @@ const ROUTE_SEGMENTS = [
 ];
 
 function statusColor(status) {
-  return status === "heavy" ? "#ef554a" : "#45aa72";
+  return TRAFFIC_LEVELS[status]?.color ?? TRAFFIC_LEVELS.smooth.color;
 }
 
-function OpenStreetMap({ selectedRoad, selectedDirection }) {
+function OpenStreetMap({
+  selectedRoad,
+  selectedDirection,
+  selectedDate,
+  selectedHour,
+}) {
   const mapElement = useRef(null);
   const mapInstance = useRef(null);
   const routeLayers = useRef(null);
@@ -329,17 +324,16 @@ function OpenStreetMap({ selectedRoad, selectedDirection }) {
 
     visibleSegments.forEach((segment) => {
       const latLngs = segment.path;
+      const segmentIndex = ROUTE_SEGMENTS.indexOf(segment);
 
       const directionLines = [
         {
           label: ROAD_DIRECTIONS[segment.road][0],
-          status: segment.status,
           offset: -4,
           number: 1,
         },
         {
           label: ROAD_DIRECTIONS[segment.road][1],
-          status: segment.reverseStatus,
           offset: 4,
           number: 2,
         },
@@ -352,6 +346,13 @@ function OpenStreetMap({ selectedRoad, selectedDirection }) {
       directionLines.forEach((direction) => {
         const offset =
           selectedDirection === "both" ? direction.offset : 0;
+        const status = getHourlyStatus(
+          selectedDate,
+          segment.road,
+          direction.number,
+          selectedHour,
+          segmentIndex,
+        );
 
         L.polyline(latLngs, {
           color: "#ffffff",
@@ -364,7 +365,7 @@ function OpenStreetMap({ selectedRoad, selectedDirection }) {
         }).addTo(layerGroup);
 
         const line = L.polyline(latLngs, {
-          color: statusColor(direction.status),
+          color: statusColor(status),
           weight: 5,
           opacity: 1,
           offset,
@@ -372,8 +373,7 @@ function OpenStreetMap({ selectedRoad, selectedDirection }) {
           lineJoin: "round",
         }).addTo(layerGroup);
 
-        const statusLabel =
-          direction.status === "heavy" ? "Heavy traffic" : "Smooth traffic";
+        const statusText = `${getStatusLabel(status)} traffic`;
 
         line.bindTooltip(
           `
@@ -381,10 +381,10 @@ function OpenStreetMap({ selectedRoad, selectedDirection }) {
               <div>
                 <span class="map-route-badge">${segment.road}</span>
                 <span class="direction-number">Direction ${direction.number}</span>
-                <span class="map-status ${direction.status}">${statusLabel}</span>
+                <span class="map-status ${status}">${statusText}</span>
               </div>
               <strong>${direction.label}</strong>
-              <small>${segment.title} · Road segment information</small>
+              <small>${segment.title} · ${selectedDate} · ${formatHourRange(selectedHour)}</small>
             </div>
           `,
           {
@@ -399,7 +399,7 @@ function OpenStreetMap({ selectedRoad, selectedDirection }) {
         line.on("mouseout", () => line.setStyle({ weight: 5 }));
       });
     });
-  }, [selectedDirection, selectedRoad]);
+  }, [selectedDate, selectedDirection, selectedHour, selectedRoad]);
 
   return <div className="leaflet-map" ref={mapElement} />;
 }
@@ -413,9 +413,39 @@ function LocationIcon() {
   );
 }
 
+function initialMapState() {
+  const query = window.location.hash.split("?")[1] ?? "";
+  const params = new URLSearchParams(query);
+  const roadParam = params.get("road");
+  const directionParam = Number(params.get("direction"));
+  const hourParam = Number(params.get("hour"));
+  const dateParam = params.get("date");
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? "");
+  const dateYear = validDate ? Number(dateParam.slice(0, 4)) : 0;
+  const road = roadParam === "A8" || roadParam === "A93" ? roadParam : "all";
+
+  return {
+    road,
+    direction:
+      road !== "all" && (directionParam === 1 || directionParam === 2)
+        ? directionParam
+        : "both",
+    date:
+      validDate && dateYear >= 2023 && dateYear <= 2029
+        ? dateParam
+        : getDefaultDateKey(),
+    hour: hourParam >= 0 && hourParam <= 23 ? hourParam : 8,
+  };
+}
+
 export default function MapPage() {
-  const [selectedRoad, setSelectedRoad] = useState("all");
-  const [selectedDirection, setSelectedDirection] = useState("both");
+  const initialState = useRef(initialMapState());
+  const [selectedRoad, setSelectedRoad] = useState(initialState.current.road);
+  const [selectedDirection, setSelectedDirection] = useState(
+    initialState.current.direction,
+  );
+  const [selectedDate, setSelectedDate] = useState(initialState.current.date);
+  const [selectedHour, setSelectedHour] = useState(initialState.current.hour);
   const selectedRoadDirections =
     selectedRoad === "all" ? null : ROAD_DIRECTIONS[selectedRoad];
 
@@ -423,6 +453,16 @@ export default function MapPage() {
     setSelectedRoad(road);
     setSelectedDirection("both");
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams({
+      date: selectedDate,
+      hour: String(selectedHour),
+      road: selectedRoad,
+      direction: String(selectedDirection),
+    });
+    window.history.replaceState(null, "", `#/map?${params.toString()}`);
+  }, [selectedDate, selectedDirection, selectedHour, selectedRoad]);
 
   return (
     <section className="map-page page-container">
@@ -455,6 +495,34 @@ export default function MapPage() {
               ? "Both highways and all directions are visible."
               : "Both directions are shown until one is selected."}
           </p>
+
+          <div className="map-time-controls">
+            <label>
+              <span className="map-filter-label">Date</span>
+              <input
+                type="date"
+                min="2023-01-01"
+                max="2029-12-31"
+                value={selectedDate}
+                onChange={(event) => {
+                  if (event.target.value) setSelectedDate(event.target.value);
+                }}
+              />
+            </label>
+            <label>
+              <span className="map-filter-label">Hour</span>
+              <select
+                value={selectedHour}
+                onChange={(event) => setSelectedHour(Number(event.target.value))}
+              >
+                {HOURS.map((hour) => (
+                  <option value={hour} key={hour}>
+                    {formatHourRange(hour)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <div className="map-filter-group">
             <span className="map-filter-label">Highway</span>
@@ -511,6 +579,9 @@ export default function MapPage() {
               <i className="legend-dot smooth" /> Smooth
             </span>
             <span>
+              <i className="legend-dot busy" /> Busy
+            </span>
+            <span>
               <i className="legend-dot heavy" /> Heavy
             </span>
           </div>
@@ -519,6 +590,8 @@ export default function MapPage() {
         <OpenStreetMap
           selectedRoad={selectedRoad}
           selectedDirection={selectedDirection}
+          selectedDate={selectedDate}
+          selectedHour={selectedHour}
         />
       </div>
     </section>
