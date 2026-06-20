@@ -1,5 +1,0 @@
-source_id,country_code,region_code,data_type,authority,official_url,notes
-openholidays,DE|AT,DE-BY|AT-SB|AT-TI,public_and_school,OpenHolidays API,https://www.openholidaysapi.org/en/,"Machine-readable aggregation used to generate the CSV files; individual records are not manually verified."
-de_bavaria,DE,DE-BY,school_and_public,Bavarian State Ministry of Education and Cultural Affairs,https://www.km.bayern.de/termine/ferien-und-feiertage,"Official source for Bavaria."
-at_calendar,AT,AT-SB|AT-TI,school_and_public,Republic of Austria,https://www.oesterreich.gv.at/de/themen/bildung_und_ausbildung/schulen/3,"Official calendars for Salzburg and Tyrol."
-at_school_law,AT,AT-SB|AT-TI,school,Austrian Legal Information System,https://ris.bka.gv.at/NormDokument.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10009575&Paragraf=2,"Current statutory rules used to calculate not-yet-published 2029 school-holiday dates; calculated records are explicitly marked."
