@@ -41,8 +41,11 @@ INTENT_AGENT_SYSTEM_PROMPT = """你是 AlpineFlow 交通助手的意图识别 Ag
 
 ## 4. 其他字段
 
-- destination: salzburg / innsbruck / null
-- road: A8 默认，去 Innsbruck 可使用 A93
+- destination: munich / salzburg / innsbruck / null
+  （走廊是双向的：去 salzburg / innsbruck 是南向/东向出行；去 munich 是北向返程方向，
+   对应慕尼黑、München、Munich 等表达）
+- road: A8 默认；凡涉及 Innsbruck 或 Kufstein 的行程（包括从 Innsbruck 返回 munich）用 A93
+- 出发地若来自 Innsbruck/Kufstein 一侧而目的地是 munich，请保持 destination=munich 且 road=A93
 - intent: plan / forecast / compare / construction / events / general
 - stay_days: 根据场景推断停留天数，不确定则为 0
 

@@ -76,7 +76,7 @@ class GenerationAgent(BaseAgent):
                 granularity = DataGranularity.DAILY
 
             # 确定路线
-            route = self._determine_route(request.destination)
+            route = self._determine_route(request.destination, request.road)
 
             # 根据时间范围长度选择生成策略
             if time_range and time_range.duration_days > 14:
@@ -110,16 +110,25 @@ class GenerationAgent(BaseAgent):
         )
         return get_persona(persona_type)
 
-    def _determine_route(self, destination: str):
-        """确定路线"""
+    def _determine_route(self, destination: str, road: str = "A8"):
+        """确定路线。
+
+        目的地是慕尼黑时有两条返程线（从 Salzburg 或从 Innsbruck），系统没有
+        独立的出发地字段，因此用 road 区分：A93 侧来自 Innsbruck/Kufstein 方向，
+        否则默认 A8 侧的 Salzburg。
+        """
         if not destination:
             return ROUTES.get("munich_salzburg")
 
         dest_lower = destination.lower()
-        if "salzburg" in dest_lower or "萨尔茨堡" in dest_lower:
-            return ROUTES.get("munich_salzburg")
-        elif "innsbruck" in dest_lower or "因斯布鲁克" in dest_lower:
+        if "innsbruck" in dest_lower or "因斯布鲁克" in dest_lower:
             return ROUTES.get("munich_innsbruck")
+        elif "salzburg" in dest_lower or "萨尔茨堡" in dest_lower:
+            return ROUTES.get("munich_salzburg")
+        elif any(k in dest_lower for k in ("munich", "münchen", "muenchen", "慕尼黑")):
+            if str(road).upper() == "A93":
+                return ROUTES.get("innsbruck_munich")
+            return ROUTES.get("salzburg_munich")
 
         return ROUTES.get("munich_salzburg")
 

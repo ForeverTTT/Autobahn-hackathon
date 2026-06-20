@@ -575,8 +575,11 @@ class IntentParser:
     }
 
     DESTINATION_KEYWORDS = {
+        # salzburg / innsbruck checked first so "从慕尼黑去萨尔茨堡" resolves to the
+        # real destination; "munich" is the northbound / return direction.
         "salzburg": ["萨尔茨堡", "salzburg", "奥地利", "austria"],
         "innsbruck": ["因斯布鲁克", "innsbruck", "滑雪", "阿尔卑斯", "alps"],
+        "munich": ["慕尼黑", "munich", "münchen", "muenchen"],
     }
 
     def _parse_persona_keywords(self, query: str) -> PersonaType:

@@ -175,6 +175,35 @@ ROUTES: Dict[str, Route] = {
         total_distance_km=150,
         free_flow_time_min=90
     ),
+    # Northbound / return direction: Salzburg → München uses the Mch-direction
+    # detector series (A8_Mch_*), so "去慕尼黑" reads the correct traffic side.
+    "salzburg_munich": Route(
+        id="salzburg_munich",
+        name="萨尔茨堡 → 慕尼黑 (A8)",
+        origin="Salzburg",
+        destination="München",
+        segments=[
+            RouteSegment("Salzburg → Rosenheim", "A8", 75, 45, ["A8_Mch_MQQ245_Mch_H"]),
+            RouteSegment("Rosenheim → München", "A8", 65, 35, ["A8_Mch_MQB25_Mch_H"]),
+        ],
+        total_distance_km=140,
+        free_flow_time_min=80
+    ),
+    # Return leg of munich_innsbruck: Innsbruck → München travels A93 toward
+    # Rosenheim (Ro direction) then A8 toward München (Mch direction).
+    "innsbruck_munich": Route(
+        id="innsbruck_munich",
+        name="因斯布鲁克 → 慕尼黑 (A93+A8)",
+        origin="Innsbruck",
+        destination="München",
+        segments=[
+            RouteSegment("Innsbruck → Kufstein", "A93", 40, 25, ["A93_Ro_MQDZ_Kiefersfelden_(S)_Ro"]),
+            RouteSegment("Kufstein → Rosenheim", "A93", 45, 30, ["A93_Ro_MQDZ_AD Inntal_(S)_Ro"]),
+            RouteSegment("Rosenheim → München", "A8", 65, 35, ["A8_Mch_MQB25_Mch_H"]),
+        ],
+        total_distance_km=150,
+        free_flow_time_min=90
+    ),
 }
 
 
