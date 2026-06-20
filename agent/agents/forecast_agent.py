@@ -9,7 +9,7 @@ import numpy as np
 
 from ..base import BaseAgent, AgentType, AgentResponse
 from ..config import AgentConfig, default_config
-from ..data_loader import prediction_loader
+from ..tools.data_loader import prediction_loader
 
 try:
     from catboost import CatBoostRegressor
@@ -39,7 +39,7 @@ class ForecastAgent(BaseAgent):
     async def initialize(self) -> bool:
         """加载预测模型"""
         if not HAS_CATBOOST:
-            print("Warning: CatBoost not installed. Processed forecasts will still be used when available.")
+            print("Warning: CatBoost not installed. data_autobahn CSV forecasts will still be used when available.")
             self._initialized = True
             return True
 
@@ -98,7 +98,7 @@ class ForecastAgent(BaseAgent):
             direction = request.get("direction", "east")
             hours = request.get("hours", list(range(24)))
 
-            loaded_predictions = self._load_processed_predictions(date_str, site_id, road, hours)
+            loaded_predictions = self._load_csv_predictions(date_str, site_id, road, hours)
             if loaded_predictions:
                 predictions = loaded_predictions
             else:
@@ -123,7 +123,7 @@ class ForecastAgent(BaseAgent):
                     "site_id": site_id,
                     "date": date_str,
                     "direction": direction,
-                    "data_source": "processed_forecast" if loaded_predictions else "mock_or_model",
+                    "data_source": "data_autobahn_csv" if loaded_predictions else "mock_or_model",
                 },
                 message="Forecast completed successfully",
                 agent_type=self.agent_type,
@@ -147,14 +147,14 @@ class ForecastAgent(BaseAgent):
             "congestion_level_assessment",
         ]
 
-    def _load_processed_predictions(
+    def _load_csv_predictions(
         self,
         date_str: str,
         site_id: str,
         road: Optional[str],
         hours: List[int],
     ) -> List[Dict[str, Any]]:
-        """Load already generated forecasts from processed parquet files."""
+        """Load already generated forecasts from data_autobahn CSV files."""
         records = prediction_loader.query(date=date_str, site_id=site_id, road=road, hours=hours)
         if not records and road:
             all_records = prediction_loader.query(date=date_str, road=road, hours=hours)

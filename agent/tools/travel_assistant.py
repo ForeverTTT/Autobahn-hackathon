@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from enum import Enum
 
-from .data_loader import prediction_loader
+from .data_loader import external_loader, prediction_loader, safe_int
 from .congestion_score import (
     CongestionScoreCalculator,
     TrafficData,
@@ -254,6 +254,7 @@ class TravelAssistant:
             "best_hour": best_hour["hour"],
             "worst_hour": worst_hour["hour"],
             "avg_congestion": round(sum(p["congestion_score"] for p in predictions) / len(predictions), 1),
+            "data_source": "data_autobahn_csv",
         }
 
     def _generate_mock_forecast(self, date: str, road: str, hours: List[int]) -> Dict[str, Any]:
@@ -331,10 +332,7 @@ class TravelAssistant:
         """
         搜索外部因素（施工、活动、天气等）
 
-        实际应用中应接入：
-        - 德国高速公路施工 API
-        - 活动日历 API
-        - 天气 API
+        当前从 data_autobahn 的日级 CSV 表读取。
 
         Args:
             date: 日期
@@ -344,16 +342,11 @@ class TravelAssistant:
         Returns:
             外部因素列表
         """
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
         factors = []
-
-        # === 施工信息（Mock，实际接入 Autobahn API）===
-        # 真实 API: https://autobahn.api.bund.dev/
 
         constructions = self._get_construction_data(date, road)
         factors.extend(constructions)
 
-        # === 活动信息（Mock）===
         events = self._get_events_data(date, road)
         factors.extend(events)
 
@@ -361,7 +354,6 @@ class TravelAssistant:
         holidays = self._get_holiday_info(date)
         factors.extend(holidays)
 
-        # === 天气信息（Mock）===
         weather = self._get_weather_data(date)
         factors.extend(weather)
 
@@ -369,142 +361,79 @@ class TravelAssistant:
 
     def _get_construction_data(self, date: str, road: str) -> List[Dict[str, Any]]:
         """获取施工数据"""
-        # Mock 数据 - 实际应接入 Autobahn API
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-
-        constructions = []
-
-        # 示例施工
-        if road == "A8" and datetime(2026, 6, 1) <= date_obj <= datetime(2026, 9, 30):
-            constructions.append({
+        factors = []
+        for row in external_loader.get_construction(date, road):
+            factors.append({
                 "type": "construction",
-                "title": "A8 桥梁翻新工程",
-                "location": "Rosenheim 附近 (km 85-90)",
-                "description": "右车道封闭，预计延误 10-15 分钟",
-                "impact": "moderate",
-                "time_range": "06:00-20:00",
-                "detour": "可选择 B15 绕行",
-            })
-
-        if road == "A93" and datetime(2026, 7, 1) <= date_obj <= datetime(2026, 8, 31):
-            constructions.append({
-                "type": "construction",
-                "title": "A93 路面维修",
-                "location": "Kiefersfelden 边境附近",
-                "description": "限速 80 km/h",
-                "impact": "light",
-                "time_range": "全天",
+                "title": row.get("construction_titles") or "施工影响",
+                "location": row.get("active_roads") or road,
+                "description": f"施工记录 {row.get('construction_count', 0)} 条，最大关闭车道 {row.get('max_closed_lanes', 0)}",
+                "impact": "high" if safe_int(row.get("has_2_plus_0")) else "moderate",
+                "time_range": "日级数据",
                 "detour": None,
+                "data_source": "data_autobahn_csv",
             })
-
-        return constructions
+        return factors
 
     def _get_events_data(self, date: str, road: str) -> List[Dict[str, Any]]:
         """获取活动数据"""
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-        events = []
-
-        # 萨尔茨堡音乐节
-        if datetime(2026, 7, 18) <= date_obj <= datetime(2026, 8, 31):
-            events.append({
+        factors = []
+        for row in external_loader.get_events(date, road):
+            impact_score = safe_int(row.get("impact_score"))
+            factors.append({
                 "type": "event",
-                "title": "萨尔茨堡音乐节 (Salzburg Festival)",
-                "location": "Salzburg, Austria",
-                "description": "大型文化活动，预计大量游客",
-                "impact": "high",
-                "recommendation": "A8 往萨尔茨堡方向下午时段拥堵加剧",
+                "title": row.get("active_event_names") or "特殊活动",
+                "location": row.get("active_event_cities") or row.get("nearest_corridor_nodes"),
+                "description": f"活动数量 {row.get('active_event_count', 0)}，影响等级 {row.get('max_impact_level') or impact_score}",
+                "impact": "high" if impact_score >= 3 else "moderate" if impact_score >= 2 else "light",
+                "recommendation": "活动可能影响走廊交通，请避开对应高峰时段",
+                "data_source": "data_autobahn_csv",
             })
-
-        # 慕尼黑啤酒节
-        if datetime(2026, 9, 19) <= date_obj <= datetime(2026, 10, 4):
-            events.append({
-                "type": "event",
-                "title": "慕尼黑啤酒节 (Oktoberfest)",
-                "location": "München",
-                "description": "全球最大啤酒节，周末交通压力极大",
-                "impact": "very_high",
-                "recommendation": "周末尽量避开慕尼黑周边高速",
-            })
-
-        return events
+        return factors
 
     def _get_holiday_info(self, date: str) -> List[Dict[str, Any]]:
         """获取假期信息"""
-        holidays_2026 = {
-            "2026-01-01": ("元旦", "high"),
-            "2026-01-06": ("主显节", "moderate"),
-            "2026-04-03": ("耶稣受难日", "high"),
-            "2026-04-06": ("复活节周一", "high"),
-            "2026-05-01": ("劳动节", "moderate"),
-            "2026-05-14": ("耶稣升天节", "high"),
-            "2026-05-25": ("圣灵降临节周一", "high"),
-            "2026-06-04": ("基督圣体节", "moderate"),
-            "2026-08-15": ("圣母升天节", "high"),
-            "2026-10-03": ("德国统一日", "high"),
-            "2026-11-01": ("万圣节", "moderate"),
-            "2026-12-25": ("圣诞节", "very_high"),
-            "2026-12-26": ("圣诞节次日", "very_high"),
-        }
-
-        if date in holidays_2026:
-            name, impact = holidays_2026[date]
-            return [{
+        info = external_loader.get_holiday_info(date)
+        factors = []
+        if info.get("is_holiday"):
+            factors.append({
                 "type": "holiday",
-                "title": name,
-                "description": f"公共假期 - {name}",
-                "impact": impact,
+                "title": info.get("holiday_name") or "公共假期",
+                "description": f"公共假期地区数：{info.get('public_holiday_count', 0)}",
+                "impact": "high" if info.get("public_holiday_count", 0) >= 2 else "moderate",
                 "recommendation": "假期出行高峰，建议提前或延后出发",
-            }]
-
-        # 检查学校假期
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-        school_holidays = [
-            (datetime(2026, 7, 27), datetime(2026, 9, 7), "巴伐利亚暑假"),
-            (datetime(2026, 12, 23), datetime(2027, 1, 5), "圣诞假期"),
-        ]
-
-        for start, end, name in school_holidays:
-            if start <= date_obj <= end:
-                return [{
-                    "type": "school_holiday",
-                    "title": name,
-                    "description": "学校假期期间，家庭出游增多",
-                    "impact": "moderate",
-                    "recommendation": "周末和假期开始/结束日交通压力大",
-                }]
-
-        return []
+                "data_source": "data_autobahn_csv",
+            })
+        if info.get("is_school_holiday"):
+            factors.append({
+                "type": "school_holiday",
+                "title": "学校假期",
+                "description": f"学校假期地区数：{info.get('school_holiday_count', 0)}",
+                "impact": "moderate",
+                "recommendation": "周末和假期开始/结束日交通压力大",
+                "data_source": "data_autobahn_csv",
+            })
+        return factors
 
     def _get_weather_data(self, date: str) -> List[Dict[str, Any]]:
-        """获取天气数据（Mock）"""
-        # 实际应接入天气 API
-        import random
-
-        # 简单模拟
-        weather_options = [
-            {"weather": "sunny", "impact": "none", "description": "晴天，路况良好"},
-            {"weather": "cloudy", "impact": "none", "description": "多云，正常路况"},
-            {"weather": "rain", "impact": "light", "description": "小雨，建议保持车距"},
-            {"weather": "heavy_rain", "impact": "moderate", "description": "大雨，能见度降低，限速"},
-        ]
-
-        # 根据月份调整概率
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-        if date_obj.month in [11, 12, 1, 2]:
-            # 冬季更可能有恶劣天气
-            weather = random.choices(weather_options, weights=[0.2, 0.3, 0.3, 0.2])[0]
-        else:
-            weather = random.choices(weather_options, weights=[0.4, 0.3, 0.2, 0.1])[0]
-
-        if weather["impact"] != "none":
-            return [{
-                "type": "weather",
-                "title": f"天气预报: {weather['weather']}",
-                "description": weather["description"],
-                "impact": weather["impact"],
-            }]
-
-        return []
+        """获取天气数据"""
+        info = external_loader.get_weather_info(date)
+        if info.get("weather") == "unknown":
+            return []
+        precip = float(info.get("precip_mm") or 0)
+        snow = float(info.get("snowfall_mm") or 0)
+        low_vis = int(info.get("low_vis_hours") or 0)
+        has_ice = bool(info.get("has_ice_risk"))
+        impact = "high" if has_ice or snow > 5 else "moderate" if precip > 10 or low_vis >= 3 else "light"
+        if impact == "light" and precip == 0 and snow == 0 and low_vis == 0 and not has_ice:
+            return []
+        return [{
+            "type": "weather",
+            "title": f"天气: {info.get('weather')}",
+            "description": f"降水 {precip:.1f}mm，降雪 {snow:.1f}mm，低能见度 {low_vis} 小时",
+            "impact": impact,
+            "data_source": "data_autobahn_csv",
+        }]
 
     # ============ 工具3: 计算出行方案 ============
 

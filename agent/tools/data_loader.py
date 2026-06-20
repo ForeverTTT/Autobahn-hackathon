@@ -3,11 +3,11 @@ Data Loader for Agent System
 加载预测数据和外部因素数据
 
 数据格式说明：
-1. predictions.parquet - 模型预测结果（2026-2029）
-2. holidays.csv - 假期数据
-3. weather.parquet - 天气数据
-4. events.csv - 活动数据
-5. construction.csv - 施工数据
+1. data_autobahn/forecast_2026_2029.csv - 模型预测结果（2026-2029）
+2. data_autobahn/合并表格，holiday日级.csv - 假期数据
+3. data_autobahn/合并表格，weather日级.csv - 天气数据
+4. data_autobahn/合并表格，special_events日级.csv - 活动数据
+5. data_autobahn/合并表格，construction日级.csv - 施工数据
 """
 import os
 from typing import Any, Dict, List, Optional, Tuple
@@ -21,30 +21,50 @@ try:
 except ImportError:
     HAS_PANDAS = False
 
-try:
-    import pyarrow.parquet as pq
-    HAS_PYARROW = True
-except ImportError:
-    HAS_PYARROW = False
-
-
 # ============ 数据路径配置 ============
 
 # 项目根目录
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parents[2]
 
 # 数据目录
 DATA_DIR = PROJECT_ROOT / "data_autobahn"
-EXTERNAL_DIR = PROJECT_ROOT / "external"
-PROCESSED_DIR = PROJECT_ROOT / "processed"
-PREDICTIONS_DIR = PROJECT_ROOT / "predictions"  # 存放预测结果
-DEFAULT_PREDICTIONS_FILE = PROCESSED_DIR / "forecast_2026_2029.parquet"
+DEFAULT_PREDICTIONS_FILE = DATA_DIR / "forecast_2026_2029.csv"
+
+
+def read_data_autobahn_csv(path: Path, **kwargs) -> "pd.DataFrame":
+    """Read data_autobahn CSV files, skipping the Chinese description row."""
+    sep = kwargs.pop("sep", ";")
+    skiprows = kwargs.pop("skiprows", [1])
+    return pd.read_csv(path, sep=sep, skiprows=skiprows, **kwargs)
+
+
+def is_missing(value: Any) -> bool:
+    return value is None or (HAS_PANDAS and pd.isna(value))
+
+
+def safe_number(value: Any, default: float = 0.0) -> float:
+    if is_missing(value):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def safe_int(value: Any, default: int = 0) -> int:
+    return int(safe_number(value, default))
+
+
+def safe_text(value: Any, default: str = "") -> str:
+    if is_missing(value):
+        return default
+    return str(value)
 
 
 # ============ 预测数据格式定义 ============
 
 """
-predictions.parquet 或 predictions.csv 格式：
+forecast_2026_2029.csv 格式：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -99,7 +119,7 @@ class PredictionDataLoader:
         初始化
 
         Args:
-            predictions_path: 预测文件路径 (.parquet 或 .csv)
+            predictions_path: 预测文件路径 (.csv)
         """
         self.predictions_path = predictions_path or str(DEFAULT_PREDICTIONS_FILE)
         self._file_path: Optional[Path] = None
@@ -121,21 +141,6 @@ class PredictionDataLoader:
             return False
 
         path = Path(self.predictions_path)
-
-        # 如果指定的文件不存在，尝试其他格式
-        if not path.exists():
-            if path.suffix == ".parquet":
-                csv_path = path.with_suffix(".csv")
-                if csv_path.exists():
-                    path = csv_path
-            elif path.suffix == ".csv":
-                parquet_path = path.with_suffix(".parquet")
-                if parquet_path.exists():
-                    path = parquet_path
-
-        # Backward compatibility for old sample data if processed forecasts are absent.
-        if not path.exists() and (PREDICTIONS_DIR / "predictions.csv").exists():
-            path = PREDICTIONS_DIR / "predictions.csv"
 
         if not path.exists():
             print(f"Warning: Predictions file not found: {path}")
@@ -168,20 +173,7 @@ class PredictionDataLoader:
             return None
 
         try:
-            if self._file_format == ".parquet":
-                # Parquet 支持谓词下推，只读取需要的行。真实 processed 数据的 date 是 timestamp，
-                # 旧样例数据可能是 string，所以这里同时兼容两种格式。
-                try:
-                    df = pd.read_parquet(
-                        self._file_path,
-                        filters=[("date", "==", pd.Timestamp(date))]
-                    )
-                except Exception:
-                    df = pd.read_parquet(
-                        self._file_path,
-                        filters=[("date", "==", date)]
-                    )
-            elif self._file_format == ".csv":
+            if self._file_format == ".csv":
                 # CSV 需要分块读取过滤
                 chunks = []
                 for chunk in pd.read_csv(self._file_path, chunksize=10000):
@@ -215,7 +207,7 @@ class PredictionDataLoader:
             return None
 
     def _normalize_prediction_columns(self, df: "pd.DataFrame") -> "pd.DataFrame":
-        """Normalize processed forecast columns to the legacy agent schema."""
+        """Normalize forecast CSV columns to the legacy agent schema."""
         if df is None or len(df) == 0:
             return df
 
@@ -224,7 +216,7 @@ class PredictionDataLoader:
         if "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
 
-        # Current processed files use *_pred names; older agent code expects *_p50.
+        # Current forecast CSV uses *_pred names; older agent code expects *_p50.
         aliases = {
             "sv_h_pred": "sv_h_p50",
             "v_kfz_pred": "v_kfz_p50",
@@ -233,7 +225,7 @@ class PredictionDataLoader:
             if source in df.columns and target not in df.columns:
                 df[target] = df[source]
 
-        # Optional model-training flags are not part of the final processed forecast.
+        # Optional model-training flags are not part of the final forecast CSV.
         defaults = {
             "tagestyp": "w",
             "is_holiday": False,
@@ -401,21 +393,15 @@ class PredictionDataLoader:
             return ("", "")
 
         try:
-            if self._file_format == ".parquet":
-                # Parquet 可以高效读取单列
-                df = pd.read_parquet(self._file_path, columns=["date"])
-                return (df["date"].min(), df["date"].max())
-            else:
-                # CSV 需要逐块读取
-                min_date, max_date = None, None
-                for chunk in pd.read_csv(self._file_path, usecols=["date"], chunksize=50000):
-                    chunk_min = chunk["date"].min()
-                    chunk_max = chunk["date"].max()
-                    if min_date is None or chunk_min < min_date:
-                        min_date = chunk_min
-                    if max_date is None or chunk_max > max_date:
-                        max_date = chunk_max
-                return (str(min_date), str(max_date))
+            min_date, max_date = None, None
+            for chunk in pd.read_csv(self._file_path, usecols=["date"], chunksize=50000):
+                chunk_min = chunk["date"].min()
+                chunk_max = chunk["date"].max()
+                if min_date is None or chunk_min < min_date:
+                    min_date = chunk_min
+                if max_date is None or chunk_max > max_date:
+                    max_date = chunk_max
+            return (str(min_date), str(max_date))
         except Exception as e:
             print(f"Error getting date range: {e}")
             return ("", "")
@@ -439,12 +425,9 @@ class ExternalDataLoader:
             return False
 
         path = DATA_DIR / "合并表格，holiday日级.csv"
-        if not path.exists():
-            path = EXTERNAL_DIR / "holidays" / "holiday_dates.csv"
-
         if path.exists():
             try:
-                self._holidays_df = pd.read_csv(path, sep=";")
+                self._holidays_df = read_data_autobahn_csv(path)
                 return True
             except Exception as e:
                 print(f"Error loading holidays: {e}")
@@ -458,19 +441,10 @@ class ExternalDataLoader:
         path = DATA_DIR / "合并表格，weather日级.csv"
         if path.exists():
             try:
-                self._weather_df = pd.read_csv(path, sep=";")
+                self._weather_df = read_data_autobahn_csv(path)
                 return True
             except Exception as e:
                 print(f"Error loading weather: {e}")
-
-        # 尝试 parquet 格式
-        path = EXTERNAL_DIR / "weather_daily.parquet"
-        if path.exists():
-            try:
-                self._weather_df = pd.read_parquet(path)
-                return True
-            except Exception as e:
-                print(f"Error loading weather parquet: {e}")
 
         return False
 
@@ -482,7 +456,7 @@ class ExternalDataLoader:
         path = DATA_DIR / "合并表格，special_events日级.csv"
         if path.exists():
             try:
-                self._events_df = pd.read_csv(path, sep=";")
+                self._events_df = read_data_autobahn_csv(path)
                 return True
             except Exception as e:
                 print(f"Error loading events: {e}")
@@ -494,12 +468,9 @@ class ExternalDataLoader:
             return False
 
         path = DATA_DIR / "合并表格，construction日级.csv"
-        if not path.exists():
-            path = EXTERNAL_DIR / "construction_sites_clean.csv"
-
         if path.exists():
             try:
-                self._construction_df = pd.read_csv(path, sep=";")
+                self._construction_df = read_data_autobahn_csv(path)
                 return True
             except Exception as e:
                 print(f"Error loading construction: {e}")
@@ -513,12 +484,26 @@ class ExternalDataLoader:
         if self._holidays_df is None:
             return {"is_holiday": False}
 
-        # 查询逻辑根据实际数据格式调整
-        # 这里是示例
+        rows = self._holidays_df[self._holidays_df["date"].astype(str) == date]
+        if len(rows) == 0:
+            return {"is_holiday": False, "is_school_holiday": False, "holiday_name": None}
+
+        row = rows.iloc[0].to_dict()
+        school_count = safe_int(row.get("school_holiday_count"))
+        public_count = safe_int(row.get("public_holiday_count"))
+        holiday_names = [
+            safe_text(row.get("public_names_DE_BY")),
+            safe_text(row.get("public_names_AT_SB")),
+            safe_text(row.get("public_names_AT_TI")),
+        ]
         return {
-            "is_holiday": False,
-            "is_school_holiday": False,
-            "holiday_name": None,
+            "is_holiday": public_count > 0,
+            "is_school_holiday": school_count > 0,
+            "holiday_name": next((name for name in holiday_names if name), None),
+            "school_holiday_count": school_count,
+            "public_holiday_count": public_count,
+            "traffic_window": row.get("in_traffic_window"),
+            "window_risk_level": row.get("window_risk_level"),
         }
 
     def get_weather_info(self, date: str) -> Dict[str, Any]:
@@ -529,10 +514,27 @@ class ExternalDataLoader:
         if self._weather_df is None:
             return {"weather": "unknown"}
 
-        # 查询逻辑根据实际数据格式调整
+        rows = self._weather_df[self._weather_df["date"].astype(str) == date]
+        if len(rows) == 0:
+            return {"weather": "unknown"}
+
+        row = rows.iloc[0].to_dict()
+        observed = safe_int(row.get("has_observed_weather")) > 0
+        precip = safe_number(row.get("precip_mm" if observed else "precip_mm_mean"))
+        snowfall = safe_number(row.get("snowfall_mm")) if observed else 0.0
+        low_vis = safe_number(row.get("low_vis_hours" if observed else "low_vis_hours_mean"))
+        t_min = safe_number(row.get("t_min_c" if observed else "t_min_c_mean"))
+        t_max = safe_number(row.get("t_max_c" if observed else "t_max_c_mean"))
+        has_ice_risk = safe_int(row.get("has_ice_risk")) > 0 if observed else safe_number(row.get("ice_risk_prob")) > 0.25
         return {
-            "weather": "clear",
-            "temperature_c": 20,
+            "weather": row.get("weather_source", "unknown"),
+            "precip_mm": precip,
+            "snowfall_mm": snowfall,
+            "low_vis_hours": low_vis,
+            "t_min_c": t_min,
+            "t_max_c": t_max,
+            "has_ice_risk": has_ice_risk,
+            "raw": row,
         }
 
     def get_events(self, date: str, road: str = None) -> List[Dict[str, Any]]:
@@ -543,8 +545,12 @@ class ExternalDataLoader:
         if self._events_df is None:
             return []
 
-        # 查询逻辑根据实际数据格式调整
-        return []
+        rows = self._events_df[self._events_df["date"].astype(str) == date]
+        if road == "A8" and "affects_a8_ost" in self._events_df.columns:
+            rows = rows[pd.to_numeric(rows["affects_a8_ost"], errors="coerce").fillna(0).astype(int) > 0]
+        elif road == "A93" and "affects_a93_sued" in self._events_df.columns:
+            rows = rows[pd.to_numeric(rows["affects_a93_sued"], errors="coerce").fillna(0).astype(int) > 0]
+        return rows.to_dict("records")
 
     def get_construction(self, date: str, road: str = None) -> List[Dict[str, Any]]:
         """获取指定日期的施工信息"""
@@ -554,8 +560,12 @@ class ExternalDataLoader:
         if self._construction_df is None:
             return []
 
-        # 查询逻辑根据实际数据格式调整
-        return []
+        rows = self._construction_df[self._construction_df["date"].astype(str) == date]
+        if road == "A8" and "has_a8_construction" in self._construction_df.columns:
+            rows = rows[pd.to_numeric(rows["has_a8_construction"], errors="coerce").fillna(0).astype(int) > 0]
+        elif road == "A93" and "has_a93_construction" in self._construction_df.columns:
+            rows = rows[pd.to_numeric(rows["has_a93_construction"], errors="coerce").fillna(0).astype(int) > 0]
+        return rows.to_dict("records")
 
 
 # ============ 全局实例 ============
@@ -612,7 +622,7 @@ def generate_sample_predictions(output_path: str = None) -> str:
     import numpy as np
     from datetime import datetime, timedelta
 
-    output_path = output_path or str(PREDICTIONS_DIR / "predictions.csv")
+    output_path = output_path or str(DATA_DIR / "sample_predictions.csv")
 
     # 确保目录存在
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)

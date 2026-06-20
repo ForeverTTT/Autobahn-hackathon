@@ -3,10 +3,10 @@ LangGraph Tools
 定义Agent可调用的工具
 """
 from typing import Any, Dict, List, Optional
-from datetime import datetime
 from langchain_core.tools import tool
 
 from ..graph_rag import GraphRAG
+from .data_loader import external_loader, prediction_loader
 
 
 _GRAPH_RAG = GraphRAG()
@@ -32,37 +32,35 @@ def get_traffic_forecast(
     if hours is None:
         hours = list(range(6, 22))
 
-    dt = datetime.strptime(date, "%Y-%m-%d")
-    predictions = []
+    road = site_id.split("_")[0] if site_id and site_id.startswith("A") else "A8"
+    records = prediction_loader.query(date=date, site_id=site_id, road=road, hours=hours)
+    if not records:
+        records = prediction_loader.query(date=date, road=road, hours=hours)
 
-    for hour in hours:
-        base = 800
-        if 7 <= hour <= 9:
-            multiplier = 1.8
-        elif 16 <= hour <= 18:
-            multiplier = 2.0
-        elif 10 <= hour <= 15:
-            multiplier = 1.4
-        else:
-            multiplier = 0.6
+    if records:
+        first_site = records[0].get("site_id")
+        records = [record for record in records if record.get("site_id") == first_site]
 
-        if dt.weekday() >= 5:
-            multiplier *= 1.2 if 9 <= hour <= 14 else 0.8
-
-        volume = int(base * multiplier)
-        level = "smooth" if volume < 800 else "light" if volume < 1200 else "moderate" if volume < 1600 else "heavy"
-
-        predictions.append({
-            "hour": hour,
-            "volume": volume,
-            "congestion_level": level
-        })
+    predictions = [
+        {
+            "hour": int(record.get("hour", 0)),
+            "volume": float(record.get("kfz_h_p50", 0)),
+            "p10": float(record.get("kfz_h_p10", 0)),
+            "p50": float(record.get("kfz_h_p50", 0)),
+            "p90": float(record.get("kfz_h_p90", 0)),
+            "speed_kmh": float(record.get("v_kfz_p50", record.get("v_kfz_pred", 0))),
+            "sv_h": float(record.get("sv_h_p50", record.get("sv_h_pred", 0))),
+        }
+        for record in records
+    ]
 
     return {
         "date": date,
-        "site_id": site_id,
+        "site_id": records[0].get("site_id") if records else site_id,
+        "road": road,
         "predictions": predictions,
-        "peak_hour": max(predictions, key=lambda x: x["volume"])["hour"]
+        "peak_hour": max(predictions, key=lambda x: x["volume"])["hour"] if predictions else None,
+        "data_source": "data_autobahn_csv",
     }
 
 
@@ -78,37 +76,11 @@ def get_events(date: str, road: str = "A8") -> Dict[str, Any]:
     Returns:
         事件列表
     """
-    dt = datetime.strptime(date, "%Y-%m-%d")
-    events = []
-
-    # Salzburg Festival
-    if datetime(2026, 7, 18) <= dt <= datetime(2026, 8, 31):
-        events.append({
-            "name": "Salzburg Festival",
-            "type": "cultural",
-            "impact": "high"
-        })
-
-    # Oktoberfest
-    if datetime(2026, 9, 19) <= dt <= datetime(2026, 10, 4):
-        events.append({
-            "name": "Oktoberfest",
-            "type": "festival",
-            "impact": "very_high"
-        })
-
-    # Summer holidays
-    if datetime(2026, 7, 27) <= dt <= datetime(2026, 9, 7):
-        events.append({
-            "name": "Bavaria Summer School Holiday",
-            "type": "school_holiday",
-            "impact": "high"
-        })
-
     return {
         "date": date,
         "road": road,
-        "events": events
+        "events": external_loader.get_events(date, road),
+        "data_source": "data_autobahn_csv",
     }
 
 
@@ -124,20 +96,11 @@ def get_construction_info(date: str, road: str = "A8") -> Dict[str, Any]:
     Returns:
         施工信息列表
     """
-    dt = datetime.strptime(date, "%Y-%m-%d")
-    constructions = []
-
-    if datetime(2026, 6, 1) <= dt <= datetime(2026, 9, 30) and road == "A8":
-        constructions.append({
-            "location": "A8 km 45-48",
-            "description": "Bridge renovation - right lane closed",
-            "impact": "moderate"
-        })
-
     return {
         "date": date,
         "road": road,
-        "constructions": constructions
+        "constructions": external_loader.get_construction(date, road),
+        "data_source": "data_autobahn_csv",
     }
 
 

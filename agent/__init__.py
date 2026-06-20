@@ -30,8 +30,8 @@ except ImportError as e:
 
 # Data Loading - 数据加载
 try:
-    from .data_loader import prediction_loader, external_loader, get_forecast
-    from .congestion_score import CongestionScoreCalculator, calculate_congestion_score
+    from .tools.data_loader import prediction_loader, external_loader, get_forecast
+    from .tools.congestion_score import CongestionScoreCalculator, calculate_congestion_score
     from .graph_rag import GraphRAG
     __all__.extend([
         "prediction_loader", "external_loader", "get_forecast",

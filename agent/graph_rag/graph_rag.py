@@ -1,5 +1,5 @@
 """
-Local Graph RAG backed by processed forecast tables.
+Local Graph RAG backed by data_autobahn CSV tables.
 
 This module intentionally does not materialize every forecast row as graph nodes.
 It exposes a small Cypher-like query surface and pushes filters into the existing
@@ -8,10 +8,9 @@ traffic data in normal agent usage.
 """
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from ..data_loader import EXTERNAL_DIR, PROCESSED_DIR, PredictionDataLoader, prediction_loader
+from ..tools.data_loader import DATA_DIR, PredictionDataLoader, prediction_loader, read_data_autobahn_csv, safe_int, safe_number
 
 try:
     import pandas as pd
@@ -29,10 +28,10 @@ class GraphRAG:
     A virtual traffic knowledge graph with a constrained Cypher query interface.
 
     Supported labels:
-    - Site: measurement station metadata from processed/site_meta.parquet
+    - Site: measurement station metadata derived from data_autobahn/合并表格，小时交通流量.csv
     - Road: road nodes derived from Site metadata
-    - Forecast: hourly forecasts from processed/forecast_2026_2029.parquet
-    - Factor: date/road impact factors from weather and construction tables
+    - Forecast: hourly forecasts from data_autobahn/forecast_2026_2029.csv
+    - Factor: date/road impact factors from data_autobahn daily CSV tables
 
     Supported query shape examples:
     - MATCH (s:Site {road: $road}) RETURN s LIMIT 10
@@ -53,8 +52,9 @@ class GraphRAG:
         self._site_by_id: Dict[str, Dict[str, Any]] = {}
         self._roads: List[str] = []
         self._weather_daily = None
-        self._weather_climatology = None
         self._construction_daily = None
+        self._holiday_daily = None
+        self._event_daily = None
 
     async def initialize(self) -> bool:
         """Load small metadata/factor tables. Forecast rows stay lazy."""
@@ -76,9 +76,16 @@ class GraphRAG:
             self._initialized = True
 
     def _load_site_meta(self) -> None:
-        site_path = PROCESSED_DIR / "site_meta.parquet"
+        site_path = DATA_DIR / "合并表格，小时交通流量.csv"
         if site_path.exists():
-            df = pd.read_parquet(site_path)
+            df = read_data_autobahn_csv(
+                site_path,
+                usecols=["road", "direction", "site_name", "bab_km", "longitude", "latitude"],
+            ).drop_duplicates(subset=["road", "direction", "site_name"])
+            df["site_id"] = df["road"].astype(str) + "_" + df["direction"].astype(str) + "_" + df["site_name"].astype(str)
+            df["longitude"] = df["longitude"].apply(self._parse_number)
+            df["latitude"] = df["latitude"].apply(self._parse_number)
+            df["bab_km"] = df["bab_km"].apply(self._parse_number)
             self._site_rows = [self._site_node(row) for row in df.to_dict("records")]
         else:
             site_ids = self.loader.get_available_sites()
@@ -96,22 +103,26 @@ class GraphRAG:
         self._roads = sorted({row.get("road") for row in self._site_rows if row.get("road")})
 
     def _load_external_tables(self) -> None:
-        weather_path = EXTERNAL_DIR / "weather_daily.parquet"
-        climatology_path = EXTERNAL_DIR / "weather_climatology.parquet"
-        construction_path = EXTERNAL_DIR / "construction_daily.parquet"
+        weather_path = DATA_DIR / "合并表格，weather日级.csv"
+        construction_path = DATA_DIR / "合并表格，construction日级.csv"
+        holiday_path = DATA_DIR / "合并表格，holiday日级.csv"
+        event_path = DATA_DIR / "合并表格，special_events日级.csv"
 
         if weather_path.exists():
-            self._weather_daily = pd.read_parquet(weather_path)
+            self._weather_daily = read_data_autobahn_csv(weather_path)
             self._weather_daily["date"] = pd.to_datetime(self._weather_daily["date"]).dt.strftime("%Y-%m-%d")
 
-        if climatology_path.exists():
-            self._weather_climatology = pd.read_parquet(climatology_path)
-
         if construction_path.exists():
-            self._construction_daily = pd.read_parquet(construction_path)
+            self._construction_daily = read_data_autobahn_csv(construction_path)
             self._construction_daily["date"] = pd.to_datetime(self._construction_daily["date"]).dt.strftime("%Y-%m-%d")
-            if "road" in self._construction_daily.columns:
-                self._construction_daily["road_base"] = self._construction_daily["road"].astype(str).str.split("_").str[0]
+
+        if holiday_path.exists():
+            self._holiday_daily = read_data_autobahn_csv(holiday_path)
+            self._holiday_daily["date"] = pd.to_datetime(self._holiday_daily["date"]).dt.strftime("%Y-%m-%d")
+
+        if event_path.exists():
+            self._event_daily = read_data_autobahn_csv(event_path)
+            self._event_daily["date"] = pd.to_datetime(self._event_daily["date"]).dt.strftime("%Y-%m-%d")
 
     def query(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Alias for query_cypher."""
@@ -157,8 +168,8 @@ class GraphRAG:
             "nodes": {
                 "Road": len(self._roads),
                 "Site": len(self._site_rows),
-                "Forecast": "lazy_from_processed_forecast",
-                "Factor": "lazy_from_external_tables",
+                "Forecast": "lazy_from_data_autobahn_forecast_csv",
+                "Factor": "from_data_autobahn_daily_csv",
             },
             "relationships": [
                 "(:Site)-[:ON_ROAD]->(:Road)",
@@ -323,7 +334,9 @@ class GraphRAG:
         if weather:
             factors.append(weather)
 
+        factors.extend(self._holiday_factors(date, road))
         factors.extend(self._construction_factors(date, road))
+        factors.extend(self._event_factors(date, road))
         factors.extend(self._calendar_factors(date, road))
         return factors
 
@@ -343,46 +356,130 @@ class GraphRAG:
                     "properties": row,
                 }
 
-        if self._weather_climatology is not None:
-            doy = datetime.strptime(date, "%Y-%m-%d").timetuple().tm_yday
-            rows = self._weather_climatology[self._weather_climatology["doy"] == doy]
-            if len(rows) > 0:
-                row = rows.iloc[0].to_dict()
-                return {
-                    "_label": "Factor",
-                    "id": f"weather_climatology:{doy}",
-                    "type": "weather_climatology",
-                    "date": date,
-                    "name": "Historical weather baseline",
-                    "impact": "moderate" if row.get("ice_risk_prob", 0) > 0.25 or row.get("precip_prob_wet", 0) > 0.5 else "low",
-                    "description": "Future weather is estimated from historical daily climatology",
-                    "properties": row,
-                }
         return None
+
+    def _holiday_factors(self, date: str, road: Optional[str]) -> List[Dict[str, Any]]:
+        if self._holiday_daily is None:
+            return []
+        rows = self._holiday_daily[self._holiday_daily["date"] == date]
+        if len(rows) == 0:
+            return []
+
+        row = rows.iloc[0].to_dict()
+        factors = []
+        school_count = safe_int(row.get("school_holiday_count"))
+        public_count = safe_int(row.get("public_holiday_count"))
+        risk = row.get("window_risk_level")
+
+        if public_count > 0:
+            names = self._join_non_empty([
+                row.get("public_names_DE_BY"),
+                row.get("public_names_AT_SB"),
+                row.get("public_names_AT_TI"),
+            ])
+            factors.append({
+                "_label": "Factor",
+                "id": f"holiday:public:{date}",
+                "type": "public_holiday",
+                "date": date,
+                "road": road,
+                "name": names or "Public holiday",
+                "impact": "high" if public_count >= 2 else "moderate",
+                "description": f"Public holiday in {public_count} region(s): {names}" if names else f"Public holiday in {public_count} region(s)",
+                "properties": row,
+            })
+
+        if school_count > 0:
+            names = self._join_non_empty([
+                row.get("school_names_DE_BY"),
+                row.get("school_names_AT_SB"),
+                row.get("school_names_AT_TI"),
+            ])
+            factors.append({
+                "_label": "Factor",
+                "id": f"holiday:school:{date}",
+                "type": "school_holiday",
+                "date": date,
+                "road": road,
+                "name": names or "School holiday",
+                "impact": "high" if school_count >= 2 else "moderate",
+                "description": f"School holiday in {school_count} region(s): {names}" if names else f"School holiday in {school_count} region(s)",
+                "properties": row,
+            })
+
+        if safe_int(row.get("in_traffic_window")) > 0:
+            factors.append({
+                "_label": "Factor",
+                "id": f"holiday:traffic_window:{date}",
+                "type": "holiday_traffic_window",
+                "date": date,
+                "road": road,
+                "name": "Holiday traffic window",
+                "impact": "high" if str(risk).lower() == "high" else "moderate",
+                "description": f"Holiday traffic window active, direction={row.get('window_direction')}, risk={risk}",
+                "properties": row,
+            })
+
+        return factors
 
     def _construction_factors(self, date: str, road: Optional[str]) -> List[Dict[str, Any]]:
         if self._construction_daily is None:
             return []
         rows = self._construction_daily[self._construction_daily["date"] == date]
-        if road and "road_base" in rows.columns:
-            rows = rows[rows["road_base"] == road]
 
         factors = []
         for row in rows.to_dict("records"):
-            if not row.get("is_construction_active"):
+            if not safe_int(row.get("has_construction")):
                 continue
-            active_sites = row.get("active_sites")
+            if road == "A8" and not safe_int(row.get("has_a8_construction")):
+                continue
+            if road == "A93" and not safe_int(row.get("has_a93_construction")):
+                continue
+
+            road_count = row.get("a8_construction_count") if road == "A8" else row.get("a93_construction_count") if road == "A93" else row.get("construction_count")
+            has_2_plus_0 = safe_int(row.get("has_2_plus_0")) > 0
             factors.append({
                 "_label": "Factor",
-                "id": f"construction:{date}:{row.get('road')}",
+                "id": f"construction:{date}:{road or 'all'}",
                 "type": "construction",
                 "date": date,
-                "road": row.get("road"),
+                "road": road,
                 "name": "Active construction",
-                "impact": "high" if row.get("is_2_plus_0_active") else "moderate",
-                "description": f"{row.get('n_sites_active', 0)} active construction site(s) on {row.get('road')}",
-                "properties": {k: v for k, v in row.items() if k != "active_sites"},
-                "active_sites": active_sites,
+                "impact": "high" if has_2_plus_0 or safe_int(row.get("max_closed_lanes")) >= 2 else "moderate",
+                "description": f"{road_count or row.get('construction_count', 0)} construction record(s); roads={row.get('active_roads', '')}; types={row.get('display_types', '')}",
+                "properties": row,
+                "active_sites": row.get("construction_titles"),
+            })
+        return factors
+
+    def _event_factors(self, date: str, road: Optional[str]) -> List[Dict[str, Any]]:
+        if self._event_daily is None:
+            return []
+        rows = self._event_daily[self._event_daily["date"] == date]
+        if len(rows) == 0:
+            return []
+
+        factors = []
+        for row in rows.to_dict("records"):
+            if not safe_int(row.get("has_special_event")):
+                continue
+            if road == "A8" and not safe_int(row.get("affects_a8_ost")):
+                continue
+            if road == "A93" and not safe_int(row.get("affects_a93_sued")):
+                continue
+
+            impact_score = safe_int(row.get("impact_score"))
+            impact = "high" if impact_score >= 3 else "moderate" if impact_score >= 2 else "low"
+            factors.append({
+                "_label": "Factor",
+                "id": f"event:{date}:{road or 'all'}",
+                "type": "special_event",
+                "date": date,
+                "road": road,
+                "name": row.get("active_event_names") or "Special event",
+                "impact": impact,
+                "description": f"{row.get('active_event_count', 0)} event(s): {row.get('active_event_names', '')}; cities={row.get('active_event_cities', '')}",
+                "properties": row,
             })
         return factors
 
@@ -549,6 +646,24 @@ class GraphRAG:
             normalized["v_kfz_p50"] = normalized["v_kfz_pred"]
         return normalized
 
+    def _parse_number(self, value: Any) -> Optional[float]:
+        if value is None or pd.isna(value):
+            return None
+        try:
+            return float(str(value).replace(",", "."))
+        except ValueError:
+            return None
+
+    def _join_non_empty(self, values: List[Any]) -> str:
+        items = []
+        for value in values:
+            if value is None or pd.isna(value):
+                continue
+            text = str(value).strip()
+            if text:
+                items.append(text)
+        return "; ".join(dict.fromkeys(items))
+
     def _site_node(self, row: Dict[str, Any]) -> Dict[str, Any]:
         return {"_label": "Site", **row, "id": row.get("site_id")}
 
@@ -570,15 +685,24 @@ class GraphRAG:
         return None
 
     def _weather_impact(self, row: Dict[str, Any]) -> str:
-        if row.get("has_ice_risk") or row.get("snowfall_mm", 0) > 5:
+        observed = safe_int(row.get("has_observed_weather")) > 0
+        has_ice_risk = safe_int(row.get("has_ice_risk")) > 0 if observed else safe_number(row.get("ice_risk_prob")) > 0.25
+        snowfall = safe_number(row.get("snowfall_mm")) if observed else 0.0
+        precip = safe_number(row.get("precip_mm")) if observed else safe_number(row.get("precip_mm_p90"))
+        low_vis = safe_number(row.get("low_vis_hours")) if observed else safe_number(row.get("low_vis_hours_mean"))
+        if has_ice_risk or snowfall > 5:
             return "high"
-        if row.get("precip_mm", 0) > 10 or row.get("low_vis_hours", 0) >= 3:
+        if precip > 10 or low_vis >= 3:
             return "moderate"
         return "low"
 
     def _weather_description(self, row: Dict[str, Any]) -> str:
+        observed = safe_int(row.get("has_observed_weather")) > 0
+        precip = safe_number(row.get("precip_mm")) if observed else safe_number(row.get("precip_mm_mean"))
+        snowfall = safe_number(row.get("snowfall_mm")) if observed else 0.0
+        low_vis = safe_number(row.get("low_vis_hours")) if observed else safe_number(row.get("low_vis_hours_mean"))
         return (
-            f"Weather: {row.get('precip_mm', 0):.1f} mm rain, "
-            f"{row.get('snowfall_mm', 0):.1f} mm snow, "
-            f"{row.get('low_vis_hours', 0)} low-visibility hours"
+            f"Weather ({row.get('weather_source', 'unknown')}): {precip:.1f} mm rain, "
+            f"{snowfall:.1f} mm snow, "
+            f"{low_vis:.1f} low-visibility hours"
         )

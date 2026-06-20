@@ -40,7 +40,7 @@ class AgentConfig:
 
     # 数据路径
     data_dir: str = "../data_autobahn"
-    holidays_file: str = "../external/holidays/holidays.csv"
+    holidays_file: str = "../data_autobahn/合并表格，holiday日级.csv"
 
     # Agent行为配置
     max_agent_iterations: int = 5

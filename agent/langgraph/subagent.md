@@ -748,7 +748,7 @@ final_response
 
 ## Congestion Score 计算
 
-详见 `congestion_score.py`
+详见 `agent/tools/congestion_score.py`
 
 ### 输入数据
 

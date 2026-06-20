@@ -13,7 +13,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from .state import AgentState
-from .tools import TRAFFIC_TOOLS
+from ..tools.langgraph_tools import TRAFFIC_TOOLS
 
 # 尝试导入LLM
 try:
