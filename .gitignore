@@ -1,3 +1,15 @@
 data/
 .DS_Store
 !src/data/
+
+# Python virtual environment (do not commit)
+.venv/
+venv/
+
+# CatBoost training artifacts
+models/snapshots/
+
+# Notebook / pipeline cache
+processed/
+__pycache__/
+*.pyc
