@@ -6,9 +6,6 @@ data/
 .venv/
 venv/
 
-# CatBoost training artifacts
-models/snapshots/
-
 # Notebook / pipeline cache
 processed/
 __pycache__/

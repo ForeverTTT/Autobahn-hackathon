@@ -1,0 +1,5 @@
+source_id,source_type,url,coverage,notes
+autobahn_overview,current,https://www.autobahn.de/planen-bauen/projektuebersicht,2026-06-20,"Current A8/A93 project listings and statuses."
+wayback_cdx,archive_index,https://web.archive.org/cdx/search/cdx,2023-2026,"URL and capture index used to discover archived Autobahn pages."
+wayback_overview,archive_snapshot,https://web.archive.org/web/20240620094749/https://www.autobahn.de/planen-bauen/projektuebersicht?tx_kesearch_pi1%5Bfilter_1_534%5D=syscat120,2024-06-20,"Earliest usable filtered project-overview snapshot found."
+autobahn_legacy,archive_snapshot,https://web.archive.org/web/20230207091622/https://www.autobahn.de/suedbayern/planfeststellungsverfahren/laufende-planfeststellungsverfahren/a8-as-rosenheim-as-achenmuehle,2023,"Example of the pre-2024 regional site structure used for legacy planning records."
