@@ -1740,6 +1740,52 @@ button.day-cell.selected {
   color: var(--accent);
 }
 
+/* sliding Local/Global toggle (replaces the old EXPAND MAP button) */
+.view-toggle {
+  position: relative;
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 16px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.view-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  bottom: 3px;
+  width: calc(50% - 3px);
+  border-radius: 9999px;
+  background: var(--accent);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view-toggle[data-mode="global"] .view-toggle-thumb {
+  transform: translateX(100%);
+}
+
+.view-toggle button {
+  position: relative;
+  z-index: 1;
+  min-width: 92px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-toggle button.active {
+  color: #ffffff;
+}
+
 .seg-graph {
   display: block;
   width: 100%;

@@ -502,6 +502,7 @@ export default function HourlyMapPage() {
   const [selectedDate, setSelectedDate] = useState(initialState.current.date);
   const [selectedHour, setSelectedHour] = useState(initialState.current.hour);
   const [forecast, setForecast] = useState(null);
+  const [viewMode, setViewMode] = useState("local"); // "local" (scroll) | "global" (overview)
 
   const shellRef = useRef(null);
   const chartRef = useRef(null);
@@ -516,9 +517,10 @@ export default function HourlyMapPage() {
   const baseLayerRef = useRef(null);
   const segLayersRef = useRef([]); // [{ casing, line }]
   const probeMarkerRef = useRef(null);
-  const closeBtnRef = useRef(null);
   const timelineRef = useRef(null);
-  const expandedRef = useRef(false);
+  const modeRef = useRef("local"); // current view mode for the render closure
+  const lastDRef = useRef(0); // last scroll progress (to restore local view)
+  const applyViewRef = useRef(null); // set inside the route effect
 
   // road is "A8" | "A93"; direction is 1 | 2 (the two named directions).
   const journeyRoad = selectedRoad;
@@ -607,7 +609,11 @@ export default function HourlyMapPage() {
     const model = chartModelRef.current;
     const svg = chartRef.current;
     if (!model || !svg) return;
-    const d = Math.max(0, Math.min(1, progressRef.current));
+    // global mode reveals the whole chart; local follows the scroll progress
+    const d =
+      modeRef.current === "global"
+        ? 1
+        : Math.max(0, Math.min(1, progressRef.current));
     const path = svg.querySelector(".g-path");
     const focal = svg.querySelector(".g-focal");
     const dots = svg.querySelectorAll(".g-dot");
@@ -760,6 +766,9 @@ export default function HourlyMapPage() {
       // finish the reveal a touch before the very bottom so scrub easing can't
       // leave the route/line short of the end when you scroll all the way down.
       const d = Math.min(1, raw / 0.94);
+      lastDRef.current = d;
+      // global (overview) mode is static — scrolling must not move anything
+      if (modeRef.current === "global") return;
       const probeDist = d * geometry.total;
       let k = 0;
       while (
@@ -772,7 +781,7 @@ export default function HourlyMapPage() {
       const probe = pointAt(seg.pts, seg.cum, probeDist - geometry.segStart[k]);
 
       // Whatever point we've scrolled to is dead-centre on the real map.
-      map.setView(probe, map.getZoom(), { animate: false });
+      map.setView(probe, MAP_ZOOM, { animate: false });
       probeMarker.setLatLng(probe);
 
       geometry.segments.forEach((s, j) => {
@@ -812,8 +821,33 @@ export default function HourlyMapPage() {
     });
     timelineRef.current = tl;
 
+    // Local = the scroll ride (above). Global = a static overview: the whole
+    // route + every bar shown, the map zoomed out to fit all segments.
+    const applyView = (mode) => {
+      modeRef.current = mode;
+      if (mode === "global") {
+        const allPts = geometry.segments.flatMap((s) => s.pts);
+        if (allPts.length) {
+          map.fitBounds(L.latLngBounds(allPts), {
+            paddingTopLeft: [50, 50],
+            paddingBottomRight: [50, 50],
+          });
+        }
+        segLayers.forEach((layer, j) => {
+          layer.casing.setLatLngs(geometry.segments[j].pts);
+          layer.line.setLatLngs(geometry.segments[j].pts);
+        });
+        probeMarker.setOpacity(0);
+        paintGraph(); // modeRef === "global" -> paints the full chart
+      } else {
+        probeMarker.setOpacity(1);
+        render(lastDRef.current * 0.94); // restore the scroll view at MAP_ZOOM
+      }
+    };
+    applyViewRef.current = applyView;
+
     map.invalidateSize();
-    render(0);
+    applyView(modeRef.current);
 
     return () => {
       tl.scrollTrigger?.kill();
@@ -839,60 +873,11 @@ export default function HourlyMapPage() {
     });
   }, [chartData]);
 
-  const expandMap = () => {
-    expandedRef.current = true;
-    const map = mapRef.current;
-    gsap
-      .timeline()
-      .set("body", { overflow: "hidden" })
-      .to(mapLiveRef.current, {
-        width: "100%",
-        maxWidth: "100%",
-        ease: "power3.inOut",
-        duration: 0.6,
-        onUpdate: () => map && map.invalidateSize(),
-      })
-      .to(timelineRef.current, { progress: 1, ease: "power2.inOut" }, 0)
-      .to(closeBtnRef.current, { autoAlpha: 1 }, 0.3)
-      .add(() => {
-        if (map) {
-          map.dragging.enable();
-          map.scrollWheelZoom.enable();
-          map.doubleClickZoom.enable();
-          map.invalidateSize();
-        }
-      });
-  };
-
-  const collapseMap = () => {
-    expandedRef.current = false;
-    const map = mapRef.current;
-    if (map) {
-      map.dragging.disable();
-      map.scrollWheelZoom.disable();
-      map.doubleClickZoom.disable();
-      if (map.getZoom() !== MAP_ZOOM) map.setZoom(MAP_ZOOM);
-    }
-    gsap
-      .timeline()
-      .to(closeBtnRef.current, { duration: 0.2, autoAlpha: 0 })
-      .to(
-        mapLiveRef.current,
-        {
-          width: "50%",
-          maxWidth: "50%",
-          ease: "expo.inOut",
-          duration: 0.6,
-          onUpdate: () => map && map.invalidateSize(),
-        },
-        0,
-      )
-      .set("body", { overflow: "" })
-      .add(() => {
-        ScrollTrigger.refresh();
-        map && map.invalidateSize();
-      });
-  };
+  // Toggle between the scroll ride (local) and the static overview (global).
+  useEffect(() => {
+    modeRef.current = viewMode;
+    applyViewRef.current?.(viewMode);
+  }, [viewMode]);
 
   // Measure the real nav + toolbar heights so the map sits flush below the
   // combined header (the nav is taller than a hardcoded guess) — keeps the
@@ -915,9 +900,6 @@ export default function HourlyMapPage() {
 
   useEffect(() => {
     const onResize = () => {
-      if (expandedRef.current) return;
-      gsap.set(closeBtnRef.current, { autoAlpha: 0 });
-      gsap.set("body", { overflow: "" });
       mapRef.current && mapRef.current.invalidateSize();
       ScrollTrigger.refresh();
     };
@@ -1005,6 +987,23 @@ export default function HourlyMapPage() {
                 Predicted volume · vehicles / h · {selectedDate} ·{" "}
                 {formatHourRange(selectedHour)}
               </span>
+              <div className="view-toggle" data-mode={viewMode}>
+                <span className="view-toggle-thumb" />
+                <button
+                  type="button"
+                  className={viewMode === "local" ? "active" : ""}
+                  onClick={() => setViewMode("local")}
+                >
+                  Local
+                </button>
+                <button
+                  type="button"
+                  className={viewMode === "global" ? "active" : ""}
+                  onClick={() => setViewMode("global")}
+                >
+                  Global
+                </button>
+              </div>
             </div>
             <svg
               className="seg-graph"
@@ -1077,23 +1076,10 @@ export default function HourlyMapPage() {
                 />
               </g>
             </svg>
-            <button className="expand-map" type="button" onClick={expandMap}>
-              <ExpandGlyph /> EXPAND MAP
-            </button>
           </div>
         </div>
       </div>
       <div className="map-spacer" aria-hidden="true" />
-
-      <button
-        className="close-map"
-        type="button"
-        ref={closeBtnRef}
-        onClick={collapseMap}
-        aria-label="Collapse map"
-      >
-        <CloseGlyph />
-      </button>
       </section>
     </div>
   );
