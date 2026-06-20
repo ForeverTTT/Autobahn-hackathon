@@ -26,7 +26,7 @@ except ImportError:
 class ForecastAgent(BaseAgent):
     """
     预测Agent
-    - 调用CatBoost模型获取P10/P50/P90流量预测
+    - 改成直接调用我们已经跑完的模型数据
     - 返回预测结果和置信区间
     """
 
