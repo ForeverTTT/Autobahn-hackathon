@@ -69,6 +69,10 @@ class Orchestrator:
             hours=parsed.data_requirements.hours,
             user_type=parsed.user_type,
             destination=parsed.destination,
+            start_date=parsed.time_range.start_date,
+            end_date=parsed.time_range.end_date,
+            granularity=parsed.data_requirements.granularity.value,
+            include_factors=True,
         )
 
         # 3. 根据画像和时间范围决定需要哪些 Agent
