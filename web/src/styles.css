@@ -283,14 +283,12 @@ a:focus-visible {
 }
 
 .legend-dot.smooth,
-.popup-status.smooth,
-.google-status.smooth {
+.map-status.smooth {
   background: var(--green);
 }
 
 .legend-dot.heavy,
-.popup-status.heavy,
-.google-status.heavy {
+.map-status.heavy {
   background: var(--red);
 }
 
@@ -412,22 +410,82 @@ a:focus-visible {
   box-shadow: 0 0 0 3px rgba(69, 170, 114, 0.13);
 }
 
-.road-key {
-  display: flex;
-  gap: 22px;
+.road-control {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
 }
 
-.road-key > span {
+.control-label {
+  color: #929991;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.road-selector {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #f1f4ef;
+}
+
+.road-selector button {
+  min-width: 78px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7b847d;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 850;
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.road-selector button:hover {
+  color: var(--ink);
+}
+
+.road-selector button.active {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(23, 32, 26, 0.12);
+}
+
+.direction-key {
+  display: flex;
+  gap: 15px;
+}
+
+.direction-key > span {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 6px;
   color: #5f6962;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 650;
 }
 
+.direction-key b {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  place-items: center;
+  border-radius: 5px;
+  background: #e8ede6;
+  color: #657068;
+  font-size: 8px;
+}
+
 .route-badge,
-.google-route-badge {
+.map-route-badge {
   display: inline-grid;
   min-width: 37px;
   height: 24px;
@@ -608,6 +666,10 @@ button.day-cell.selected {
   font-weight: 700;
 }
 
+.direction-name {
+  white-space: nowrap;
+}
+
 .map-heading {
   align-items: center;
 }
@@ -662,7 +724,6 @@ button.day-cell.selected {
     0 24px 70px rgba(36, 49, 39, 0.08);
 }
 
-.google-map,
 .leaflet-map {
   position: relative;
   z-index: 1;
@@ -738,8 +799,7 @@ button.day-cell.selected {
   gap: 18px;
 }
 
-.leaflet-road-popup > div,
-.google-road-popup > div {
+.leaflet-road-popup > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -747,26 +807,21 @@ button.day-cell.selected {
 }
 
 .leaflet-road-popup strong,
-.leaflet-road-popup small,
-.google-road-popup strong,
-.google-road-popup small {
+.leaflet-road-popup small {
   display: block;
 }
 
-.leaflet-road-popup strong,
-.google-road-popup strong {
+.leaflet-road-popup strong {
   font-size: 13px;
 }
 
-.leaflet-road-popup small,
-.google-road-popup small {
+.leaflet-road-popup small {
   margin-top: 5px;
   color: #929a93;
   font-size: 9px;
 }
 
-.popup-status,
-.google-status {
+.map-status {
   padding: 5px 8px;
   border-radius: 999px;
   color: #fff;
@@ -776,8 +831,7 @@ button.day-cell.selected {
   text-transform: uppercase;
 }
 
-.leaflet-road-popup,
-.google-road-popup {
+.leaflet-road-popup {
   min-width: 200px;
   padding: 3px 1px;
   color: var(--ink);
@@ -786,7 +840,7 @@ button.day-cell.selected {
     sans-serif;
 }
 
-.google-route-badge {
+.map-route-badge {
   min-width: 34px;
   height: 21px;
 }
@@ -826,21 +880,6 @@ button.day-cell.selected {
   border-top-color: rgba(255, 255, 255, 0.97) !important;
 }
 
-.gm-style .gm-style-iw-c {
-  padding: 12px !important;
-  border-radius: 14px !important;
-  box-shadow: 0 16px 38px rgba(35, 48, 38, 0.18) !important;
-}
-
-.gm-style .gm-style-iw-d {
-  overflow: auto !important;
-  padding: 0 !important;
-}
-
-.gm-style .gm-style-iw-chr {
-  display: none;
-}
-
 @media (max-width: 900px) {
   .topbar {
     grid-template-columns: auto 1fr;
@@ -874,9 +913,9 @@ button.day-cell.selected {
     flex-direction: column;
   }
 
-  .road-key {
+  .road-control {
     width: 100%;
-    justify-content: space-between;
+    justify-items: start;
   }
 
   .day-cell {
@@ -979,14 +1018,26 @@ button.day-cell.selected {
     width: 124px;
   }
 
-  .road-key {
-    overflow-x: auto;
-    justify-content: flex-start;
-    gap: 18px;
-    padding-bottom: 4px;
+  .road-control {
+    gap: 8px;
   }
 
-  .road-key > span {
+  .road-selector {
+    width: 100%;
+  }
+
+  .road-selector button {
+    flex: 1;
+  }
+
+  .direction-key {
+    overflow-x: auto;
+    width: 100%;
+    gap: 12px;
+    padding-bottom: 3px;
+  }
+
+  .direction-key > span {
     white-space: nowrap;
   }
 

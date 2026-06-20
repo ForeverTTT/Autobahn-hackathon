@@ -16,6 +16,24 @@ const MONTHS = [
   "December",
 ];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const ROADS = {
+  a8: {
+    id: "a8",
+    name: "A8",
+    directions: [
+      { label: "Munich → Salzburg", shortLabel: "→ SBG", seed: 0 },
+      { label: "Salzburg → Munich", shortLabel: "→ MUC", seed: 1 },
+    ],
+  },
+  a93: {
+    id: "a93",
+    name: "A93",
+    directions: [
+      { label: "Rosenheim → Kufstein", shortLabel: "→ KUF", seed: 2 },
+      { label: "Kufstein → Rosenheim", shortLabel: "→ ROS", seed: 3 },
+    ],
+  },
+};
 
 function demoTrafficStatus(year, month, day, roadIndex) {
   const value =
@@ -29,7 +47,7 @@ function demoTrafficStatus(year, month, day, roadIndex) {
     : "smooth";
 }
 
-function buildMonth(year, month) {
+function buildMonth(year, month, road) {
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const mondayOffset = (firstDay.getDay() + 6) % 7;
@@ -41,8 +59,9 @@ function buildMonth(year, month) {
     return {
       day,
       date: new Date(year, month, day),
-      a8: demoTrafficStatus(year, month, day, 0),
-      a93: demoTrafficStatus(year, month, day, 1),
+      directions: road.directions.map((direction) =>
+        demoTrafficStatus(year, month, day, direction.seed),
+      ),
     };
   });
 }
@@ -68,9 +87,11 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(
     YEARS.includes(today.getFullYear()) ? today.getMonth() : 5,
   );
+  const [roadId, setRoadId] = useState("a8");
   const [selectedDay, setSelectedDay] = useState(null);
+  const road = ROADS[roadId];
 
-  const days = useMemo(() => buildMonth(year, month), [year, month]);
+  const days = useMemo(() => buildMonth(year, month, road), [year, month, road]);
 
   const moveMonth = (offset) => {
     const next = new Date(year, month + offset, 1);
@@ -94,8 +115,7 @@ export default function CalendarPage() {
           <span className="eyebrow">TRAFFIC OUTLOOK · 2023–2029</span>
           <h1>When will the road get busy?</h1>
           <p>
-            A daily overview of average congestion on the two Alpine
-            corridors.
+            Choose a highway to compare average congestion in both directions.
           </p>
         </div>
 
@@ -166,15 +186,32 @@ export default function CalendarPage() {
             </button>
           </div>
 
-          <div className="road-key">
-            <span>
-              <b className="route-badge a8">A8</b>
-              Munich → Salzburg
-            </span>
-            <span>
-              <b className="route-badge a93">A93</b>
-              Rosenheim → Kufstein
-            </span>
+          <div className="road-control">
+            <span className="control-label">Selected highway</span>
+            <div className="road-selector" aria-label="Select highway">
+              {Object.values(ROADS).map((availableRoad) => (
+                <button
+                  className={availableRoad.id === roadId ? "active" : ""}
+                  type="button"
+                  key={availableRoad.id}
+                  onClick={() => {
+                    setRoadId(availableRoad.id);
+                    setSelectedDay(null);
+                  }}
+                  aria-pressed={availableRoad.id === roadId}
+                >
+                  {availableRoad.name}
+                </button>
+              ))}
+            </div>
+            <div className="direction-key">
+              {road.directions.map((direction, index) => (
+                <span key={direction.label}>
+                  <b>{index + 1}</b>
+                  {direction.label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -194,16 +231,16 @@ export default function CalendarPage() {
                 }`}
                 key={item.date.toISOString()}
                 onClick={() => setSelectedDay(item.day)}
-                aria-label={`${MONTHS[month]} ${item.day}, ${year}. A8 ${item.a8}, A93 ${item.a93}.`}
+                aria-label={`${MONTHS[month]} ${item.day}, ${year}. ${road.directions[0].label} ${item.directions[0]}, ${road.directions[1].label} ${item.directions[1]}.`}
               >
                 <span className="day-number">{item.day}</span>
                 <span className="traffic-bars" aria-hidden="true">
-                  <i className={item.a8} />
-                  <i className={item.a93} />
+                  <i className={item.directions[0]} />
+                  <i className={item.directions[1]} />
                 </span>
                 <span className="mobile-road-labels">
-                  <small>A8</small>
-                  <small>A93</small>
+                  <small>1</small>
+                  <small>2</small>
                 </span>
               </button>
             ) : (
@@ -222,22 +259,22 @@ export default function CalendarPage() {
                 </strong>
               </div>
               <div className="summary-routes">
-                <span>
-                  <b className="route-badge a8">A8</b>
-                  <i className={`legend-dot ${selected.a8}`} />
-                  {selected.a8 === "smooth" ? "Smooth traffic" : "Heavy traffic"}
-                </span>
-                <span>
-                  <b className="route-badge a93">A93</b>
-                  <i className={`legend-dot ${selected.a93}`} />
-                  {selected.a93 === "smooth"
-                    ? "Smooth traffic"
-                    : "Heavy traffic"}
-                </span>
+                {road.directions.map((direction, index) => (
+                  <span key={direction.label}>
+                    <b className={`route-badge ${road.id}`}>{road.name}</b>
+                    <span className="direction-name">{direction.label}</span>
+                    <i
+                      className={`legend-dot ${selected.directions[index]}`}
+                    />
+                    {selected.directions[index] === "smooth"
+                      ? "Smooth"
+                      : "Heavy"}
+                  </span>
+                ))}
               </div>
             </>
           ) : (
-            <p>Select a date to inspect both corridor forecasts.</p>
+            <p>Select a date to inspect both directions of {road.name}.</p>
           )}
         </div>
       </div>
