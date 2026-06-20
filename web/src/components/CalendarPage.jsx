@@ -8,6 +8,7 @@ import {
   ROAD_DIRECTIONS,
   statusLabel,
 } from "../lib/trafficData";
+import RouteArrow from "../../arrows/RouteArrow";
 
 const YEARS = Array.from({ length: 7 }, (_, index) => 2023 + index);
 const MONTHS = [
@@ -29,6 +30,31 @@ const ROADS = [
   { id: "A8", className: "a8" },
   { id: "A93", className: "a93" },
 ];
+const STATUS_SCORE = {
+  smooth: 0,
+  busy: 1,
+  heavy: 2,
+};
+const SCORE_STATUS = ["smooth", "busy", "heavy"];
+
+function buildTrafficOverview(dateKey, road, direction) {
+  return Array.from({ length: 6 }, (_, index) => {
+    const startHour = index * 4;
+    const statuses = Array.from({ length: 4 }, (_, hourOffset) =>
+      getHourlyStatus(dateKey, road, direction, startHour + hourOffset),
+    );
+    const averageScore =
+      statuses.reduce((total, status) => total + STATUS_SCORE[status], 0) /
+      statuses.length;
+
+    return {
+      label: `${String(startHour).padStart(2, "0")}–${String(
+        startHour + 4,
+      ).padStart(2, "0")}`,
+      status: SCORE_STATUS[Math.round(averageScore)],
+    };
+  });
+}
 
 function buildMonth(year, month, road) {
   const firstDay = new Date(year, month, 1);
@@ -89,6 +115,13 @@ export default function CalendarPage() {
     ? days.find((item) => item?.day === selectedDay)
     : null;
   const directions = ROAD_DIRECTIONS[road];
+  const trafficOverview = useMemo(
+    () =>
+      selected
+        ? buildTrafficOverview(selected.dateKey, road, detailDirection)
+        : [],
+    [selected?.dateKey, road, detailDirection],
+  );
 
   const moveMonth = (offset) => {
     const next = new Date(year, month + offset, 1);
@@ -212,7 +245,12 @@ export default function CalendarPage() {
               <div className="direction-key">
                 {directions.map((direction, index) => (
                   <span key={direction}>
-                    <b>{index + 1}</b>
+                    <RouteArrow
+                      road={road}
+                      direction={index + 1}
+                      status="neutral"
+                      label={direction}
+                    />
                     {direction}
                   </span>
                 ))}
@@ -239,13 +277,21 @@ export default function CalendarPage() {
                   aria-label={`${MONTHS[month]} ${item.day}, ${year}. ${directions[0]} ${statusLabel(item.directions[0])}, ${directions[1]} ${statusLabel(item.directions[1])}.`}
                 >
                   <span className="day-number">{item.day}</span>
-                  <span className="traffic-bars" aria-hidden="true">
-                    <i className={item.directions[0]} />
-                    <i className={item.directions[1]} />
-                  </span>
-                  <span className="mobile-road-labels">
-                    <small>1</small>
-                    <small>2</small>
+                  <span
+                    className={`calendar-route-shapes ${road.toLowerCase()}`}
+                  >
+                    <RouteArrow
+                      road={road}
+                      direction={1}
+                      status={item.directions[0]}
+                      label={`${directions[0]}: ${statusLabel(item.directions[0])}`}
+                    />
+                    <RouteArrow
+                      road={road}
+                      direction={2}
+                      status={item.directions[1]}
+                      label={`${directions[1]}: ${statusLabel(item.directions[1])}`}
+                    />
                   </span>
                 </button>
               ) : (
@@ -293,9 +339,34 @@ export default function CalendarPage() {
                     key={direction}
                     onClick={() => setDetailDirection(index + 1)}
                   >
-                    <small>{index + 1}</small>
+                    <RouteArrow
+                      road={road}
+                      direction={index + 1}
+                      status="neutral"
+                      label={direction}
+                    />
                     {direction}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="traffic-overview">
+              <span className="traffic-overview-title">
+                4-hour average traffic
+              </span>
+              <div className="traffic-overview-line">
+                {trafficOverview.map((period) => (
+                  <span
+                    className={`traffic-overview-segment ${period.status}`}
+                    key={period.label}
+                    title={`${period.label}: ${statusLabel(period.status)}`}
+                  />
+                ))}
+              </div>
+              <div className="traffic-overview-labels">
+                {trafficOverview.map((period) => (
+                  <span key={period.label}>{period.label}</span>
                 ))}
               </div>
             </div>
