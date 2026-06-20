@@ -8,14 +8,14 @@ AlpineFlow AI Agent 层
 - 个性化建议生成
 
 使用方式:
-    from agent import ask, get_plan, Orchestrator
+    from agent import chat
 
-    # 快速查询
-    advice = ask("周六去萨尔茨堡，什么时候出发好？")
-    print(advice)
+    # 对话式交互（推荐）
+    print(chat("周六去萨尔茨堡，什么时候出发好？"))
 
-    # 获取完整计划
-    plan = get_plan("2026-07-25", destination="salzburg", user_type="traveler")
+    # 带调试信息
+    from agent import ask
+    print(ask("明天去萨尔茨堡", verbose=True))
 """
 
 # 核心模型
@@ -37,6 +37,7 @@ from .models import (
 from .orchestrator import (
     Orchestrator,
     ask,
+    chat,
     get_plan,
 )
 
@@ -99,6 +100,7 @@ __all__ = [
     # 调度器
     "Orchestrator",
     "ask",
+    "chat",
     "get_plan",
     # Agents
     "IntentParser",

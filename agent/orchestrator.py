@@ -27,12 +27,18 @@ class Orchestrator:
     4. 返回针对用户画像的响应
     """
 
-    def __init__(self):
+    def __init__(self, verbose: bool = True):
+        self.verbose = verbose
         self.intent_parser = IntentParser()
         self.forecast_agent = ForecastAgent()
         self.context_agent = ContextAgent()
         self.search_agent = SearchAgent()
         self.generation_agent = GenerationAgent()
+
+    def _log(self, message: str):
+        """打印调试信息（仅在 verbose 模式下）"""
+        if self.verbose:
+            print(message)
 
     async def process(self, query: str, user_type: UserType = None) -> Dict[str, Any]:
         """
@@ -49,17 +55,17 @@ class Orchestrator:
         parsed = await self.intent_parser.parse_async(query, user_type)
 
         # 打印调试信息
-        print(f"[Orchestrator] Persona: {parsed.persona_type.value}")
-        print(f"[Orchestrator] Core Question: {parsed.core_question}")
-        print(f"[Orchestrator] Time Range: {parsed.time_range.type.value} ({parsed.time_range.description})")
-        print(f"[Orchestrator]   - Start: {parsed.time_range.start_date}")
-        print(f"[Orchestrator]   - End: {parsed.time_range.end_date}")
-        print(f"[Orchestrator]   - Duration: {parsed.time_range.duration_days} days")
-        print(f"[Orchestrator] Granularity: {parsed.data_requirements.granularity.value}")
+        self._log(f"[Orchestrator] Persona: {parsed.persona_type.value}")
+        self._log(f"[Orchestrator] Core Question: {parsed.core_question}")
+        self._log(f"[Orchestrator] Time Range: {parsed.time_range.type.value} ({parsed.time_range.description})")
+        self._log(f"[Orchestrator]   - Start: {parsed.time_range.start_date}")
+        self._log(f"[Orchestrator]   - End: {parsed.time_range.end_date}")
+        self._log(f"[Orchestrator]   - Duration: {parsed.time_range.duration_days} days")
+        self._log(f"[Orchestrator] Granularity: {parsed.data_requirements.granularity.value}")
         if parsed.trip_plan:
-            print(f"[Orchestrator] Trip Type: {parsed.trip_plan.trip_type.value}")
+            self._log(f"[Orchestrator] Trip Type: {parsed.trip_plan.trip_type.value}")
             if parsed.trip_plan.stay_days:
-                print(f"[Orchestrator] Stay Days: {parsed.trip_plan.stay_days}")
+                self._log(f"[Orchestrator] Stay Days: {parsed.trip_plan.stay_days}")
 
         # 2. 创建请求
         request = AgentRequest(
@@ -163,23 +169,63 @@ class Orchestrator:
             "search": asyncio.create_task(self.search_agent.process(request)),
         }
 
-        print(f"[Orchestrator] Running agents: forecast, context, search")
+        self._log(f"[Orchestrator] Running agents: forecast, context, search")
 
         return tasks
 
     def process_sync(self, query: str, user_type: UserType = None) -> Dict[str, Any]:
-        """同步版本"""
-        return asyncio.run(self.process(query, user_type))
+        """同步版本 - 支持 Jupyter notebook"""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # 没有运行中的事件循环，使用 asyncio.run()
+            return asyncio.run(self.process(query, user_type))
+
+        # 在 Jupyter notebook 中，已有事件循环运行
+        # 使用 nest_asyncio 允许嵌套事件循环
+        import nest_asyncio
+        nest_asyncio.apply()
+        return loop.run_until_complete(self.process(query, user_type))
 
 
 # ============ 便捷函数 ============
 
-def ask(query: str, user_type: str = None) -> str:
-    """快速查询"""
-    orchestrator = Orchestrator()
+def ask(query: str, user_type: str = None, verbose: bool = True) -> str:
+    """
+    快速查询（带调试信息）
+
+    Args:
+        query: 用户自然语言问题
+        user_type: 用户类型（可选）
+        verbose: 是否打印调试信息
+
+    Returns:
+        自然语言回答
+    """
+    orchestrator = Orchestrator(verbose=verbose)
     user_type_enum = UserType(user_type) if user_type else None
     result = orchestrator.process_sync(query, user_type_enum)
     return result.get("advice", "无法生成建议")
+
+
+def chat(query: str) -> str:
+    """
+    对话式接口 - 纯净的自然语言交互
+
+    Args:
+        query: 用户自然语言问题，例如：
+            - "明天去萨尔茨堡怎么样"
+            - "暑假带家人自驾游去奥地利"
+            - "我是货车司机，后天送货去因斯布鲁克"
+
+    Returns:
+        自然语言回答（Markdown 格式）
+
+    Example:
+        >>> from agent import chat
+        >>> print(chat("周末去萨尔茨堡"))
+    """
+    return ask(query, verbose=False)
 
 
 def get_plan(
