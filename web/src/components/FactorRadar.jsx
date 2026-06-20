@@ -1,35 +1,17 @@
 // Factor-influence radar for the Map page's GLOBAL mode.
-// MOCK DATA for now (real factor-attribution data is not wired yet) — values
-// are seeded from the current selection so they feel alive across date/hour.
+// Driven by REAL factor attribution (public/factors.json, from the model's
+// per-hour `reason` breakdown). The historical baseline is excluded (it's a
+// structural prior, not a situational cause); the remaining reasons are
+// re-proportioned among themselves and scaled to fill the chart, so the
+// polygon shows their relative weight. No raw % is drawn.
+//
+// Props: factors = [{ label, value (0..1) }]
 
-export const RADAR_FACTORS = [
-  "Weather",
-  "Accident",
-  "Event",
-  "Construction",
-  "Holiday",
-];
-
-function hash(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i += 1) {
-    h = (h * 31 + str.charCodeAt(i)) % 100003;
-  }
-  return h;
-}
-
-export function buildFactors(seedKey) {
-  return RADAR_FACTORS.map((label) => {
-    const v = (hash(`${seedKey}|${label}`) % 1000) / 1000;
-    return { label, value: 0.22 + v * 0.73 }; // mock influence 0.22–0.95
-  });
-}
-
-const W = 280;
+const W = 300;
 const H = 236;
-const CX = 140;
-const CY = 116;
-const R = 76;
+const CX = 150;
+const CY = 112;
+const R = 82;
 
 export default function FactorRadar({ factors }) {
   const n = factors.length;
@@ -45,10 +27,10 @@ export default function FactorRadar({ factors }) {
   );
   const axisLines = factors.map((_, i) => pt(i, 1));
   const valuePts = factors.map((f, i) =>
-    pt(i, Math.max(0.05, Math.min(1, f.value))),
+    pt(i, Math.max(0.04, Math.min(1, f.value))),
   );
   const valuePoly = valuePts.map(fmt).join(" ");
-  const labelPts = factors.map((_, i) => pt(i, 1.2));
+  const labelPts = factors.map((_, i) => pt(i, 1.16));
 
   return (
     <svg className="radar radar--in" viewBox={`0 0 ${W} ${H}`}>

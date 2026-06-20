@@ -185,32 +185,6 @@ export default function CalendarPage() {
   return (
     <>
       <section className="calendar-page page-container">
-        <div className="calendar-top-tools">
-          <div className="legend-card" aria-label="Traffic legend">
-            <span className="legend-title">Traffic level</span>
-            <span className="legend-item">
-              <i className="legend-dot smooth" />
-              Smooth
-            </span>
-            <span className="legend-item">
-              <i className="legend-dot light" />
-              Light
-            </span>
-            <span className="legend-item">
-              <i className="legend-dot moderate" />
-              Moderate
-            </span>
-            <span className="legend-item">
-              <i className="legend-dot heavy" />
-              Heavy
-            </span>
-            <span className="legend-item">
-              <i className="legend-dot critical" />
-              Critical
-            </span>
-          </div>
-        </div>
-
         <div className="calendar-card">
           <div className="calendar-toolbar">
             <div className="month-navigation">
@@ -282,18 +256,43 @@ export default function CalendarPage() {
                   </button>
                 ))}
               </div>
-              <div className="direction-key">
-                {directions.map((direction, index) => (
-                  <span key={direction}>
-                    <RouteArrow
-                      road={road}
-                      direction={index + 1}
-                      status="neutral"
-                      label={direction}
-                    />
-                    {direction}
+              <div className="direction-key-row">
+                <div className="legend-inline" aria-label="Traffic legend">
+                  <span className="legend-title">Traffic level</span>
+                  <span className="legend-item">
+                    <i className="legend-dot smooth" />
+                    Smooth
                   </span>
-                ))}
+                  <span className="legend-item">
+                    <i className="legend-dot light" />
+                    Light
+                  </span>
+                  <span className="legend-item">
+                    <i className="legend-dot moderate" />
+                    Moderate
+                  </span>
+                  <span className="legend-item">
+                    <i className="legend-dot heavy" />
+                    Heavy
+                  </span>
+                  <span className="legend-item">
+                    <i className="legend-dot critical" />
+                    Critical
+                  </span>
+                </div>
+                <div className="direction-key">
+                  {directions.map((direction, index) => (
+                    <span key={direction}>
+                      <RouteArrow
+                        road={road}
+                        direction={index + 1}
+                        status="neutral"
+                        label={direction}
+                      />
+                      {direction}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

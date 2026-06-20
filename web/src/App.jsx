@@ -36,16 +36,37 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  // The nav is fixed to the top; expose its real height so content below it
-  // (and the map page's pinned layout) can offset by exactly the right amount.
+  // Lock the whole UI to a fixed "design width" and scale it uniformly so the
+  // proportions never change between screens / browser zoom levels. Above the
+  // design width (incl. zooming out, which widens the viewport) we set a `zoom`
+  // on <html> = realWidth / DESIGN, making every vw/vh resolve as if the
+  // viewport were exactly DESIGN px wide, then magnified — so layout, fonts and
+  // spacing all scale together. Below DESIGN we leave zoom at 1 and the existing
+  // responsive rules handle narrow windows / phones.
+  //
+  // `zoom` (not transform: scale) is used on purpose: it keeps position:fixed,
+  // the Leaflet map and GSAP ScrollTrigger working, since it scales the real
+  // CSS pixel grid rather than just the painted output.
   useEffect(() => {
-    const setNavHeight = () => {
-      const h = navRef.current?.offsetHeight ?? 78;
-      shellRef.current?.style.setProperty("--nav-h", `${h}px`);
+    const DESIGN_WIDTH = 1500;
+    const html = document.documentElement;
+
+    const applyScale = () => {
+      // measure in true (un-zoomed) pixels first
+      html.style.zoom = "1";
+      const navH = navRef.current?.offsetHeight ?? 78;
+      shellRef.current?.style.setProperty("--nav-h", `${navH}px`);
+      const realWidth = window.innerWidth; // innerWidth is at zoom:1 right now
+      const z = realWidth > DESIGN_WIDTH ? realWidth / DESIGN_WIDTH : 1;
+      html.style.zoom = String(z);
     };
-    setNavHeight();
-    window.addEventListener("resize", setNavHeight);
-    return () => window.removeEventListener("resize", setNavHeight);
+
+    applyScale();
+    window.addEventListener("resize", applyScale);
+    return () => {
+      window.removeEventListener("resize", applyScale);
+      html.style.zoom = "";
+    };
   }, []);
 
   return (

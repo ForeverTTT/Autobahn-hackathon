@@ -13,7 +13,7 @@ import {
   TRAFFIC_LEVELS,
 } from "../lib/trafficData";
 import { DateField, HourField } from "./TimeControls";
-import FactorRadar, { buildFactors } from "./FactorRadar";
+import FactorRadar from "./FactorRadar";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -329,6 +329,47 @@ function congestionStatus(score) {
   return "smooth";
 }
 
+// Human-readable phrase per factor, for the MOCK radar narrative. Replaced by
+// the live agent message later.
+const FACTOR_NOTE = {
+  Time: "the time-of-day rush pattern",
+  Road: "the road segment & detector layout",
+  Holiday: "holiday travel demand",
+  Weather: "current weather and temperature",
+  Event: "a nearby special event",
+  Construction: "active roadworks",
+};
+
+const phrase = (label) => FACTOR_NOTE[label] ?? label;
+const sentenceCase = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function buildFactorNotes(factors, directionLabel) {
+  const ranked = factors
+    .filter((f) => f.pct > 0)
+    .sort((a, b) => b.pct - a.pct);
+  if (!ranked.length) {
+    return [
+      `No standout situational reason on ${directionLabel} this hour — flow is tracking the historical baseline.`,
+    ];
+  }
+  const notes = [
+    `${sentenceCase(phrase(ranked[0].label))} is the main reason shaping flow on ${directionLabel} right now.`,
+  ];
+  if (ranked[1]) notes.push(`${sentenceCase(phrase(ranked[1].label))} adds a secondary push.`);
+  if (ranked[2]) notes.push(`${sentenceCase(phrase(ranked[2].label))} is also in play.`);
+  return notes;
+}
+
+// Turn the agent's bullet-point explanation string ("• …\n• …") into an array
+// of clean bullet lines.
+function parseExplanation(text) {
+  if (!text || typeof text !== "string") return [];
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*[•\-*·–—]+\s*/, "").trim())
+    .filter(Boolean);
+}
+
 function worseStatus(a, b) {
   return SEVERITY[a] >= SEVERITY[b] ? a : b;
 }
@@ -514,6 +555,8 @@ export default function HourlyMapPage() {
   const [selectedDate, setSelectedDate] = useState(initialState.current.date);
   const [selectedHour, setSelectedHour] = useState(initialState.current.hour);
   const [forecast, setForecast] = useState(null);
+  const [factorData, setFactorData] = useState(null);
+  const [explain, setExplain] = useState({ status: "idle", notes: null }); // live agent narrative
   const [viewMode, setViewMode] = useState("local"); // "local" (scroll) | "global" (overview)
 
   const shellRef = useRef(null);
@@ -567,6 +610,18 @@ export default function HourlyMapPage() {
     fetch(`${import.meta.env.BASE_URL}forecast.json`)
       .then((r) => r.json())
       .then((data) => alive && setForecast(data))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Load the real per-hour factor attribution (radar, GLOBAL mode) once.
+  useEffect(() => {
+    let alive = true;
+    fetch(`${import.meta.env.BASE_URL}factors.json`)
+      .then((r) => r.json())
+      .then((data) => alive && setFactorData(data))
       .catch(() => {});
     return () => {
       alive = false;
@@ -632,11 +687,86 @@ export default function HourlyMapPage() {
     return { points, pathD, truckPathD, max, segCong };
   }, [forecast, selectedDate, selectedHour, journeyRoad, dirNumber, geometry]);
 
-  // Global-mode factor radar — MOCK data until factor-attribution is wired.
-  const radarFactors = useMemo(
-    () => buildFactors(`${selectedDate}|${selectedHour}|${journeyRoad}|${dirNumber}`),
-    [selectedDate, selectedHour, journeyRoad, dirNumber],
+  // Global-mode factor radar — REAL attribution from factors.json. The
+  // historical baseline (factor index 0) is dropped — it's a structural prior,
+  // not a situational cause — and the remaining reasons are re-proportioned
+  // among themselves, then scaled so the largest fills the chart (ratios kept).
+  // No % is shown. Attribution covers 2026 only, so other years map to the same
+  // month/day.
+  const radarFactors = useMemo(() => {
+    const allLabels = factorData?.factors ?? [
+      "Baseline",
+      "Time",
+      "Road",
+      "Holiday",
+      "Weather",
+      "Event",
+      "Construction",
+    ];
+    // exclude the historical baseline (index 0)
+    const keep = allLabels.map((label, i) => ({ label, i })).slice(1);
+    if (!factorData) {
+      return keep.map(({ label }) => ({ label, value: 0, pct: 0 }));
+    }
+    const [, mm, dd] = selectedDate.split("-").map(Number);
+    const di = Math.round(
+      (Date.UTC(2026, mm - 1, dd) - Date.UTC(2026, 0, 1)) / 86400000,
+    );
+    const idx =
+      Math.max(0, Math.min(factorData.days - 1, di)) * factorData.hours +
+      selectedHour;
+    const corridor = factorData.corridors[`${journeyRoad}-${dirNumber}`];
+    const row = corridor?.[idx] ?? allLabels.map(() => 0);
+
+    const pcts = keep.map(({ i }) => row[i] ?? 0);
+    const total = pcts.reduce((a, b) => a + b, 0) || 1;
+    const shares = pcts.map((p) => p / total); // re-proportion among the kept
+    const maxShare = Math.max(...shares, 1e-6);
+    return keep.map(({ label }, k) => ({
+      label,
+      value: shares[k] / maxShare, // fill the radar, keep ratios
+      pct: Math.round(shares[k] * 100),
+    }));
+  }, [factorData, selectedDate, selectedHour, journeyRoad, dirNumber]);
+
+  // Local templated fallback for the read-out, used until the live agent
+  // explanation arrives (or if the agent API is unreachable).
+  const fallbackNotes = useMemo(
+    () => buildFactorNotes(radarFactors, directionLabel),
+    [radarFactors, directionLabel],
   );
+
+  // Live natural-language explanation from the agent API
+  // (GET /api/explain/{date}/{hour}). It's an LLM call so it can take a few
+  // seconds — only fetch in GLOBAL mode, show a loading line, and fall back to
+  // the templated notes on any error. The endpoint is per road (not direction).
+  useEffect(() => {
+    if (viewMode !== "global") return undefined;
+    const controller = new AbortController();
+    setExplain({ status: "loading", notes: null });
+    fetch(
+      `/api/explain/${selectedDate}/${selectedHour}?road=${journeyRoad}&lang=en`,
+      { signal: controller.signal },
+    )
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data) => {
+        const notes = parseExplanation(data?.explanation);
+        setExplain(
+          notes.length
+            ? { status: "ready", notes }
+            : { status: "error", notes: null },
+        );
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") setExplain({ status: "error", notes: null });
+      });
+    return () => controller.abort();
+  }, [viewMode, selectedDate, selectedHour, journeyRoad]);
+
+  // What the panel actually renders: live agent notes when ready, the templated
+  // fallback otherwise (a loading flag drives a "generating…" line in the view).
+  const radarNotes = explain.status === "ready" ? explain.notes : fallbackNotes;
+  const notesLoading = explain.status === "loading";
 
   // Faithful jEVVvOr scroll-graph, driven imperatively from the shared scroll
   // progress: the line draws in, the dots pop, the focal point rides the line
@@ -1020,7 +1150,7 @@ export default function HourlyMapPage() {
               <h2>{directionLabel}</h2>
               <span className="seg-chart-kicker">
                 {viewMode === "global"
-                  ? `Factor influence · mock · ${selectedDate}`
+                  ? `Factor influence · ${selectedDate} · ${formatHourRange(selectedHour)}`
                   : `Predicted volume · vehicles / h · ${selectedDate} · ${formatHourRange(selectedHour)}`}
               </span>
               {viewMode === "local" && (
@@ -1052,7 +1182,22 @@ export default function HourlyMapPage() {
               </div>
             </div>
             {viewMode === "global" ? (
-              <FactorRadar factors={radarFactors} />
+              <div className="factor-readout">
+                <FactorRadar factors={radarFactors} />
+                {notesLoading ? (
+                  <ul className="factor-notes">
+                    <li className="factor-notes-loading">
+                      Generating live explanation…
+                    </li>
+                  </ul>
+                ) : (
+                  <ul className="factor-notes">
+                    {radarNotes.map((note, i) => (
+                      <li key={i}>{note}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             ) : (
             <svg
               className="seg-graph"

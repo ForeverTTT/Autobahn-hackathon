@@ -23,7 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-from agent.tools.api_handlers import ChatSessionRegistry
+from agent.tools.api_handlers import ChatSessionRegistry, handle_hourly_explanation
 from agent.tools.calendar_data import calendar_traffic_loader
 
 
@@ -70,6 +70,12 @@ class DemoApiHandler(BaseHTTPRequestHandler):
             )
             return
 
+        # Natural-language factor explanation for the map page's GLOBAL radar.
+        # /api/explain/{date}/{hour}?road=A8&lang=en
+        if parsed.path.startswith("/api/explain/"):
+            self.handle_explain(parsed)
+            return
+
         if parsed.path != "/api/calendar/daily":
             self.send_json(404, {"detail": "Not found"})
             return
@@ -85,6 +91,35 @@ class DemoApiHandler(BaseHTTPRequestHandler):
             return
         except FileNotFoundError as error:
             self.send_json(503, {"detail": str(error)})
+            return
+
+        self.send_json(200, payload)
+
+    def handle_explain(self, parsed) -> None:
+        parts = [p for p in parsed.path[len("/api/explain/"):].split("/") if p]
+        if len(parts) != 2:
+            self.send_json(404, {"detail": "Not found"})
+            return
+        date = unquote(parts[0]).strip()
+        try:
+            hour = int(parts[1])
+        except ValueError:
+            self.send_json(400, {"detail": "hour must be an integer"})
+            return
+
+        params = parse_qs(parsed.query)
+        road = params.get("road", ["A8"])[0]
+        lang = params.get("lang", ["en"])[0]
+
+        try:
+            payload = self.run_agent_coroutine(
+                handle_hourly_explanation(date, hour, road, lang)
+            )
+        except FutureTimeoutError:
+            self.send_json(504, {"detail": "The explanation agent timed out"})
+            return
+        except Exception as error:
+            self.send_json(500, {"detail": str(error)})
             return
 
         self.send_json(200, payload)
