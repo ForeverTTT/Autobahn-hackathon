@@ -1,34 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CalendarPage from "./components/CalendarPage";
 import MapPage from "./components/MapPage";
+import HourlyMapPage from "./components/HourlyMapPage";
+import GooeyNav from "./components/GooeyNav";
 import AgentBot from "../agent/AgentBot";
 
-const pages = new Set(["calendar", "map"]);
+const pages = ["calendar", "map", "hourly"];
+
+const NAV_ITEMS = [
+  { label: "Calendar", href: "#/calendar" },
+  { label: "Map", href: "#/map" },
+  { label: "Hourly", href: "#/hourly" },
+];
 
 function pageFromHash() {
   const page = window.location.hash.replace("#/", "").split("?")[0];
-  return pages.has(page) ? page : "calendar";
-}
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v12H4V7a2 2 0 0 1 2-2Z" />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m9 18-5 2V6l5-2 6 2 5-2v14l-5 2-6-2Z" />
-      <path d="M9 4v14M15 6v14" />
-    </svg>
-  );
+  return pages.includes(page) ? page : "calendar";
 }
 
 export default function App() {
   const [page, setPage] = useState(pageFromHash);
+  const shellRef = useRef(null);
+  const navRef = useRef(null);
+  const initialIndex = useRef(Math.max(0, pages.indexOf(pageFromHash())));
 
   useEffect(() => {
     const onHashChange = () => setPage(pageFromHash());
@@ -41,33 +35,32 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const navigate = (nextPage) => {
-    window.location.hash = `#/${nextPage}`;
-  };
+  // The nav is fixed to the top; expose its real height so content below it
+  // (and the map page's pinned layout) can offset by exactly the right amount.
+  useEffect(() => {
+    const setNavHeight = () => {
+      const h = navRef.current?.offsetHeight ?? 78;
+      shellRef.current?.style.setProperty("--nav-h", `${h}px`);
+    };
+    setNavHeight();
+    window.addEventListener("resize", setNavHeight);
+    return () => window.removeEventListener("resize", setNavHeight);
+  }, []);
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <nav className="page-tabs" aria-label="Primary navigation">
-          <button
-            className={page === "calendar" ? "active" : ""}
-            type="button"
-            onClick={() => navigate("calendar")}
-            aria-current={page === "calendar" ? "page" : undefined}
-          >
-            <CalendarIcon />
-            Calendar
-          </button>
-          <button
-            className={page === "map" ? "active" : ""}
-            type="button"
-            onClick={() => navigate("map")}
-            aria-current={page === "map" ? "page" : undefined}
-          >
-            <MapIcon />
-            Map
-          </button>
-        </nav>
+    <div className="app-shell" ref={shellRef}>
+      <header className="topbar" ref={navRef}>
+        <GooeyNav
+          items={NAV_ITEMS}
+          initialActiveIndex={initialIndex.current}
+          currentIndex={Math.max(0, pages.indexOf(page))}
+          particleCount={15}
+          particleDistances={[90, 10]}
+          particleR={100}
+          animationTime={600}
+          timeVariance={300}
+          colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+        />
 
         <div className="live-chip">
           <span />
@@ -75,7 +68,11 @@ export default function App() {
         </div>
       </header>
 
-      <main>{page === "calendar" ? <CalendarPage /> : <MapPage />}</main>
+      <main>
+        {page === "calendar" && <CalendarPage />}
+        {page === "map" && <MapPage />}
+        {page === "hourly" && <HourlyMapPage />}
+      </main>
       <AgentBot />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import agentImage from "./assets/traffic-agent-avatar.png";
+import agentImage from "./assets/bot.webp";
 import "./AgentBot.css";
 
 const ROLE_STORAGE_KEY = `alpineflow-agent-role:${import.meta.env.VITE_AGENT_SESSION_ID}`;
