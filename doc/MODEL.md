@@ -181,7 +181,7 @@ More conservative than the flow model (shallower trees, stronger regularization)
 
 **What**: All construction features have 0.0% importance in the model.
 
-**Why (verified correct)**: The training window (2023–2024, 731 days) contains **zero** days with `has_2_plus_0=1`. There were simply no 2+0 lane configurations during those years. The feature has literally zero variance — CatBoost cannot learn from it.
+**Why (verified correct)**: The training window (2023–2024, 731 days) contains **zero** days with meaningful construction data. The Autobahn API has no historical endpoint. Additionally, the merged construction table was built from a buggy pipeline with an over-permissive `is_2_plus_0` decoder. A corrected pipeline exists (`scripts/fix_construction_data.py`) but its output was never wired into the merged table. **Full investigation**: see [`doc/CONSTRUCTION_DATA_ISSUE.md`](CONSTRUCTION_DATA_ISSUE.md).
 
 **Impact**: The model **cannot represent "2+0" capacity halving** during road maintenance. This is a data limitation, not a code bug.
 
@@ -344,6 +344,7 @@ models/
 | `../CLAUDE.md` | Complete data dictionary, station mapping, project context |
 | `station_reliability_report.md` | Per-station sensor reliability analysis |
 | `DATA.md` | Merged data table schema reference |
+| `CONSTRUCTION_DATA_ISSUE.md` | Full investigation of construction data bug — root cause, fix guide, script inventory |
 | `tasks_D_F_G_tutorial.md` | Implementation code for unfinished tasks (D, F, G1–G4) |
 | `SOLUTION.md` | Original system architecture vision (pre-implementation) |
 | `product.md` / `product_func.md` | Product requirements and user stories |
