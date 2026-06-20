@@ -9,6 +9,7 @@ import {
   statusLabel,
 } from "../lib/trafficData";
 import RouteArrow from "../../arrows/RouteArrow";
+import { SelectMenu } from "./TimeControls";
 
 const YEARS = Array.from({ length: 7 }, (_, index) => 2023 + index);
 const MONTHS = [
@@ -183,34 +184,32 @@ export default function CalendarPage() {
               <div className="date-selectors">
                 <span>Selected month</span>
                 <div className="date-select-row">
-                  <select
+                  <SelectMenu
+                    ariaLabel="Select year"
                     value={year}
-                    onChange={(event) => {
-                      setYear(Number(event.target.value));
+                    minWidth={104}
+                    options={YEARS.map((availableYear) => ({
+                      value: availableYear,
+                      label: String(availableYear),
+                    }))}
+                    onChange={(nextYear) => {
+                      setYear(nextYear);
                       setSelectedDay(null);
                     }}
-                    aria-label="Select year"
-                  >
-                    {YEARS.map((availableYear) => (
-                      <option value={availableYear} key={availableYear}>
-                        {availableYear}
-                      </option>
-                    ))}
-                  </select>
-                  <select
+                  />
+                  <SelectMenu
+                    ariaLabel="Select month"
                     value={month}
-                    onChange={(event) => {
-                      setMonth(Number(event.target.value));
+                    minWidth={148}
+                    options={MONTHS.map((monthName, monthIndex) => ({
+                      value: monthIndex,
+                      label: monthName,
+                    }))}
+                    onChange={(nextMonth) => {
+                      setMonth(nextMonth);
                       setSelectedDay(null);
                     }}
-                    aria-label="Select month"
-                  >
-                    {MONTHS.map((monthName, monthIndex) => (
-                      <option value={monthIndex} key={monthName}>
-                        {monthName}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <button

@@ -48,7 +48,7 @@ button {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgba(69, 170, 114, 0.25);
+  outline: 3px solid rgba(61, 90, 254, 0.3);
   outline-offset: 3px;
 }
 
@@ -66,15 +66,25 @@ a:focus-visible {
   right: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   min-height: 70px;
-  padding: 0 2.4vw;
+  padding: 0;
   /* no bar, no divider line — the nav just floats over the page */
   background: transparent;
   pointer-events: none;
 }
 
-.topbar > * {
+/* same centred max-width column as .page-container, so the nav's right edge
+   lines up with the calendar / content right edge below it */
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: min(1380px, 92vw);
+  height: 100%;
+  margin: 0 auto;
+}
+
+.topbar-inner > * {
   pointer-events: auto;
 }
 
@@ -234,7 +244,7 @@ a:focus-visible {
 .eyebrow {
   display: inline-block;
   margin-bottom: 13px;
-  color: var(--green-dark);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.14em;
@@ -340,18 +350,18 @@ a:focus-visible {
 
 .month-navigation {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-end;
+  gap: 12px;
 }
 
 .month-navigation > button {
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 11px;
-  background: #fafbf9;
+  border-radius: 9999px;
+  background: #ffffff;
   cursor: pointer;
   transition:
     transform 150ms ease,
@@ -402,11 +412,11 @@ a:focus-visible {
 
 .date-select-row select {
   height: 39px;
-  padding: 0 35px 0 12px;
+  padding: 0 32px 0 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 9999px;
   outline: 0;
-  background-color: #fafbf9;
+  background-color: #ffffff;
   color: var(--ink);
   cursor: pointer;
   font-size: 13px;
@@ -431,8 +441,8 @@ a:focus-visible {
 }
 
 .date-select-row select:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(69, 170, 114, 0.13);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(61, 90, 254, 0.15);
 }
 
 .road-control {
@@ -451,37 +461,33 @@ a:focus-visible {
 
 .road-selector {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: #f1f4ef;
+  gap: 3px;
+  padding: 3px;
+  border: none;
+  border-radius: 9999px;
+  background: #000000;
 }
 
 .road-selector button {
-  min-width: 78px;
-  height: 34px;
+  min-width: 72px;
+  height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 9999px;
   background: transparent;
-  color: #7b847d;
+  color: #ffffff;
   cursor: pointer;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
   transition:
     color 140ms ease,
-    background 140ms ease,
-    box-shadow 140ms ease;
-}
-
-.road-selector button:hover {
-  color: var(--ink);
+    background 140ms ease;
 }
 
 .road-selector button.active {
-  background: var(--ink);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(23, 32, 26, 0.12);
+  background: #ffffff;
+  color: #000000;
 }
 
 .direction-key {
@@ -576,14 +582,14 @@ button.day-cell {
 
 button.day-cell:hover {
   z-index: 1;
-  background: #f7faf5;
-  box-shadow: inset 0 0 0 2px #c8dbc9;
+  background: #f5f6ff;
+  box-shadow: inset 0 0 0 2px rgba(61, 90, 254, 0.3);
 }
 
 button.day-cell.selected {
   z-index: 2;
-  background: #f1f7ed;
-  box-shadow: inset 0 0 0 2px var(--green);
+  background: #eef0ff;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .day-cell.empty {
@@ -765,10 +771,10 @@ button.day-cell.selected {
 }
 
 .drawer-direction button.active {
-  border-color: #bcd5c1;
-  background: #edf6ec;
+  border-color: rgba(61, 90, 254, 0.35);
+  background: #eef0ff;
   color: var(--ink);
-  box-shadow: inset 3px 0 0 var(--green);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .drawer-direction .route-direction-shape {
@@ -1740,6 +1746,37 @@ button.day-cell.selected {
   color: var(--accent);
 }
 
+.seg-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.seg-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seg-legend i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.seg-legend i.lg-veh {
+  background: #ffffff;
+}
+
+.seg-legend i.lg-truck {
+  background: #ffb84d;
+}
+
 /* sliding Local/Global toggle (replaces the old EXPAND MAP button) */
 .view-toggle {
   position: relative;
@@ -1835,6 +1872,19 @@ button.day-cell.selected {
 
 .g-dot {
   fill: #ffffff;
+}
+
+/* trucks (sv_h_pred): amber line + points, no bars */
+.g-truck-path {
+  fill: none;
+  stroke: #ffb84d;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.g-truck-dot {
+  fill: #ffb84d;
 }
 
 .g-focal {
@@ -2155,4 +2205,168 @@ button.day-cell.selected {
     height: auto;
     padding: 18px 16px 40px;
   }
+}
+
+/* ── Custom Date / Hour controls (English, themed) ───────────────────── */
+.tc-field {
+  position: relative;
+  display: inline-flex;
+}
+
+.tc-trigger {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #d8ded6;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #17201a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tc-trigger--select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 38px;
+  border: 2px solid #17201a;
+  font-weight: 800;
+}
+
+.tc-caret {
+  width: 14px;
+  height: 14px;
+  color: #8a938c;
+  flex: 0 0 auto;
+}
+
+.tc-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100%;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.tc-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  padding: 12px;
+  border: 1px solid #e2e6df;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(20, 30, 22, 0.18);
+}
+
+.tc-cal {
+  width: 286px;
+}
+
+.tc-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tc-cal-head span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #17201a;
+}
+
+.tc-cal-head button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e2e6df;
+  border-radius: 9px;
+  background: #fafbf9;
+  color: #17201a;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tc-cal-head button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.tc-weekdays,
+.tc-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.tc-weekdays span {
+  padding: 4px 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #9aa29a;
+}
+
+.tc-days .tc-empty {
+  height: 34px;
+}
+
+.tc-day {
+  height: 34px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #17201a;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.tc-day:hover {
+  background: #eef1ec;
+}
+
+.tc-day.sel {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.tc-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 168px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.tc-hour {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #17201a;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.tc-hour:hover {
+  background: #eef1ec;
+}
+
+.tc-hour.sel {
+  background: var(--accent);
+  color: #ffffff;
 }

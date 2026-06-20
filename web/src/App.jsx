@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import CalendarPage from "./components/CalendarPage";
+// Legacy Leaflet map — kept in the codebase but no longer routed.
+// eslint-disable-next-line no-unused-vars
 import MapPage from "./components/MapPage";
 import HourlyMapPage from "./components/HourlyMapPage";
 import PillNav from "./components/PillNav";
 import AgentBot from "../agent/AgentBot";
 
-const pages = ["calendar", "map", "hourly"];
+const pages = ["calendar", "map"];
 
 const NAV_ITEMS = [
   { label: "Calendar", href: "#/calendar" },
   { label: "Map", href: "#/map" },
-  { label: "Hourly", href: "#/hourly" },
 ];
 
 function pageFromHash() {
@@ -50,21 +51,23 @@ export default function App() {
   return (
     <div className="app-shell" ref={shellRef}>
       <header className="topbar" ref={navRef}>
-        <PillNav
-          items={NAV_ITEMS}
-          activeHref={`#/${page}`}
-          baseColor="#000000"
-          pillColor="#ffffff"
-          pillTextColor="#000000"
-          hoveredPillTextColor="#ffffff"
-          initialLoadAnimation={false}
-        />
+        <div className="topbar-inner">
+          <PillNav
+            items={NAV_ITEMS}
+            activeHref={`#/${page}`}
+            baseColor="#000000"
+            pillColor="#ffffff"
+            pillTextColor="#000000"
+            hoveredPillTextColor="#ffffff"
+            initialLoadAnimation={false}
+          />
+        </div>
       </header>
 
       <main>
         {page === "calendar" && <CalendarPage />}
-        {page === "map" && <MapPage />}
-        {page === "hourly" && <HourlyMapPage />}
+        {/* "Map" now shows the scroll version (formerly Hourly) */}
+        {page === "map" && <HourlyMapPage />}
       </main>
       <AgentBot />
     </div>

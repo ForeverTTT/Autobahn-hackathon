@@ -12,6 +12,7 @@ import {
   statusLabel as getStatusLabel,
   TRAFFIC_LEVELS,
 } from "../lib/trafficData";
+import { DateField, HourField } from "./TimeControls";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -263,24 +264,33 @@ const ROUTE_SEGMENTS = [
 
 const SEVERITY = { smooth: 0, busy: 1, heavy: 2 };
 
-// Real forecast stations (data_autobahn/forecast_2026_2029.csv) per highway +
-// direction, listed in travel order (start -> end). Each direction has 3 real
-// sensor sites; the A8 has 4 visual segments so two share the middle sensor.
-const DIR_SITES = {
-  "A8-1": ["A8_Sbg_MQQ37_Sbg_H", "A8_Sbg_MQQ213_Sbg_H", "A8_Sbg_MQQ245_Sbg_H"],
-  "A8-2": ["A8_Mch_MQQ245_Mch_H", "A8_Mch_MQQ209_Mch_H", "A8_Mch_MQB25_Mch_H"],
+// Real sensor stations per highway + direction, in travel order (start -> end),
+// with on-route coordinates (from the main traffic table's bab_km/lat/lng).
+// Each direction has exactly 3 sensors — there is none at the Munich end, so
+// the chart legitimately begins at the first station (~km 20, near Holzkirchen).
+const DIR_STATIONS = {
+  "A8-1": [
+    { site: "A8_Sbg_MQQ37_Sbg_H", label: "Holzkirchen", lat: 47.936, lng: 11.705 },
+    { site: "A8_Sbg_MQQ213_Sbg_H", label: "Chiemsee", lat: 47.828, lng: 12.583 },
+    { site: "A8_Sbg_MQQ245_Sbg_H", label: "Traunstein", lat: 47.831, lng: 12.733 },
+  ],
+  "A8-2": [
+    { site: "A8_Mch_MQQ245_Mch_H", label: "Traunstein", lat: 47.831, lng: 12.734 },
+    { site: "A8_Mch_MQQ209_Mch_H", label: "Chiemsee", lat: 47.826, lng: 12.565 },
+    { site: "A8_Mch_MQB25_Mch_H", label: "Holzkirchen", lat: 47.936, lng: 11.705 },
+  ],
   "A93-1": [
-    "A93_Kff_MQDZ_AD Inntal_(S)_Kff",
-    "A93_Kff_MQ_Gletschergarten_Kff",
-    "A93_Kff_MQDZ_Kiefersfelden_(S)_Kff",
+    { site: "A93_Kff_MQDZ_AD Inntal_(S)_Kff", label: "AD Inntal", lat: 47.794, lng: 12.09 },
+    { site: "A93_Kff_MQ_Gletschergarten_Kff", label: "Gletschergarten", lat: 47.711, lng: 12.151 },
+    { site: "A93_Kff_MQDZ_Kiefersfelden_(S)_Kff", label: "Kiefersfelden", lat: 47.606, lng: 12.195 },
   ],
   "A93-2": [
-    "A93_Ro_MQDZ_Kiefersfelden_(S)_Ro",
-    "A93_Ro_MQ_Gletschergarten_Ro",
-    "A93_Ro_MQDZ_AD Inntal_(S)_Ro",
+    { site: "A93_Ro_MQDZ_Kiefersfelden_(S)_Ro", label: "Kiefersfelden", lat: 47.606, lng: 12.195 },
+    { site: "A93_Ro_MQ_Gletschergarten_Ro", label: "Gletschergarten", lat: 47.71, lng: 12.152 },
+    { site: "A93_Ro_MQDZ_AD Inntal_(S)_Ro", label: "AD Inntal", lat: 47.794, lng: 12.09 },
   ],
 };
-// segment index -> station index along the route
+// which station colours each (visual) map segment
 const SEG_STATION = { A8: [0, 1, 1, 2], A93: [0, 1, 2] };
 
 const FORECAST_START = Date.UTC(2026, 0, 1);
@@ -561,21 +571,22 @@ export default function HourlyMapPage() {
     };
   }, []);
 
-  // Per-segment predicted vehicles/h for the selected date + hour, mapped from
-  // the real sensor sites, plus each segment's position along the route so the
-  // bars can rise in lock-step with the probe.
+  // The chart x-axis is the REAL sensor stations (3 per direction), placed at
+  // their true position along the route so each bar rises as the probe reaches
+  // that station. kfz_h_p50 = all vehicles (bars + line); sv_h_pred = trucks
+  // (points only). A separate per-map-segment value drives the road colouring.
   const chartData = useMemo(() => {
-    const sites = DIR_SITES[`${journeyRoad}-${dirNumber}`] ?? [];
-    const stationFor = SEG_STATION[journeyRoad] ?? [];
+    const stations = DIR_STATIONS[`${journeyRoad}-${dirNumber}`] ?? [];
     const baseIdx = dayIndexOf(selectedDate) * 24;
-    const valueAt = (siteId, hour) => {
-      const arr = forecast?.sites?.[siteId];
-      return arr ? arr[baseIdx + hour] ?? 0 : 0;
-    };
+    const kfzAt = (site, hour) =>
+      forecast?.sites?.[site]?.kfz?.[baseIdx + hour] ?? 0;
+    const svAt = (site, hour) =>
+      forecast?.sites?.[site]?.sv?.[baseIdx + hour] ?? 0;
+
     let dayMax = 0;
     if (forecast) {
-      sites.forEach((siteId) => {
-        const arr = forecast.sites[siteId];
+      stations.forEach((st) => {
+        const arr = forecast.sites[st.site]?.kfz;
         if (!arr) return;
         for (let h = 0; h < 24; h += 1) {
           dayMax = Math.max(dayMax, arr[baseIdx + h] ?? 0);
@@ -583,23 +594,37 @@ export default function HourlyMapPage() {
       });
     }
     const max = Math.max(800, Math.ceil((dayMax * 1.12) / 200) * 200);
-    const n = geometry.segments.length;
-    const points = geometry.segments.map((seg, i) => {
-      const value = forecast ? valueAt(sites[stationFor[i] ?? 0], selectedHour) : 0;
-      const x = n === 1 ? GV.cx : GV.x0 + ((GV.x1 - GV.x0) * i) / (n - 1);
-      const y = GV.yBase - (value / max) * (GV.yBase - GV.yTop);
+    const yFor = (v) => GV.yBase - (v / max) * (GV.yBase - GV.yTop);
+
+    // categorical x-axis: the real stations, evenly spaced in travel order
+    const n = stations.length;
+    const points = stations.map((st, i) => {
+      const value = forecast ? kfzAt(st.site, selectedHour) : 0;
+      const truck = forecast ? svAt(st.site, selectedHour) : 0;
       return {
-        label: seg.title.split(" — ").pop(),
+        label: st.label,
         value,
-        x,
-        y,
+        truck,
+        x: n === 1 ? GV.cx : GV.x0 + ((GV.x1 - GV.x0) * i) / (n - 1),
+        y: yFor(value),
+        ty: yFor(truck),
         popFrac: n === 1 ? 0 : i / (n - 1),
       };
     });
     const pathD = points
       .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
       .join(" ");
-    return { points, pathD, max };
+    const truckPathD = points
+      .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.ty.toFixed(2)}`)
+      .join(" ");
+
+    // per visual map-segment value (for road colouring) via the station mapping
+    const stationFor = SEG_STATION[journeyRoad] ?? [];
+    const segValues = geometry.segments.map((_, j) =>
+      forecast ? kfzAt(stations[stationFor[j] ?? 0]?.site, selectedHour) : 0,
+    );
+
+    return { points, pathD, truckPathD, max, segValues };
   }, [forecast, selectedDate, selectedHour, journeyRoad, dirNumber, geometry]);
 
   // Faithful jEVVvOr scroll-graph, driven imperatively from the shared scroll
@@ -623,6 +648,14 @@ export default function HourlyMapPage() {
     path.style.strokeDasharray = `${len}`;
     path.style.strokeDashoffset = `${len * (1 - d)}`;
 
+    // truck line draws in alongside the main line
+    const truckPath = svg.querySelector(".g-truck-path");
+    if (truckPath) {
+      const tlen = truckPath.getTotalLength();
+      truckPath.style.strokeDasharray = `${tlen}`;
+      truckPath.style.strokeDashoffset = `${tlen * (1 - d)}`;
+    }
+
     const pt = len
       ? path.getPointAtLength(len * d)
       : { x: model.points[0]?.x ?? GV.cx, y: model.points[0]?.y ?? GV.cy };
@@ -632,6 +665,7 @@ export default function HourlyMapPage() {
     }
 
     const bars = svg.querySelectorAll(".g-bar");
+    const truckDots = svg.querySelectorAll(".g-truck-dot");
     dots.forEach((c, i) => {
       const p = model.points[i];
       if (!p) return;
@@ -646,6 +680,9 @@ export default function HourlyMapPage() {
         bar.setAttribute("height", h.toFixed(2));
         bar.setAttribute("y", (GV.yBase - h).toFixed(2));
       }
+      // truck point pops in the same way (no bar)
+      const td = truckDots[i];
+      if (td) td.setAttribute("r", (fill * 1.7).toFixed(2));
     });
   }, []);
 
@@ -662,7 +699,7 @@ export default function HourlyMapPage() {
       road: selectedRoad,
       direction: String(selectedDirection),
     });
-    window.history.replaceState(null, "", `#/hourly?${params.toString()}`);
+    window.history.replaceState(null, "", `#/map?${params.toString()}`);
   }, [selectedDate, selectedDirection, selectedHour, selectedRoad]);
 
   // Create the real, live Leaflet map once.
@@ -868,7 +905,7 @@ export default function HourlyMapPage() {
   // Live per-segment colour from the real forecast (date / hour change).
   useEffect(() => {
     segLayersRef.current.forEach((layer, i) => {
-      const status = volumeStatus(chartData.points[i]?.value ?? 0);
+      const status = volumeStatus(chartData.segValues[i] ?? 0);
       layer.line.setStyle({ color: statusColor(status) });
     });
   }, [chartData]);
@@ -916,31 +953,14 @@ export default function HourlyMapPage() {
     <div className="map-page-shell" ref={shellRef}>
       <div className="map-toolbar map-toolbar--float" ref={toolbarRef}>
         <span className="panel-kicker">LIVE CORRIDOR</span>
-        <label className="map-control">
+        <div className="map-control">
           <span>Date</span>
-          <input
-            type="date"
-            min="2023-01-01"
-            max="2029-12-31"
-            value={selectedDate}
-            onChange={(event) => {
-              if (event.target.value) setSelectedDate(event.target.value);
-            }}
-          />
-        </label>
-        <label className="map-control">
+          <DateField value={selectedDate} onChange={setSelectedDate} />
+        </div>
+        <div className="map-control">
           <span>Hour</span>
-          <select
-            value={selectedHour}
-            onChange={(event) => setSelectedHour(Number(event.target.value))}
-          >
-            {HOURS.map((hour) => (
-              <option value={hour} key={hour}>
-                {formatHourRange(hour)}
-              </option>
-            ))}
-          </select>
-        </label>
+          <HourField value={selectedHour} onChange={setSelectedHour} />
+        </div>
         <div className="map-toolbar-group">
           <span className="map-filter-label">Highway</span>
           <div className="map-pills">
@@ -987,6 +1007,14 @@ export default function HourlyMapPage() {
                 Predicted volume · vehicles / h · {selectedDate} ·{" "}
                 {formatHourRange(selectedHour)}
               </span>
+              <div className="seg-legend">
+                <span>
+                  <i className="lg lg-veh" /> All vehicles
+                </span>
+                <span>
+                  <i className="lg lg-truck" /> Trucks
+                </span>
+              </div>
               <div className="view-toggle" data-mode={viewMode}>
                 <span className="view-toggle-thumb" />
                 <button
@@ -1054,6 +1082,17 @@ export default function HourlyMapPage() {
                     </g>
                   );
                 })}
+                {/* trucks (sv_h_pred): a line with points only, no bars */}
+                <path className="g-truck-path" d={chartData.truckPathD} />
+                {chartData.points.map((p, i) => (
+                  <circle
+                    key={`${routeKey}-tk-${i}`}
+                    className="g-truck-dot"
+                    cx={p.x}
+                    cy={p.ty}
+                    r={0}
+                  />
+                ))}
                 <path className="g-path" d={chartData.pathD} />
                 {chartData.points.map((p, i) => (
                   <g key={`${routeKey}-pt-${i}`}>
