@@ -24,6 +24,18 @@
   background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.live-monitor-bar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #000000 0%, #000000 33.33%, #DD0000 33.33%, #DD0000 66.66%, #FFCC00 66.66%, #FFCC00 100%);
 }
 
 .monitor-left {
