@@ -2,6 +2,7 @@ import HeroSection from "./sections/HeroSection";
 import MarqueeSection from "./sections/MarqueeSection";
 import AboutSection from "./sections/AboutSection";
 import ServicesSection from "./sections/ServicesSection";
+import ArchitectureSection from "./sections/ArchitectureSection";
 import ProjectsSection from "./sections/ProjectsSection";
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
       <MarqueeSection />
       <AboutSection />
       <ServicesSection />
+      <ArchitectureSection />
       <ProjectsSection />
     </main>
   );
