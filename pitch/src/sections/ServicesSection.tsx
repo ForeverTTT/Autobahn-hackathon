@@ -1,45 +1,48 @@
 import FadeIn from "../components/FadeIn";
 
-const SERVICES = [
+const AUDIENCE = [
   {
     n: "01",
-    name: "3D Modeling",
-    desc: "Creation of detailed objects, characters, or environments tailored to specific client needs, ideal for games, products, and visualizations.",
+    name: "Travelers",
+    desc: "Find the calmest day and hour to cross the Alps — weeks before you pack the car, not while you're already stuck in it.",
   },
   {
     n: "02",
-    name: "Rendering",
-    desc: "High-quality, photorealistic renders that showcase designs with custom lighting, textures, and materials to bring concepts to life.",
+    name: "Residents",
+    desc: "Skip the holiday surges on your own stretch of the A8 or A93, and keep your everyday commute out of the through-traffic.",
   },
   {
     n: "03",
-    name: "Motion Design",
-    desc: "Dynamic animations and motion graphics that add energy and storytelling to brands, products, and digital experiences.",
+    name: "Logistics",
+    desc: "Plan heavy-vehicle runs around predicted peaks, tighten arrival windows, and price routes with reliable travel times.",
   },
   {
     n: "04",
-    name: "Branding",
-    desc: "Crafting cohesive visual identities — from logos to full brand systems — that communicate a clear and memorable presence.",
+    name: "Tourism",
+    desc: "See the arrival waves into Salzburg, Rosenheim and Kufstein before they hit, and staff for the days that actually matter.",
   },
   {
     n: "05",
-    name: "Web Design",
-    desc: "Designing clean, modern, and conversion-focused websites with attention to layout, typography, and user experience.",
+    name: "Authorities",
+    desc: "Spot corridor-wide risk days and the windows where signalling, diversion or roadwork timing pays off most.",
   },
 ];
 
 export default function ServicesSection() {
   return (
-    <section className="bg-white rounded-t-[40px] sm:rounded-t-[50px] md:rounded-t-[60px] px-5 sm:px-8 md:px-10 py-20 sm:py-24 md:py-32">
+    <section
+      id="audience"
+      className="bg-white rounded-t-[40px] sm:rounded-t-[50px] md:rounded-t-[60px] px-5 sm:px-8 md:px-10 py-20 sm:py-24 md:py-32"
+    >
       <h2
         className="text-[#0C0C0C] font-black uppercase text-center mb-16 sm:mb-20 md:mb-28"
         style={{ fontSize: "clamp(3rem, 12vw, 160px)" }}
       >
-        Services
+        Who It&apos;s For
       </h2>
 
       <div className="max-w-5xl mx-auto">
-        {SERVICES.map((s, i) => (
+        {AUDIENCE.map((s, i) => (
           <FadeIn
             key={s.n}
             delay={i * 0.1}

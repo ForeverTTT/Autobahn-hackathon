@@ -26,6 +26,7 @@ from agent.tools.calendar_data import calendar_traffic_loader
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 WEB_DIR = PROJECT_ROOT / "web"
+PITCH_DIR = PROJECT_ROOT / "pitch"
 
 
 class DemoApiHandler(BaseHTTPRequestHandler):
@@ -86,13 +87,13 @@ def wait_for_port(host: str, port: int, timeout: float = 20) -> bool:
     return False
 
 
-def ensure_frontend_dependencies(npm: str) -> None:
-    vite_binary = WEB_DIR / "node_modules" / ".bin" / "vite"
+def ensure_node_dependencies(directory: Path, npm: str, label: str) -> None:
+    vite_binary = directory / "node_modules" / ".bin" / "vite"
     if vite_binary.exists():
         return
 
-    print("[setup] Frontend dependencies are missing; running npm install...")
-    subprocess.run([npm, "install"], cwd=WEB_DIR, check=True)
+    print(f"[setup] {label} dependencies are missing; running npm install...")
+    subprocess.run([npm, "install"], cwd=directory, check=True)
 
 
 def stop_process(process: subprocess.Popen | None) -> None:
@@ -112,10 +113,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--frontend-port", type=int, default=5173)
     parser.add_argument("--backend-port", type=int, default=8000)
+    parser.add_argument("--pitch-port", type=int, default=5180)
+    parser.add_argument(
+        "--no-pitch",
+        action="store_true",
+        help="Do not start the pitch deck, only the web demo.",
+    )
     parser.add_argument(
         "--no-browser",
         action="store_true",
-        help="Do not open the calendar automatically.",
+        help="Do not open the pitch automatically.",
     )
     return parser.parse_args()
 
@@ -127,8 +134,12 @@ def main() -> int:
         print("Error: npm was not found. Install Node.js first.", file=sys.stderr)
         return 1
 
+    start_pitch = not args.no_pitch
+
     try:
-        ensure_frontend_dependencies(npm)
+        ensure_node_dependencies(WEB_DIR, npm, "Frontend")
+        if start_pitch:
+            ensure_node_dependencies(PITCH_DIR, npm, "Pitch")
         api_server = ReusableThreadingHTTPServer(
             (args.host, args.backend_port),
             DemoApiHandler,
@@ -149,10 +160,11 @@ def main() -> int:
     environment = os.environ.copy()
     environment["DEMO_API_PORT"] = str(args.backend_port)
     frontend_process = None
+    pitch_process = None
     browser_host = "127.0.0.1" if args.host == "0.0.0.0" else args.host
-    calendar_url = (
-        f"http://{browser_host}:{args.frontend_port}/#/calendar"
-    )
+    frontend_base = f"http://{browser_host}:{args.frontend_port}"
+    calendar_url = f"{frontend_base}/#/calendar"
+    pitch_url = f"http://{browser_host}:{args.pitch_port}/"
 
     try:
         frontend_process = subprocess.Popen(
@@ -171,14 +183,41 @@ def main() -> int:
             env=environment,
         )
 
-        print(f"[demo] Calendar API: http://{browser_host}:{args.backend_port}")
-        print(f"[demo] Frontend:     {calendar_url}")
-        print("[demo] Press Ctrl+C to stop both services.")
+        if start_pitch:
+            pitch_environment = os.environ.copy()
+            # Point the pitch's "Live Demo" links at the web app this script
+            # just launched, regardless of the port chosen.
+            pitch_environment["VITE_FRONTEND_BASE"] = frontend_base
+            pitch_process = subprocess.Popen(
+                [
+                    npm,
+                    "run",
+                    "dev",
+                    "--",
+                    "--host",
+                    args.host,
+                    "--port",
+                    str(args.pitch_port),
+                    "--strictPort",
+                ],
+                cwd=PITCH_DIR,
+                env=pitch_environment,
+            )
 
+        print(f"[demo] Calendar API: http://{browser_host}:{args.backend_port}")
+        print(f"[demo] Web frontend: {calendar_url}")
+        if start_pitch:
+            print(f"[demo] Pitch deck:   {pitch_url}")
+        print("[demo] Press Ctrl+C to stop all services.")
+
+        # The pitch is the presentation front door; fall back to the calendar
+        # when the pitch is disabled.
+        open_url = pitch_url if start_pitch else calendar_url
+        open_port = args.pitch_port if start_pitch else args.frontend_port
         if not args.no_browser:
             def open_when_ready() -> None:
-                if wait_for_port(args.host, args.frontend_port):
-                    webbrowser.open(calendar_url)
+                if wait_for_port(args.host, open_port):
+                    webbrowser.open(open_url)
 
             threading.Thread(target=open_when_ready, daemon=True).start()
 
@@ -191,6 +230,7 @@ def main() -> int:
         return 0
     finally:
         stop_process(frontend_process)
+        stop_process(pitch_process)
         api_server.shutdown()
         api_server.server_close()
 

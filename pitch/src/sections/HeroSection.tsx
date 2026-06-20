@@ -1,11 +1,14 @@
 import FadeIn from "../components/FadeIn";
 import Magnet from "../components/Magnet";
 import ContactButton from "../components/ContactButton";
+import { DEMO } from "../config";
 
-const NAV_LINKS = ["About", "Price", "Projects", "Contact"];
-
-const PORTRAIT =
-  "https://shrug-person-78902957.figma.site/_components/v2/d24c01ad3a56fc65e942a1f501eb73db42d7cf9a/Rectangle_40443.81459862.png";
+const NAV_LINKS = [
+  { label: "Problem", href: "#problem" },
+  { label: "Audience", href: "#audience" },
+  { label: "Product", href: "#product" },
+  { label: "Demo", href: DEMO.calendar },
+];
 
 export default function HeroSection() {
   return (
@@ -19,11 +22,14 @@ export default function HeroSection() {
       >
         {NAV_LINKS.map((link) => (
           <a
-            key={link}
-            href="#"
+            key={link.label}
+            href={link.href}
+            {...(link.href.startsWith("http")
+              ? { target: "_blank", rel: "noreferrer" }
+              : {})}
             className="hover:opacity-70 transition-opacity duration-200"
           >
-            {link}
+            {link.label}
           </a>
         ))}
       </FadeIn>
@@ -34,9 +40,9 @@ export default function HeroSection() {
           as="h1"
           delay={0.15}
           y={40}
-          className="hero-heading text-center font-black uppercase tracking-tight leading-none whitespace-nowrap w-full text-[14vw] sm:text-[15vw] md:text-[16vw] lg:text-[17.5vw] mt-6 sm:mt-4 md:-mt-5"
+          className="hero-heading text-center font-black uppercase tracking-tight leading-none whitespace-nowrap w-full text-[13vw] sm:text-[14vw] md:text-[15vw] lg:text-[16vw] mt-6 sm:mt-4 md:-mt-2"
         >
-          Hi, i&apos;m jack
+          AlpineFlow
         </FadeIn>
       </div>
 
@@ -46,32 +52,33 @@ export default function HeroSection() {
           as="p"
           delay={0.35}
           y={20}
-          className="text-[#D7E2EA] font-light uppercase tracking-wide leading-snug max-w-[160px] sm:max-w-[220px] md:max-w-[260px]"
+          className="text-[#D7E2EA] font-light uppercase tracking-wide leading-snug max-w-[170px] sm:max-w-[240px] md:max-w-[300px]"
           style={{ fontSize: "clamp(0.75rem, 1.4vw, 1.5rem)" }}
         >
-          a 3d creator driven by crafting striking and unforgettable projects
+          long-range, explainable traffic forecasting for the a8 east &amp; a93
+          south alpine corridors
         </FadeIn>
 
         <FadeIn delay={0.5} y={20}>
-          <ContactButton />
+          <ContactButton label="View live demo" href={DEMO.calendar} />
         </FadeIn>
       </div>
 
-      {/* Portrait — magnetic, centred and overlapping the heading.
-          The centring transforms live on a plain wrapper so they don't fight
+      {/* Floating product window — magnetic, centred, overlapping the heading.
+          Centring transforms live on a plain wrapper so they don't fight
           Framer Motion's animation transform on the FadeIn element. */}
-      <div className="absolute left-1/2 -translate-x-1/2 z-10 top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-0">
+      <div className="absolute left-1/2 -translate-x-1/2 z-10 top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-[6%] md:bottom-[8%] pointer-events-none">
         <FadeIn delay={0.6} y={30}>
           <Magnet
             padding={150}
-            strength={3}
+            strength={4}
             activeTransition="transform 0.3s ease-out"
             inactiveTransition="transform 0.6s ease-in-out"
           >
             <img
-              src={PORTRAIT}
-              alt="Jack"
-              className="w-[280px] sm:w-[360px] md:w-[440px] lg:w-[520px] select-none pointer-events-none"
+              src="/shots/web-map-4.png"
+              alt="AlpineFlow segment map and forecast"
+              className="w-[300px] sm:w-[420px] md:w-[520px] lg:w-[600px] rounded-2xl border border-[#D7E2EA]/25 shadow-[0_30px_80px_rgba(0,0,0,0.6)] select-none"
               draggable={false}
             />
           </Magnet>
