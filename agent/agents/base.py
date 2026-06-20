@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from ..models import AgentRequest, AgentResponse
+from .prompt import get_agent_prompt
 
 
 class BaseAgent(ABC):
@@ -22,6 +23,12 @@ class BaseAgent(ABC):
     def name(self) -> str:
         """Agent 名称"""
         pass
+
+    @property
+    def prompt(self) -> str:
+        """Central prompt for this agent."""
+        prompt_key = self.name.replace("Agent", "").lower()
+        return get_agent_prompt(prompt_key)
 
     @abstractmethod
     async def process(self, request: AgentRequest) -> AgentResponse:

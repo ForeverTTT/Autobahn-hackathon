@@ -1,16 +1,28 @@
 """
 Agent 配置
 
-所有 SearchAgent 参数集中放在这里。
-真实 API key 建议通过环境变量 TAVILY_API_KEY 注入；如果只是本地演示，
-也可以把 key 临时填到 TAVILY_API_KEY_DEFAULT，但不要提交真实密钥。
+所有 Agent 参数集中放在这里。
+真实 API key 建议通过环境变量注入；如果只是本地演示，
+也可以把默认值临时填在这里，但不要提交真实密钥。
 """
 import os
 
 
+# ============ GPT / OpenAI LLM ============
+
+LLM_PROVIDER = "openai"
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.0"))
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
+
+OPENAI_API_KEY_DEFAULT = ""
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", OPENAI_API_KEY_DEFAULT)
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+
+
 # ============ Tavily ============
 
-TAVILY_API_KEY_DEFAULT = "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"
+TAVILY_API_KEY_DEFAULT = ""
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", TAVILY_API_KEY_DEFAULT)
 TAVILY_ENDPOINT = "https://api.tavily.com/search"
 TAVILY_SEARCH_DEPTH = "advanced"

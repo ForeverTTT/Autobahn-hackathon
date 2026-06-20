@@ -74,6 +74,15 @@ from .personas import (
     get_required_features,
 )
 
+# Prompts
+from .agents.prompt import (
+    AGENT_PROMPTS,
+    GENERATION_PERSONA_PROMPTS,
+    build_generation_prompt,
+    get_agent_prompt,
+    get_generation_persona_prompt,
+)
+
 __all__ = [
     # 模型
     "UserType",
@@ -113,6 +122,12 @@ __all__ = [
     "get_persona",
     "get_data_needs",
     "get_required_features",
+    # Prompts
+    "AGENT_PROMPTS",
+    "GENERATION_PERSONA_PROMPTS",
+    "build_generation_prompt",
+    "get_agent_prompt",
+    "get_generation_persona_prompt",
 ]
 
 __version__ = "1.0.0"

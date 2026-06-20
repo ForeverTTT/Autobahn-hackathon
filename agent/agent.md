@@ -168,22 +168,21 @@ elif persona == OPERATOR:
 | "Austria" | ✅ → salzburg | ✅ → salzburg |
 | "下个周末" | ❌ 无法识别 | ✅ → 正确日期 |
 
-### 支持的 LLM 提供商
+### GPT LLM 配置
 
-| 提供商 | 模型 | 环境变量 |
-|--------|------|----------|
-| OpenAI | gpt-4o-mini (默认) | `OPENAI_API_KEY` |
-| Anthropic | claude-3-5-sonnet | `ANTHROPIC_API_KEY` |
+当前 Agent 链路只使用 OpenAI GPT。
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `OPENAI_API_KEY` | 从 `agent/config.py` 或环境变量读取 | GPT API key |
+| `OPENAI_MODEL` | `gpt-4.1-mini` | GPT 模型 |
+| `LLM_TEMPERATURE` | `0.0` | 生成温度 |
+| `LLM_MAX_TOKENS` | `1024` | 最大输出 token |
 
 配置方式:
 ```bash
-# 使用 OpenAI
 export OPENAI_API_KEY="sk-..."
-export LLM_PROVIDER="openai"
-
-# 或使用 Anthropic
-export ANTHROPIC_API_KEY="sk-ant-..."
-export LLM_PROVIDER="anthropic"
+export OPENAI_MODEL="gpt-4.1-mini"
 ```
 
 ### Fallback 机制

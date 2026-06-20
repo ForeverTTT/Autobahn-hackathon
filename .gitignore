@@ -6,6 +6,9 @@ data/
 .venv/
 venv/
 
+# Local agent config with API keys
+agent/config.py
+
 # Notebook / pipeline cache
 processed/
 __pycache__/

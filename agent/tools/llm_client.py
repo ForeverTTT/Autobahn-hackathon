@@ -1,23 +1,20 @@
 """
 LLM 客户端工具
-支持 OpenAI 和 Anthropic 的异步文本/JSON 生成。
+只支持 OpenAI GPT 的异步文本/JSON 生成。
 """
 import json
-import os
 from typing import Any, Dict, Optional
+
+from .. import config
 
 
 class LLMClient:
     """
-    LLM 客户端
-
-    支持:
-    - OpenAI (gpt-4o, gpt-4o-mini)
-    - Anthropic (claude-3-5-sonnet)
+    GPT LLM 客户端。
 
     配置:
-        设置环境变量 OPENAI_API_KEY 或 ANTHROPIC_API_KEY
-        设置 LLM_PROVIDER 选择提供商 (openai/anthropic)
+        在 agent/config.py 或环境变量中配置 OPENAI_API_KEY。
+        模型由 OPENAI_MODEL 控制，默认使用 GPT 系列模型。
     """
 
     def __init__(
@@ -25,50 +22,39 @@ class LLMClient:
         provider: str = None,
         model: str = None,
     ):
-        self.provider = provider or os.getenv("LLM_PROVIDER", "openai")
-
-        if self.provider == "openai":
-            self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-            self._init_openai()
-        elif self.provider == "anthropic":
-            self.model = model or os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
-            self._init_anthropic()
-        else:
-            raise ValueError(f"Unknown provider: {self.provider}")
+        if provider and provider != "openai":
+            raise ValueError("Only OpenAI GPT is supported")
+        self.provider = "openai"
+        self.model = model or config.OPENAI_MODEL
+        self._init_openai()
 
     def _init_openai(self):
         """初始化 OpenAI 客户端。"""
         try:
             from openai import AsyncOpenAI
-            api_key = os.getenv("OPENAI_API_KEY")
+            api_key = config.OPENAI_API_KEY
             if not api_key:
-                raise ValueError("OPENAI_API_KEY not set")
-            self.client = AsyncOpenAI(api_key=api_key)
+                raise ValueError("OPENAI_API_KEY not set in agent/config.py or environment")
+
+            client_kwargs = {"api_key": api_key}
+            if config.OPENAI_BASE_URL:
+                client_kwargs["base_url"] = config.OPENAI_BASE_URL
+            self.client = AsyncOpenAI(**client_kwargs)
         except ImportError:
             raise ImportError("openai package not installed. Run: pip install openai")
-
-    def _init_anthropic(self):
-        """初始化 Anthropic 客户端。"""
-        try:
-            from anthropic import AsyncAnthropic
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY not set")
-            self.client = AsyncAnthropic(api_key=api_key)
-        except ImportError:
-            raise ImportError("anthropic package not installed. Run: pip install anthropic")
 
     async def generate(
         self,
         prompt: str,
         system: str = None,
-        temperature: float = 0.0,
-        max_tokens: int = 1024,
+        temperature: float = None,
+        max_tokens: int = None,
     ) -> str:
         """生成文本。"""
-        if self.provider == "openai":
-            return await self._generate_openai(prompt, system, temperature, max_tokens)
-        return await self._generate_anthropic(prompt, system, temperature, max_tokens)
+        temperature = config.LLM_TEMPERATURE if temperature is None else temperature
+        max_tokens = config.LLM_MAX_TOKENS if max_tokens is None else max_tokens
+
+        return await self._generate_openai(prompt, system, temperature, max_tokens)
 
     async def _generate_openai(
         self,
@@ -91,28 +77,11 @@ class LLMClient:
         )
         return response.choices[0].message.content
 
-    async def _generate_anthropic(
-        self,
-        prompt: str,
-        system: str,
-        temperature: float,
-        max_tokens: int,
-    ) -> str:
-        """Anthropic 生成。"""
-        response = await self.client.messages.create(
-            model=self.model,
-            system=system or "You are a helpful assistant.",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        return response.content[0].text
-
     async def generate_json(
         self,
         prompt: str,
         system: str = None,
-        temperature: float = 0.0,
+        temperature: float = None,
     ) -> Dict[str, Any]:
         """生成 JSON，并自动解析返回值。"""
         json_prompt = f"{prompt}\n\nReturn ONLY valid JSON, no other text."

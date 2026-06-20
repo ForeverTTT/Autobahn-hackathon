@@ -11,6 +11,7 @@ from enum import Enum
 
 from ..models import UserType
 from ..personas import PersonaType, PersonaProfile, get_persona
+from .prompt import INTENT_AGENT_SYSTEM_PROMPT
 
 
 class TimeRangeType(str, Enum):
@@ -94,67 +95,6 @@ class ParsedIntent:
     data_requirements: DataRequirements = None
 
 
-# ============ LLM System Prompt ============
-
-SYSTEM_PROMPT = """你是意图识别助手。分析用户输入，识别以下信息：
-
-## 1. persona (用户画像)
-
-| persona | 特征关键词 |
-|---------|------------|
-| commuter | 上班、下班、通勤、每天 |
-| traveler | 带家人、度假、自驾游、暑假、旅行 |
-| logistics | 送货、货车、运输、物流 |
-| tourist | 第一次来、不熟悉、游客 |
-| operator | 管理、监控、为什么堵、分析 |
-
-## 2. trip_type (行程类型)
-
-| 类型 | 场景 |
-|------|------|
-| round_trip | 旅行、度假、周末游 |
-| commute | 每日通勤 |
-| one_way | 单程、送人 |
-
-## 3. time_range (时间范围)
-
-根据用户表达计算具体日期：
-- today/tomorrow/this_weekend/next_weekend
-- summer (7月1日-8月31日)
-- winter (12月1日-2月28日)
-- christmas (12月20日-1月6日)
-- custom (具体日期)
-- flexible (未指定)
-
-## 4. 其他字段
-
-- destination: salzburg / innsbruck / null
-- road: A8 (默认) / A93
-- intent: plan / forecast / compare / construction / events / general
-- stay_days: 根据场景推断停留天数
-
-## 输出 JSON
-
-```json
-{
-    "persona": "traveler",
-    "trip_type": "round_trip",
-    "time_range": {
-        "type": "summer",
-        "start_date": "2026-07-01",
-        "end_date": "2026-08-31",
-        "description": "暑假"
-    },
-    "stay_days": 3,
-    "destination": "salzburg",
-    "road": "A8",
-    "intent": "plan"
-}
-```
-
-只做意图识别，不做交通分析。"""
-
-
 class IntentParser:
     """
     意图解析器
@@ -168,6 +108,12 @@ class IntentParser:
     def __init__(self, use_llm: bool = True):
         self.use_llm = use_llm
         self._llm_client = None
+        self.system_prompt = INTENT_AGENT_SYSTEM_PROMPT
+
+    @property
+    def prompt(self) -> str:
+        """Central prompt used by the LLM intent parser."""
+        return self.system_prompt
 
     def _get_llm_client(self):
         """延迟加载 LLM 客户端"""
@@ -210,7 +156,7 @@ class IntentParser:
 
 请识别用户意图，返回 JSON。"""
 
-        result = await llm_client.generate_json(prompt, SYSTEM_PROMPT)
+        result = await llm_client.generate_json(prompt, self.prompt)
 
         # 解析 persona
         persona_str = result.get("persona", "tourist")

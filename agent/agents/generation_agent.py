@@ -16,7 +16,17 @@ from ..personas import (
     PersonaType, PersonaProfile, PERSONAS,
     get_persona, USER_TYPE_TO_PERSONA,
 )
-from ..tools import score_to_stress_index
+from .prompt import (
+    GENERATION_AGENT_SYSTEM_PROMPT,
+    build_generation_prompt,
+    get_generation_persona_prompt,
+)
+from ..tools import (
+    aggregate_daily_reasons,
+    load_factor_contribution_knowledge,
+    score_to_stress_index,
+    summarize_factor_reasons,
+)
 
 
 class GenerationAgent(BaseAgent):
@@ -31,6 +41,10 @@ class GenerationAgent(BaseAgent):
     - 1周: 日级日历
     - 1月+: 周级/最佳窗口推荐
     """
+
+    def __init__(self):
+        self.factor_knowledge = load_factor_contribution_knowledge()
+        self.system_prompt = GENERATION_AGENT_SYSTEM_PROMPT
 
     @property
     def name(self) -> str:
@@ -66,7 +80,7 @@ class GenerationAgent(BaseAgent):
             if time_range and time_range.duration_days > 14:
                 # 长时间范围（超过2周）：生成最佳窗口推荐
                 result = self._generate_long_range_response(
-                    request, parsed_intent, all_factors, route
+                    request, parsed_intent, forecast, all_factors, route
                 )
             elif time_range and time_range.duration_days > 1:
                 # 中等时间范围（2-14天）：生成日历视图
@@ -78,6 +92,8 @@ class GenerationAgent(BaseAgent):
                 result = self._generate_persona_response(
                     request, parsed_intent, persona, forecast, all_factors, route
                 )
+
+            result = self._attach_generation_prompt(result, persona.type.value)
 
             return self._success(result)
 
@@ -105,12 +121,26 @@ class GenerationAgent(BaseAgent):
 
         return ROUTES.get("munich_salzburg")
 
+    def _attach_generation_prompt(self, result: Dict[str, Any], persona: str) -> Dict[str, Any]:
+        """Attach the prompt guidance used for this generation pass."""
+        if not isinstance(result, dict):
+            return result
+
+        data = result.setdefault("data", {})
+        data["generation_prompt"] = {
+            "system": self.system_prompt,
+            "persona": get_generation_persona_prompt(persona),
+            "composed": build_generation_prompt(persona),
+        }
+        return result
+
     # ============ 长时间范围：最佳窗口推荐 ============
 
     def _generate_long_range_response(
         self,
         request: AgentRequest,
         parsed_intent: ParsedIntent,
+        forecast,
         factors: List[ExternalFactor],
         route,
     ) -> Dict[str, Any]:
@@ -122,10 +152,14 @@ class GenerationAgent(BaseAgent):
 
         # 分析时间段内的最佳窗口
         windows = self._analyze_best_windows(time_range, factors)
+        factor_insights = self._factor_explanations_for_records(
+            self._daily_forecast_records(forecast),
+            top_n=4,
+        )
 
         # 生成建议文本
         advice = self._format_long_range_advice(
-            request, parsed_intent, route, windows, factors
+            request, parsed_intent, route, windows, factors, factor_insights
         )
 
         return {
@@ -136,6 +170,8 @@ class GenerationAgent(BaseAgent):
             "data": {
                 "windows": windows,
                 "duration_days": time_range.duration_days,
+                "factor_insights": factor_insights,
+                "factor_knowledge_doc": self.factor_knowledge.get("doc_path"),
             },
             "factors": factors,
         }
@@ -234,6 +270,7 @@ class GenerationAgent(BaseAgent):
         route,
         windows: List[Dict],
         factors: List[ExternalFactor],
+        factor_insights: List[Dict[str, Any]],
     ) -> str:
         """格式化长时间范围建议（包含往返）"""
         time_range = parsed_intent.time_range
@@ -302,6 +339,13 @@ class GenerationAgent(BaseAgent):
             avoid_str = ", ".join([w["week_label"] for w in avoid_windows[:2]])
             lines.append(f"⚠️ **建议避开**: {avoid_str}")
 
+        if factor_insights:
+            lines.extend([
+                "",
+                "#### 模型归因解读",
+            ])
+            lines.extend(self._format_factor_insight_lines(factor_insights))
+
         # 添加重要提醒
         important = [f for f in factors if f.impact in ["high", "very_high"]]
         if important:
@@ -351,6 +395,7 @@ class GenerationAgent(BaseAgent):
             "data": {
                 "calendar": calendar,
                 "best_day": best_day,
+                "factor_knowledge_doc": self.factor_knowledge.get("doc_path"),
             },
             "factors": factors,
         }
@@ -369,17 +414,21 @@ class GenerationAgent(BaseAgent):
         current = start
         while current <= end:
             weekday = weekday_names[current.weekday()]
+            date_text = current.strftime("%Y-%m-%d")
             score = self._estimate_day_score(current, forecast, factors)
             level, emoji = self._score_to_level(score)
             reasons = self._get_day_reasons(current, factors)
+            forecast_records = self._daily_forecast_records_for_date(forecast, date_text)
+            factor_explanations = self._factor_explanations_for_records(forecast_records)
 
             calendar.append({
-                "date": current.strftime("%Y-%m-%d"),
+                "date": date_text,
                 "weekday": weekday,
                 "score": score,
                 "level": level,
                 "emoji": emoji,
                 "reasons": reasons,
+                "factor_explanations": factor_explanations,
             })
 
             current += timedelta(days=1)
@@ -466,7 +515,11 @@ class GenerationAgent(BaseAgent):
         ])
 
         for day in calendar:
-            reason_str = ", ".join(day["reasons"]) if day["reasons"] else "-"
+            reason_parts = list(day["reasons"] or [])
+            factor_labels = self._format_factor_labels(day.get("factor_explanations", []))
+            if factor_labels:
+                reason_parts.append(factor_labels)
+            reason_str = ", ".join(reason_parts) if reason_parts else "-"
             lines.append(
                 f"| {day['date']} | {day['weekday']} | {day['emoji']} {day['level']} | {reason_str} |"
             )
@@ -481,6 +534,13 @@ class GenerationAgent(BaseAgent):
                 lines.append(f"💡 {best_day['weekday']}全天路况良好，可灵活安排出发时间")
             else:
                 lines.append(f"💡 建议 {best_day['weekday']} 上午出发，避开下午高峰")
+
+            if best_day.get("factor_explanations"):
+                lines.extend([
+                    "",
+                    "#### 模型归因解读",
+                ])
+                lines.extend(self._format_factor_insight_lines(best_day["factor_explanations"]))
 
         # 如果是往返行程，添加返程建议
         if trip_plan and trip_plan.trip_type == TripType.ROUND_TRIP:
@@ -510,6 +570,67 @@ class GenerationAgent(BaseAgent):
             lines.append(f"⚠️ {important[0].name}: {important[0].description}")
 
         return "\n".join(lines)
+
+    def _daily_forecast_records(self, forecast) -> List[Dict[str, Any]]:
+        """Normalize daily forecast payloads into a list of station-day records."""
+        if isinstance(forecast, list):
+            return [record for record in forecast if isinstance(record, dict)]
+        if isinstance(forecast, dict):
+            records = forecast.get("daily_forecasts")
+            if isinstance(records, list):
+                return [record for record in records if isinstance(record, dict)]
+        return []
+
+    def _daily_forecast_records_for_date(self, forecast, date: str) -> List[Dict[str, Any]]:
+        """Get all station-day forecast records for one date."""
+        return [
+            record for record in self._daily_forecast_records(forecast)
+            if str(record.get("date")) == date
+        ]
+
+    def _factor_explanations_for_records(
+        self,
+        records: List[Dict[str, Any]],
+        top_n: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Aggregate daily reason shares and map them through FACTOR_CONTRIBUTIONS.md knowledge."""
+        aggregated = aggregate_daily_reasons(records)
+        return summarize_factor_reasons(aggregated, top_n=top_n, include_baseline=False)
+
+    def _format_factor_labels(self, explanations: List[Dict[str, Any]]) -> str:
+        """Compact labels for calendar table cells."""
+        labels = []
+        for item in explanations[:2]:
+            label = item.get("label") or item.get("name")
+            value = item.get("value")
+            if value is None:
+                labels.append(str(label))
+            else:
+                labels.append(f"{label} {value:.1f}%")
+        return " / ".join(labels)
+
+    def _format_factor_insight_lines(self, explanations: List[Dict[str, Any]]) -> List[str]:
+        """Format markdown-guided factor insights for user-facing advice."""
+        lines = []
+        cautions = []
+        for item in explanations:
+            lines.append(f"- **{item.get('label', item.get('name'))}**: {item.get('message')}")
+            caution = item.get("caution")
+            if caution and caution not in cautions:
+                cautions.append(caution)
+
+        for caution in cautions[:2]:
+            lines.append(f"- 注: {caution}")
+
+        return lines
+
+    def _to_float(self, value: Any, default: float = None):
+        try:
+            if value in {None, ""}:
+                return default
+            return float(str(value).replace(",", "."))
+        except (TypeError, ValueError):
+            return default
 
     # ============ 短时间范围：按画像生成 ============
 
@@ -772,7 +893,21 @@ class GenerationAgent(BaseAgent):
         level = "moderate"
         recommended = "08:00"
 
-        if forecast and forecast.predictions:
+        daily_records = self._daily_forecast_records(forecast)
+        if daily_records:
+            scores = [
+                self._to_float(record.get("congestion_score"))
+                for record in daily_records
+            ]
+            scores = [score for score in scores if score is not None]
+            avg_score = sum(scores) / len(scores) if scores else 30
+            if avg_score < 30:
+                level, recommended = "low", "09:00"
+            elif avg_score < 50:
+                level, recommended = "moderate", "08:00"
+            else:
+                level, recommended = "high", "07:30"
+        elif forecast and forecast.predictions:
             avg_score = forecast.avg_congestion_score
             if avg_score < 30:
                 level, recommended = "low", "09:00"

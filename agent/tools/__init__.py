@@ -33,6 +33,13 @@ from .llm_client import (
     generate_json,
 )
 
+from .factor_knowledge import (
+    aggregate_daily_reasons,
+    explain_factor_contribution,
+    load_factor_contribution_knowledge,
+    summarize_factor_reasons,
+)
+
 __all__ = [
     "PredictionLoader",
     "ContextLoader",
@@ -53,4 +60,8 @@ __all__ = [
     "get_llm_client",
     "generate",
     "generate_json",
+    "aggregate_daily_reasons",
+    "explain_factor_contribution",
+    "load_factor_contribution_knowledge",
+    "summarize_factor_reasons",
 ]
