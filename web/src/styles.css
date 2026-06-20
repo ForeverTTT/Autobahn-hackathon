@@ -498,15 +498,15 @@ a:focus-visible {
   font-weight: 650;
 }
 
-.direction-key b {
-  display: grid;
-  width: 17px;
-  height: 17px;
-  place-items: center;
-  border-radius: 5px;
-  background: #e8ede6;
+.direction-key .route-direction-shape {
+  flex: 0 0 auto;
   color: #657068;
-  font-size: 8px;
+  filter: none;
+}
+
+.direction-key .route-direction-shape {
+  width: 14px;
+  height: 25px;
 }
 
 .route-badge,
@@ -605,55 +605,45 @@ button.day-cell.selected {
   font-weight: 800;
 }
 
-.traffic-bars {
+.calendar-route-shapes {
   position: absolute;
-  top: 50%;
+  top: 56%;
   left: 50%;
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  transform: translate(-50%, -36%);
+  width: 88px;
+  height: 68%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  gap: 10px;
+  transform: translate(-50%, -50%);
 }
 
-.traffic-bars i {
+.route-direction-shape {
   display: block;
-  width: 7px;
-  height: 39px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+  overflow: visible;
+  filter: drop-shadow(0 2px 2px rgba(23, 32, 26, 0.09));
 }
 
-.traffic-bars i:first-child {
-  height: 45px;
+.calendar-route-shapes .route-direction-shape {
+  width: 34px;
+  height: 100%;
 }
 
-.traffic-bars i.smooth {
-  background: var(--green);
+.route-direction-shape.smooth {
+  color: var(--green);
 }
 
-.traffic-bars i.busy {
-  background: var(--yellow);
+.route-direction-shape.busy {
+  color: var(--yellow);
 }
 
-.traffic-bars i.heavy {
-  background: var(--red);
+.route-direction-shape.heavy {
+  color: var(--red);
 }
 
-.mobile-road-labels {
-  position: absolute;
-  bottom: 9px;
-  left: 50%;
-  display: flex;
-  gap: 8px;
-  transform: translateX(-50%);
-  color: #a2a9a3;
-}
-
-.mobile-road-labels small {
-  width: 12px;
-  font-size: 7px;
-  font-weight: 850;
-  text-align: center;
+.route-direction-shape.neutral {
+  color: #657068;
 }
 
 .calendar-help {
@@ -781,17 +771,76 @@ button.day-cell.selected {
   box-shadow: inset 3px 0 0 var(--green);
 }
 
-.drawer-direction small {
-  display: grid;
-  width: 21px;
-  height: 21px;
+.drawer-direction .route-direction-shape {
   flex: 0 0 auto;
-  place-items: center;
-  border-radius: 6px;
-  background: #fff;
-  color: #758078;
-  font-size: 8px;
+  color: #657068;
+  filter: none;
+}
+
+.drawer-direction .route-direction-shape {
+  width: 18px;
+  height: 34px;
+}
+
+.traffic-overview {
+  padding: 15px 24px 17px;
+  border-bottom: 1px solid var(--line);
+}
+
+.traffic-overview-title {
+  display: block;
+  margin-bottom: 12px;
+  color: #8b948d;
+  font-size: 9px;
   font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.traffic-overview-line,
+.traffic-overview-labels {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.traffic-overview-line {
+  overflow: hidden;
+  height: 10px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e7ebe5;
+  box-shadow:
+    0 0 0 1px #dfe5de,
+    0 2px 5px rgba(27, 38, 29, 0.08);
+}
+
+.traffic-overview-segment {
+  min-width: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.traffic-overview-segment:last-child {
+  border-right: 0;
+}
+
+.traffic-overview-segment.smooth {
+  background: var(--green);
+}
+
+.traffic-overview-segment.busy {
+  background: var(--yellow);
+}
+
+.traffic-overview-segment.heavy {
+  background: var(--red);
+}
+
+.traffic-overview-labels {
+  margin-top: 7px;
+  color: #7c867f;
+  font-size: 8px;
+  font-weight: 750;
+  text-align: center;
 }
 
 .hourly-list-heading {
@@ -1354,21 +1403,6 @@ button.day-cell.selected {
     top: 6px;
     left: 7px;
     font-size: 10px;
-  }
-
-  .traffic-bars {
-    gap: 7px;
-    transform: translate(-50%, -30%);
-  }
-
-  .traffic-bars i,
-  .traffic-bars i:first-child {
-    width: 5px;
-    height: 29px;
-  }
-
-  .mobile-road-labels {
-    display: none;
   }
 
   .day-detail-drawer {
@@ -1977,4 +2011,3 @@ button.day-cell.selected {
     padding: 18px 16px 40px;
   }
 }
-
