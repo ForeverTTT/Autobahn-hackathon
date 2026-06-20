@@ -202,7 +202,7 @@ export default function CalendarPage() {
                   <SelectMenu
                     ariaLabel="Select year"
                     value={year}
-                    minWidth={104}
+                    minWidth={82}
                     options={YEARS.map((availableYear) => ({
                       value: availableYear,
                       label: String(availableYear),
@@ -215,7 +215,7 @@ export default function CalendarPage() {
                   <SelectMenu
                     ariaLabel="Select month"
                     value={month}
-                    minWidth={148}
+                    minWidth={120}
                     options={MONTHS.map((monthName, monthIndex) => ({
                       value: monthIndex,
                       label: monthName,
@@ -257,6 +257,12 @@ export default function CalendarPage() {
                 ))}
               </div>
               <div className="direction-key-row">
+                <div className="direction-key">
+                  <span className="dir-legend">
+                    <span className="dir-legend-name">{directions[0]}</span>
+                    <span className="dir-legend-name">{directions[1]}</span>
+                  </span>
+                </div>
                 <div className="legend-inline" aria-label="Traffic legend">
                   <span className="legend-title">Traffic level</span>
                   <span className="legend-item">
@@ -279,19 +285,6 @@ export default function CalendarPage() {
                     <i className="legend-dot critical" />
                     Critical
                   </span>
-                </div>
-                <div className="direction-key">
-                  {directions.map((direction, index) => (
-                    <span key={direction}>
-                      <RouteArrow
-                        road={road}
-                        direction={index + 1}
-                        status="neutral"
-                        label={direction}
-                      />
-                      {direction}
-                    </span>
-                  ))}
                 </div>
               </div>
             </div>
@@ -319,18 +312,14 @@ export default function CalendarPage() {
                   <span
                     className={`calendar-route-shapes ${road.toLowerCase()}`}
                   >
-                    <RouteArrow
-                      road={road}
-                      direction={1}
-                      status={item.directions[0]}
-                      label={`${directions[0]}: ${statusLabel(item.directions[0])}${item.scores[0] === null ? "" : ` (${item.scores[0]})`}`}
-                    />
-                    <RouteArrow
-                      road={road}
-                      direction={2}
-                      status={item.directions[1]}
-                      label={`${directions[1]}: ${statusLabel(item.directions[1])}${item.scores[1] === null ? "" : ` (${item.scores[1]})`}`}
-                    />
+                    <span
+                      className="day-bar"
+                      role="img"
+                      aria-label={`${directions[0]}: ${statusLabel(item.directions[0])}; ${directions[1]}: ${statusLabel(item.directions[1])}`}
+                    >
+                      <i className={`day-bar-half ${item.directions[0]}`} />
+                      <i className={`day-bar-half ${item.directions[1]}`} />
+                    </span>
                   </span>
                 </button>
               ) : (
