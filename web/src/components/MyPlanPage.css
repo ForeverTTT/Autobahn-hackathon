@@ -20,11 +20,9 @@
   justify-content: space-between;
   padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  border-bottom: 3px solid;
-  border-image: linear-gradient(90deg, var(--german-red) 0%, var(--german-red) 50%, var(--german-gold) 50%, var(--german-gold) 100%) 1;
 }
 
 .monitor-left {
@@ -242,31 +240,20 @@
   font-weight: 700;
 }
 
-/* ========== Savings Card (German Flag) ========== */
+/* ========== Savings Card (German Colors) ========== */
 .savings-card {
-  background: linear-gradient(180deg, #000000 0%, #000000 33%, #DD0000 33%, #DD0000 66%, #FFCC00 66%, #FFCC00 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
   border-radius: 16px;
   padding: 1.25rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.savings-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(1px);
+  border-left: 4px solid var(--german-gold, #FFCC00);
 }
 
 .savings-label {
-  position: relative;
-  z-index: 1;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.75rem;
   margin: 0 0 0.25rem;
   font-weight: 700;
@@ -275,23 +262,18 @@
 }
 
 .savings-value {
-  position: relative;
-  z-index: 1;
   font-size: 1.4rem;
   font-weight: 800;
-  color: white;
+  color: var(--german-gold, #FFCC00);
   margin: 0;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .savings-badge {
-  position: relative;
-  z-index: 1;
   margin-top: 0.5rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.75);
+  background-color: rgba(255, 255, 255, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   width: fit-content;
