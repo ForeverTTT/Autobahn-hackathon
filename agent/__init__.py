@@ -1,16 +1,34 @@
 # AlpineFlow AI - Agent Layer
-# Multi-Agent System + Graph RAG + LangGraph
+# Personalized Travel Assistant
 
 __all__ = []
 
-# LangGraph Agent System (recommended)
-try:
-    from .langgraph import TrafficAgentGraph, create_traffic_graph, AgentState
-    __all__.extend(["TrafficAgentGraph", "create_traffic_graph", "AgentState"])
-except ImportError as e:
-    print(f"Warning: LangGraph imports failed: {e}")
+# ============ 核心模块 (推荐使用) ============
 
-# Data Loading
+# Travel Assistant - 个性化出行助手
+try:
+    from .travel_assistant import (
+        TravelAssistant,
+        UserType,
+        TravelPlan,
+        TravelOption,
+        quick_plan,
+        create_assistant,
+        TOOLS_SCHEMA,
+    )
+    __all__.extend([
+        "TravelAssistant",
+        "UserType",
+        "TravelPlan",
+        "TravelOption",
+        "quick_plan",
+        "create_assistant",
+        "TOOLS_SCHEMA",
+    ])
+except ImportError as e:
+    print(f"Warning: Travel assistant imports failed: {e}")
+
+# Data Loading - 数据加载
 try:
     from .data_loader import prediction_loader, external_loader, get_forecast
     from .congestion_score import CongestionScoreCalculator, calculate_congestion_score
@@ -20,6 +38,15 @@ try:
     ])
 except ImportError as e:
     print(f"Warning: Data loader imports failed: {e}")
+
+# ============ 可选模块 ============
+
+# LangGraph Agent System (可选，用于复杂工作流)
+try:
+    from .langgraph import TrafficAgentGraph, create_traffic_graph, AgentState
+    __all__.extend(["TrafficAgentGraph", "create_traffic_graph", "AgentState"])
+except ImportError:
+    pass  # LangGraph optional
 
 # Legacy Agent System (rule-based)
 try:
