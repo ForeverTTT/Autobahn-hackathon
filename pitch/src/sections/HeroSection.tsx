@@ -10,6 +10,14 @@ const NAV_LINKS = [
   { label: "Demo", href: DEMO.calendar },
 ];
 
+const TEAM_NAMES = [
+  "Dummy Name 1",
+  "Dummy Name 2",
+  "Dummy Name 3",
+  "Dummy Name 4",
+  "Dummy Name 5",
+];
+
 export default function HeroSection() {
   return (
     <section className="relative h-screen flex flex-col" style={{ overflowX: "clip" }}>
@@ -46,16 +54,27 @@ export default function HeroSection() {
         </FadeIn>
       </div>
 
+      <FadeIn
+        delay={0.3}
+        x={24}
+        className="absolute right-6 md:right-10 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-end gap-2 text-[#D7E2EA]/55 font-light tracking-wide"
+        style={{ fontSize: "clamp(0.7rem, 1vw, 0.95rem)" }}
+      >
+        {TEAM_NAMES.map((name) => (
+          <span key={name}>{name}</span>
+        ))}
+      </FadeIn>
+
       {/* Bottom bar */}
       <div className="mt-auto flex justify-between items-end px-6 md:px-10 pb-7 sm:pb-8 md:pb-10">
         <FadeIn
           as="p"
           delay={0.35}
           y={20}
-          className="text-[#D7E2EA] font-light uppercase tracking-wide leading-snug max-w-[170px] sm:max-w-[240px] md:max-w-[300px]"
+          className="text-[#D7E2EA] font-light tracking-normal leading-snug max-w-[190px] sm:max-w-[260px] md:max-w-[330px]"
           style={{ fontSize: "clamp(0.75rem, 1.4vw, 1.5rem)" }}
         >
-          long-range, explainable traffic forecasting for the a8 east &amp; a93
+          Long-range, explainable traffic forecasting for the A8 east and A93
           south alpine corridors
         </FadeIn>
 
@@ -75,12 +94,14 @@ export default function HeroSection() {
             activeTransition="transform 0.3s ease-out"
             inactiveTransition="transform 0.6s ease-in-out"
           >
-            <img
-              src="/shots/web-map-4.png"
-              alt="AlpineFlow segment map and forecast"
-              className="w-[300px] sm:w-[420px] md:w-[520px] lg:w-[600px] rounded-2xl border border-[#D7E2EA]/25 shadow-[0_30px_80px_rgba(0,0,0,0.6)] select-none"
-              draggable={false}
-            />
+            <div className="hero-product-float">
+              <img
+                src="/shots/web-map-4.png"
+                alt="AlpineFlow segment map and forecast"
+                className="w-[330px] sm:w-[460px] md:w-[570px] lg:w-[660px] rounded-2xl border border-[#D7E2EA]/25 shadow-[0_30px_80px_rgba(0,0,0,0.6)] select-none"
+                draggable={false}
+              />
+            </div>
           </Magnet>
         </FadeIn>
       </div>

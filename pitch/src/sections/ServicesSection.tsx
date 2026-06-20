@@ -32,10 +32,10 @@ export default function ServicesSection() {
   return (
     <section
       id="audience"
-      className="bg-white rounded-t-[40px] sm:rounded-t-[50px] md:rounded-t-[60px] px-5 sm:px-8 md:px-10 py-20 sm:py-24 md:py-32"
+      className="bg-[#0C0C0C] rounded-t-[40px] sm:rounded-t-[50px] md:rounded-t-[60px] px-5 sm:px-8 md:px-10 py-20 sm:py-24 md:py-32"
     >
       <h2
-        className="text-[#0C0C0C] font-black uppercase text-center mb-16 sm:mb-20 md:mb-28"
+        className="hero-heading font-black uppercase text-center mb-16 sm:mb-20 md:mb-28"
         style={{ fontSize: "clamp(3rem, 12vw, 160px)" }}
       >
         Who It&apos;s For
@@ -47,23 +47,23 @@ export default function ServicesSection() {
             key={s.n}
             delay={i * 0.1}
             className="flex items-center gap-5 sm:gap-8 md:gap-12 py-8 sm:py-10 md:py-12"
-            style={{ borderTop: "1px solid rgba(12, 12, 12, 0.15)" }}
+            style={{ borderTop: "1px solid rgba(215, 226, 234, 0.18)" }}
           >
             <span
-              className="text-[#0C0C0C] font-black leading-none flex-shrink-0"
+              className="text-[#D7E2EA] font-black leading-none flex-shrink-0"
               style={{ fontSize: "clamp(3rem, 10vw, 140px)" }}
             >
               {s.n}
             </span>
             <div className="flex flex-col gap-2 sm:gap-3">
               <span
-                className="text-[#0C0C0C] font-medium uppercase leading-none"
+                className="text-[#D7E2EA] font-medium uppercase leading-none"
                 style={{ fontSize: "clamp(1rem, 2.2vw, 2.1rem)" }}
               >
                 {s.name}
               </span>
               <p
-                className="text-[#0C0C0C] font-light leading-relaxed max-w-2xl opacity-60"
+                className="text-[#D7E2EA] font-light leading-relaxed max-w-2xl opacity-65"
                 style={{ fontSize: "clamp(0.85rem, 1.6vw, 1.25rem)" }}
               >
                 {s.desc}

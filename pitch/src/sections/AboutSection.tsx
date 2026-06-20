@@ -20,7 +20,7 @@ export default function AboutSection() {
   return (
     <section
       id="problem"
-      className="relative min-h-screen flex flex-col items-center justify-center px-5 sm:px-8 md:px-10 py-20 overflow-hidden"
+      className="relative min-h-screen flex flex-col items-center justify-center bg-white rounded-t-[40px] sm:rounded-t-[50px] md:rounded-t-[60px] px-5 sm:px-8 md:px-10 py-20 overflow-hidden"
     >
       {/* Decorative 3D corner objects */}
       <FadeIn
@@ -69,7 +69,7 @@ export default function AboutSection() {
           as="h2"
           delay={0}
           y={40}
-          className="hero-heading font-black uppercase leading-none tracking-tight text-center"
+          className="text-[#0C0C0C] font-black uppercase leading-none tracking-tight text-center"
           style={{ fontSize: "clamp(3rem, 12vw, 160px)" }}
         >
           The Problem
@@ -77,7 +77,7 @@ export default function AboutSection() {
 
         <AnimatedText
           text={PROBLEM_TEXT}
-          className="mt-10 sm:mt-14 md:mt-16 text-[#D7E2EA] font-medium text-center leading-relaxed max-w-[620px]"
+          className="mt-10 sm:mt-14 md:mt-16 text-[#0C0C0C]/70 font-medium text-center leading-relaxed max-w-[620px]"
           style={{ fontSize: "clamp(1rem, 2vw, 1.35rem)" }}
         />
 
@@ -89,12 +89,12 @@ export default function AboutSection() {
           {STATS.map((s) => (
             <div key={s.label} className="flex flex-col items-center">
               <span
-                className="hero-heading font-black leading-none"
+                className="text-[#0C0C0C] font-black leading-none"
                 style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
               >
                 {s.value}
               </span>
-              <span className="mt-2 text-[#8b90a6] font-medium uppercase tracking-widest text-[10px] sm:text-xs">
+              <span className="mt-2 text-[#0C0C0C]/50 font-medium uppercase tracking-widest text-[10px] sm:text-xs">
                 {s.label}
               </span>
             </div>

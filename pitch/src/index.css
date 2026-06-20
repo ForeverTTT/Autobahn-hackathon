@@ -21,3 +21,18 @@ body,
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+.hero-product-float {
+  animation: hero-product-float 5.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes hero-product-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.2deg);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(0.35deg);
+  }
+}
