@@ -423,7 +423,7 @@
 }
 
 .value-critical {
-  color: var(--de-red);
+  color: #ef554a;
 }
 
 .bar-bg {
@@ -451,11 +451,11 @@
 }
 
 .trend-up {
-  color: var(--de-red);
+  color: #ef554a;
 }
 
 .trend-down {
-  color: var(--de-gold);
+  color: #45aa72;
 }
 
 /* ========== Suggestion Bar ========== */
@@ -828,15 +828,15 @@
 }
 
 .legend-green {
-  background-color: var(--de-gold);
+  background-color: #45aa72;
 }
 
 .legend-orange {
-  background-color: var(--de-grey);
+  background-color: #ee8a36;
 }
 
 .legend-red {
-  background-color: var(--de-red);
+  background-color: #ef554a;
 }
 
 .legend-box {
