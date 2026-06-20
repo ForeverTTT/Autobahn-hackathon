@@ -1,0 +1,1860 @@
+date,event_name,city,impact_level,affects_a8_ost,affects_a93_sued,day_position,is_weekend,status
+2023-01-26,Mozartwoche,Salzburg,low,True,False,start,False,confirmed
+2023-01-27,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2023-01-28,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2023-01-29,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2023-01-30,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2023-01-31,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2023-02-01,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2023-02-02,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2023-02-03,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2023-02-04,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2023-02-05,Mozartwoche,Salzburg,low,True,False,end,True,confirmed
+2023-04-21,Frühlingsfest,Munich,med,True,False,start,False,confirmed
+2023-04-22,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2023-04-23,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2023-04-24,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-04-25,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-04-26,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-04-27,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-04-28,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-04-29,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2023-04-30,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2023-05-01,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-05-02,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-05-03,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-05-04,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-05-05,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2023-05-06,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2023-05-07,Frühlingsfest,Munich,med,True,False,end,True,confirmed
+2023-06-21,Tollwood Sommer,Munich,med,True,False,start,False,confirmed
+2023-06-22,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-06-23,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-06-24,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-06-25,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-06-26,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-06-27,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-06-28,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-06-29,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-06-30,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-01,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-02,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-03,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-04,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-05,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-06,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,confirmed
+2023-07-06,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-07,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-08,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-09,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-10,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-11,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-12,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-13,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-14,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-15,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-16,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-17,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-18,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-18,Salzburger Festspiele,Salzburg,high,True,False,start,False,confirmed
+2023-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-19,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-19,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-20,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-21,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2023-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,confirmed
+2023-07-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-22,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2023-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-23,Tollwood Sommer,Munich,med,True,False,end,True,confirmed
+2023-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-05,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2023-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-09,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-10,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2023-08-11,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2023-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-12,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,confirmed
+2023-08-12,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2023-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-13,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,confirmed
+2023-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2023-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2023-08-31,Salzburger Festspiele,Salzburg,high,True,False,end,False,confirmed
+2023-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,confirmed
+2023-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2023-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2023-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2023-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-13,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-14,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-15,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2023-09-16,Oktoberfest,Munich,high,True,False,start,True,confirmed
+2023-09-16,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2023-09-17,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2023-09-17,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,confirmed
+2023-09-18,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-19,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-20,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-21,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-22,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-23,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2023-09-24,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2023-09-25,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-26,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-27,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-28,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-29,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-09-30,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2023-10-01,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2023-10-02,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2023-10-03,Oktoberfest,Munich,high,True,False,end,False,confirmed
+2023-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,confirmed
+2023-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,confirmed
+2023-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2023-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2023-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,False,confirmed
+2023-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2023-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2023-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,True,confirmed
+2024-01-25,Mozartwoche,Salzburg,low,True,False,start,False,confirmed
+2024-01-26,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2024-01-27,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2024-01-28,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2024-01-29,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2024-01-30,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2024-01-31,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2024-02-01,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2024-02-02,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2024-02-03,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2024-02-04,Mozartwoche,Salzburg,low,True,False,end,True,confirmed
+2024-04-19,Frühlingsfest,Munich,med,True,False,start,False,confirmed
+2024-04-20,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2024-04-21,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2024-04-22,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-04-23,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-04-24,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-04-25,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-04-26,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-04-27,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2024-04-28,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2024-04-29,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-04-30,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-05-01,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-05-02,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-05-03,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2024-05-04,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2024-05-05,Frühlingsfest,Munich,med,True,False,end,True,confirmed
+2024-06-26,Tollwood Sommer,Munich,med,True,False,start,False,confirmed
+2024-06-27,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-06-28,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-06-29,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-06-30,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-07-01,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-02,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-03,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-04,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,confirmed
+2024-07-04,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-05,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-05,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-06,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-07-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-07,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-07-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-08,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-09,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-10,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-11,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-12,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-13,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-14,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-15,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-16,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-17,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-18,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-19,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2024-07-19,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,confirmed
+2024-07-19,Salzburger Festspiele,Salzburg,high,True,False,start,False,confirmed
+2024-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-20,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2024-07-20,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-07-20,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-21,Tollwood Sommer,Munich,med,True,False,end,True,confirmed
+2024-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-07-21,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2024-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-05,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2024-08-09,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2024-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-10,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,confirmed
+2024-08-10,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2024-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-11,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,confirmed
+2024-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2024-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2024-08-31,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,confirmed
+2024-08-31,Salzburger Festspiele,Salzburg,high,True,False,end,True,confirmed
+2024-09-01,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2024-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2024-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2024-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-13,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2024-09-14,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2024-09-15,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,confirmed
+2024-09-21,Oktoberfest,Munich,high,True,False,start,True,confirmed
+2024-09-22,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2024-09-23,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-09-24,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-09-25,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-09-26,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-09-27,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-09-28,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2024-09-29,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2024-09-30,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-10-01,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-10-02,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-10-03,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-10-04,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2024-10-05,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2024-10-06,Oktoberfest,Munich,high,True,False,end,True,confirmed
+2024-11-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,confirmed
+2024-11-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-11-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,confirmed
+2024-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-11-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2024-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2024-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,False,confirmed
+2024-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2024-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2024-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,False,confirmed
+2025-01-23,Mozartwoche,Salzburg,low,True,False,start,False,confirmed
+2025-01-24,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2025-01-25,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2025-01-26,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2025-01-27,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2025-01-28,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2025-01-29,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2025-01-30,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2025-01-31,Mozartwoche,Salzburg,low,True,False,mid,False,confirmed
+2025-02-01,Mozartwoche,Salzburg,low,True,False,mid,True,confirmed
+2025-02-02,Mozartwoche,Salzburg,low,True,False,end,True,confirmed
+2025-04-25,Frühlingsfest,Munich,med,True,False,start,False,confirmed
+2025-04-26,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2025-04-27,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2025-04-28,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-04-29,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-04-30,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-01,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-02,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-03,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2025-05-04,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2025-05-05,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-06,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-07,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-08,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-09,Frühlingsfest,Munich,med,True,False,mid,False,confirmed
+2025-05-10,Frühlingsfest,Munich,med,True,False,mid,True,confirmed
+2025-05-11,Frühlingsfest,Munich,med,True,False,end,True,confirmed
+2025-06-25,Tollwood Sommer,Munich,med,True,False,start,False,confirmed
+2025-06-26,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-06-27,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-06-28,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-06-29,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-06-30,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-01,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-02,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-03,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-04,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-05,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-07-06,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-07-07,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-08,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-09,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,confirmed
+2025-07-10,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-11,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-07-12,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-07-13,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-14,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-15,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-16,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-17,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-18,Tollwood Sommer,Munich,med,True,False,mid,False,confirmed
+2025-07-18,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,confirmed
+2025-07-18,Salzburger Festspiele,Salzburg,high,True,False,start,False,confirmed
+2025-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-07-19,Tollwood Sommer,Munich,med,True,False,mid,True,confirmed
+2025-07-19,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-07-19,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-07-20,Tollwood Sommer,Munich,med,True,False,end,True,confirmed
+2025-07-20,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-07-20,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,confirmed
+2025-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-05,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,confirmed
+2025-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,confirmed
+2025-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-09,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,confirmed
+2025-08-09,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,confirmed
+2025-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-10,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,confirmed
+2025-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,True,confirmed
+2025-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,confirmed
+2025-08-30,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,confirmed
+2025-08-30,Salzburger Festspiele,Salzburg,high,True,False,end,True,confirmed
+2025-08-31,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2025-09-01,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2025-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2025-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,confirmed
+2025-09-13,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,confirmed
+2025-09-14,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,confirmed
+2025-09-20,Oktoberfest,Munich,high,True,False,start,True,confirmed
+2025-09-21,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2025-09-22,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-09-23,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-09-24,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-09-25,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-09-26,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-09-27,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2025-09-28,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2025-09-29,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-09-30,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-10-01,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-10-02,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-10-03,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2025-10-04,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2025-10-05,Oktoberfest,Munich,high,True,False,end,True,confirmed
+2025-11-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,confirmed
+2025-11-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-11-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-11-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,confirmed
+2025-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-11-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-11-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,confirmed
+2025-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,confirmed
+2025-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,False,confirmed
+2025-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,confirmed
+2025-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,confirmed
+2025-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,False,confirmed
+2026-01-22,Mozartwoche,Salzburg,low,True,False,start,False,estimated
+2026-01-23,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2026-01-24,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2026-01-25,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2026-01-26,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2026-01-27,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2026-01-28,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2026-01-29,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2026-01-30,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2026-01-31,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2026-02-01,Mozartwoche,Salzburg,low,True,False,end,True,estimated
+2026-04-24,Frühlingsfest,Munich,med,True,False,start,False,estimated
+2026-04-25,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2026-04-26,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2026-04-27,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-04-28,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-04-29,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-04-30,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-01,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-02,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2026-05-03,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2026-05-04,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-05,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-06,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-07,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-08,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2026-05-09,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2026-05-10,Frühlingsfest,Munich,med,True,False,end,True,estimated
+2026-06-24,Tollwood Sommer,Munich,med,True,False,start,False,estimated
+2026-06-25,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-06-26,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-06-27,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-06-28,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-06-29,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-06-30,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-01,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-02,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-03,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-04,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-07-05,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-07-06,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-07,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-08,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-09,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,estimated
+2026-07-09,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-10,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-07-11,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-07-12,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-13,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-14,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-15,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-16,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-17,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2026-07-17,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,estimated
+2026-07-17,Salzburger Festspiele,Salzburg,high,True,False,start,False,estimated
+2026-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-07-18,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2026-07-18,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-07-18,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-07-19,Tollwood Sommer,Munich,med,True,False,end,True,estimated
+2026-07-19,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-07-19,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-20,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2026-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-05,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2026-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2026-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-08,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,estimated
+2026-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2026-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-09,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,estimated
+2026-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2026-08-29,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,estimated
+2026-08-29,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2026-08-30,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2026-08-30,Salzburger Festspiele,Salzburg,high,True,False,end,True,estimated
+2026-08-31,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-01,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2026-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2026-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2026-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2026-09-13,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,estimated
+2026-09-19,Oktoberfest,Munich,high,True,False,start,True,confirmed
+2026-09-20,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2026-09-21,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-22,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-23,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-24,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-25,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-26,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2026-09-27,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2026-09-28,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-29,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-09-30,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-10-01,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-10-02,Oktoberfest,Munich,high,True,False,mid,False,confirmed
+2026-10-03,Oktoberfest,Munich,high,True,False,mid,True,confirmed
+2026-10-04,Oktoberfest,Munich,high,True,False,end,True,confirmed
+2026-11-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,estimated
+2026-11-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-11-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-11-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-11-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,estimated
+2026-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-11-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-11-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-11-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2026-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2026-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,True,estimated
+2026-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2026-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2026-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,False,estimated
+2027-01-21,Mozartwoche,Salzburg,low,True,False,start,False,estimated
+2027-01-22,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2027-01-23,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2027-01-24,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2027-01-25,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2027-01-26,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2027-01-27,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2027-01-28,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2027-01-29,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2027-01-30,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2027-01-31,Mozartwoche,Salzburg,low,True,False,end,True,estimated
+2027-04-23,Frühlingsfest,Munich,med,True,False,start,False,estimated
+2027-04-24,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2027-04-25,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2027-04-26,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-04-27,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-04-28,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-04-29,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-04-30,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-05-01,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2027-05-02,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2027-05-03,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-05-04,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-05-05,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-05-06,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-05-07,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2027-05-08,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2027-05-09,Frühlingsfest,Munich,med,True,False,end,True,estimated
+2027-06-23,Tollwood Sommer,Munich,med,True,False,start,False,estimated
+2027-06-24,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-06-25,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-06-26,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-06-27,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-06-28,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-06-29,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-06-30,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-01,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-02,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-03,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-07-04,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-07-05,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-06,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-07,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-08,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,estimated
+2027-07-08,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-09,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-10,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-11,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-12,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-13,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-14,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-15,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-16,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2027-07-16,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,estimated
+2027-07-16,Salzburger Festspiele,Salzburg,high,True,False,start,False,estimated
+2027-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-17,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2027-07-17,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-07-17,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-18,Tollwood Sommer,Munich,med,True,False,end,True,estimated
+2027-07-18,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-07-18,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-19,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-19,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-20,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2027-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-05,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2027-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2027-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-07,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,estimated
+2027-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2027-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,estimated
+2027-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2027-08-28,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,estimated
+2027-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2027-08-29,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2027-08-29,Salzburger Festspiele,Salzburg,high,True,False,end,True,estimated
+2027-08-30,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-08-31,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-01,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2027-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2027-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2027-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2027-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,estimated
+2027-09-18,Oktoberfest,Munich,high,True,False,start,True,estimated
+2027-09-19,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2027-09-20,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-21,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-22,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-23,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-24,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-25,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2027-09-26,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2027-09-27,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-28,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-29,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-09-30,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-10-01,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2027-10-02,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2027-10-03,Oktoberfest,Munich,high,True,False,end,True,estimated
+2027-11-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,estimated
+2027-11-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-11-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-11-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,estimated
+2027-11-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2027-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2027-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2027-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,True,estimated
+2027-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2027-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,False,estimated
+2028-01-20,Mozartwoche,Salzburg,low,True,False,start,False,estimated
+2028-01-21,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2028-01-22,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2028-01-23,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2028-01-24,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2028-01-25,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2028-01-26,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2028-01-27,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2028-01-28,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2028-01-29,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2028-01-30,Mozartwoche,Salzburg,low,True,False,end,True,estimated
+2028-04-21,Frühlingsfest,Munich,med,True,False,start,False,estimated
+2028-04-22,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2028-04-23,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2028-04-24,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-04-25,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-04-26,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-04-27,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-04-28,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-04-29,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2028-04-30,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2028-05-01,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-05-02,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-05-03,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-05-04,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-05-05,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2028-05-06,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2028-05-07,Frühlingsfest,Munich,med,True,False,end,True,estimated
+2028-06-21,Tollwood Sommer,Munich,med,True,False,start,False,estimated
+2028-06-22,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-06-23,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-06-24,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-06-25,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-06-26,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-06-27,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-06-28,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-06-29,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-06-30,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-01,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-07-02,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-07-03,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-04,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-05,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-06,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,estimated
+2028-07-06,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-07,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-08,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-07-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-09,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-10,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-11,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-12,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-13,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-14,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2028-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-15,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2028-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-16,Tollwood Sommer,Munich,med,True,False,end,True,estimated
+2028-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,estimated
+2028-07-21,Salzburger Festspiele,Salzburg,high,True,False,start,False,estimated
+2028-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2028-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2028-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-05,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,estimated
+2028-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-09,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-10,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-11,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2028-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-12,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2028-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-13,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,estimated
+2028-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-08-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-09-01,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2028-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,estimated
+2028-09-02,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2028-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2028-09-03,Salzburger Festspiele,Salzburg,high,True,False,end,True,estimated
+2028-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2028-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2028-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-13,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-14,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-15,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2028-09-16,Oktoberfest,Munich,high,True,False,start,True,estimated
+2028-09-16,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2028-09-17,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2028-09-17,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,estimated
+2028-09-18,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-19,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-20,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-21,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-22,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-23,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2028-09-24,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2028-09-25,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-26,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-27,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-28,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-29,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-09-30,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2028-10-01,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2028-10-02,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2028-10-03,Oktoberfest,Munich,high,True,False,end,False,estimated
+2028-11-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,estimated
+2028-11-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,estimated
+2028-11-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-11-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-11-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2028-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2028-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,False,estimated
+2028-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2028-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2028-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,True,estimated
+2029-01-25,Mozartwoche,Salzburg,low,True,False,start,False,estimated
+2029-01-26,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2029-01-27,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2029-01-28,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2029-01-29,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2029-01-30,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2029-01-31,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2029-02-01,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2029-02-02,Mozartwoche,Salzburg,low,True,False,mid,False,estimated
+2029-02-03,Mozartwoche,Salzburg,low,True,False,mid,True,estimated
+2029-02-04,Mozartwoche,Salzburg,low,True,False,end,True,estimated
+2029-04-27,Frühlingsfest,Munich,med,True,False,start,False,estimated
+2029-04-28,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2029-04-29,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2029-04-30,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-01,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-02,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-03,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-04,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-05,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2029-05-06,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2029-05-07,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-08,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-09,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-10,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-11,Frühlingsfest,Munich,med,True,False,mid,False,estimated
+2029-05-12,Frühlingsfest,Munich,med,True,False,mid,True,estimated
+2029-05-13,Frühlingsfest,Munich,med,True,False,end,True,estimated
+2029-06-20,Tollwood Sommer,Munich,med,True,False,start,False,estimated
+2029-06-21,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-22,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-23,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-06-24,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-06-25,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-26,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-27,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-28,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-29,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-06-30,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-07-01,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-07-02,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-03,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-04,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-05,Kufsteiner Operettensommer,Kufstein,low,False,True,start,False,estimated
+2029-07-05,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-06,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-06,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-07,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-07,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-07-08,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-08,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-07-09,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-09,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-10,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-10,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-11,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-11,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-12,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-12,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-13,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-13,Tollwood Sommer,Munich,med,True,False,mid,False,estimated
+2029-07-14,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-14,Tollwood Sommer,Munich,med,True,False,mid,True,estimated
+2029-07-15,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-15,Tollwood Sommer,Munich,med,True,False,end,True,estimated
+2029-07-16,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-17,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-18,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-19,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-20,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-20,Rosenheimer Sommerfestival,Rosenheim,low,True,True,start,False,estimated
+2029-07-20,Salzburger Festspiele,Salzburg,high,True,False,start,False,estimated
+2029-07-21,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-21,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-07-21,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-07-22,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-22,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-07-22,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-07-23,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-23,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-07-24,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-24,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-07-25,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-25,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-25,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-07-26,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-26,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-26,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-07-27,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-27,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-07-28,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-28,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-07-28,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-07-29,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,True,estimated
+2029-07-29,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-07-29,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-07-30,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-30,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-07-31,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-07-31,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-07-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-01,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-08-01,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-01,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-02,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-08-02,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-02,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-03,Kufsteiner Operettensommer,Kufstein,low,False,True,mid,False,estimated
+2029-08-03,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-03,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-04,Kufsteiner Operettensommer,Kufstein,low,False,True,end,True,estimated
+2029-08-04,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-08-04,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-05,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-08-05,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-06,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-06,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-07,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-07,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-08,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-08,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-09,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-09,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-10,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,False,estimated
+2029-08-10,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-11,Rosenheimer Sommerfestival,Rosenheim,low,True,True,mid,True,estimated
+2029-08-11,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-12,Rosenheimer Sommerfestival,Rosenheim,low,True,True,end,True,estimated
+2029-08-12,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-13,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-14,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-15,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-16,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-17,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-18,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-19,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-20,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-21,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-22,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-23,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-24,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-25,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-26,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-08-27,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-28,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-29,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-30,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-08-31,Salzburger Festspiele,Salzburg,high,True,False,mid,False,estimated
+2029-09-01,Rosenheimer Herbstfest,Rosenheim,high,True,True,start,True,estimated
+2029-09-01,Salzburger Festspiele,Salzburg,high,True,False,mid,True,estimated
+2029-09-02,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2029-09-02,Salzburger Festspiele,Salzburg,high,True,False,end,True,estimated
+2029-09-03,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-04,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-05,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-06,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-07,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-08,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2029-09-09,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2029-09-10,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-11,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-12,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-13,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-14,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,False,estimated
+2029-09-15,Oktoberfest,Munich,high,True,False,start,True,estimated
+2029-09-15,Rosenheimer Herbstfest,Rosenheim,high,True,True,mid,True,estimated
+2029-09-16,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2029-09-16,Rosenheimer Herbstfest,Rosenheim,high,True,True,end,True,estimated
+2029-09-17,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-18,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-19,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-20,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-21,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-22,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2029-09-23,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2029-09-24,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-25,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-26,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-27,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-28,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-09-29,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2029-09-30,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2029-10-01,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-10-02,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-10-03,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-10-04,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-10-05,Oktoberfest,Munich,high,True,False,mid,False,estimated
+2029-10-06,Oktoberfest,Munich,high,True,False,mid,True,estimated
+2029-10-07,Oktoberfest,Munich,high,True,False,end,True,estimated
+2029-11-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,start,False,estimated
+2029-11-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,start,False,estimated
+2029-11-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-11-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-11-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-11-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-11-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-11-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-11-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-27,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-11-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-28,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-11-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-29,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-11-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-11-30,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-01,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-01,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-02,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-02,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-03,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-03,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-04,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-04,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-05,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-05,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-06,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-06,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-07,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-07,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-08,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-08,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-09,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-09,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-10,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-10,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-11,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-11,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-12,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-12,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-13,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-13,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-14,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-14,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-15,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-15,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-16,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-16,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-17,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-17,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-18,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-18,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-19,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-19,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-20,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-20,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-21,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-21,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-22,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-22,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-23,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-23,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,True,estimated
+2029-12-24,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-24,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-25,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-25,Salzburger Christkindlmarkt,Salzburg,med,True,False,mid,False,estimated
+2029-12-26,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-26,Salzburger Christkindlmarkt,Salzburg,med,True,False,end,False,estimated
+2029-12-27,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-28,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,False,estimated
+2029-12-29,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-30,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,mid,True,estimated
+2029-12-31,Tollwood Winter & Christkindlmarkt,Munich,med,True,False,end,False,estimated

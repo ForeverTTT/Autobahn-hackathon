@@ -1,0 +1,71 @@
+event_name,city,year,start_date,end_date,duration_days,impact_level,affects_a8_ost,affects_a93_sued,nearest_corridor_node,status,source
+Mozartwoche,Salzburg,2023,2023-01-26,2023-02-05,11,low,True,False,Salzburg_border,confirmed,mozarteum.at
+Frühlingsfest,Munich,2023,2023-04-21,2023-05-07,17,med,True,False,AK_München,confirmed,fruehlingsfest-muenchen.de
+Tollwood Sommer,Munich,2023,2023-06-21,2023-07-23,33,med,True,False,AK_München,confirmed,tollwood.de
+Kufsteiner Operettensommer,Kufstein,2023,2023-07-06,2023-08-12,38,low,False,True,Kufstein_border,confirmed,operettensommer.com
+Salzburger Festspiele,Salzburg,2023,2023-07-18,2023-08-31,45,high,True,False,Salzburg_border,confirmed,salzburgerfestspiele.at
+Rosenheimer Sommerfestival,Rosenheim,2023,2023-07-21,2023-08-13,24,low,True,True,AD_Rosenheim,confirmed,rosenheimer-sommerfestival.de
+Rosenheimer Herbstfest,Rosenheim,2023,2023-09-02,2023-09-17,16,high,True,True,AD_Rosenheim,confirmed,rosenheimer-herbstfest.de
+Oktoberfest,Munich,2023,2023-09-16,2023-10-03,18,high,True,False,AK_München,confirmed,oktoberfest.de
+Salzburger Christkindlmarkt,Salzburg,2023,2023-11-23,2023-12-26,34,med,True,False,Salzburg_border,confirmed,christkindlmarkt.co.at
+Tollwood Winter & Christkindlmarkt,Munich,2023,2023-11-27,2023-12-31,35,med,True,False,AK_München,confirmed,tollwood.de
+Mozartwoche,Salzburg,2024,2024-01-25,2024-02-04,11,low,True,False,Salzburg_border,confirmed,mozarteum.at
+Frühlingsfest,Munich,2024,2024-04-19,2024-05-05,17,med,True,False,AK_München,confirmed,fruehlingsfest-muenchen.de
+Tollwood Sommer,Munich,2024,2024-06-26,2024-07-21,26,med,True,False,AK_München,confirmed,tollwood.de
+Kufsteiner Operettensommer,Kufstein,2024,2024-07-04,2024-08-10,38,low,False,True,Kufstein_border,confirmed,operettensommer.com
+Rosenheimer Sommerfestival,Rosenheim,2024,2024-07-19,2024-08-11,24,low,True,True,AD_Rosenheim,confirmed,rosenheimer-sommerfestival.de
+Salzburger Festspiele,Salzburg,2024,2024-07-19,2024-08-31,44,high,True,False,Salzburg_border,confirmed,salzburgerfestspiele.at
+Rosenheimer Herbstfest,Rosenheim,2024,2024-08-31,2024-09-15,16,high,True,True,AD_Rosenheim,confirmed,rosenheimer-herbstfest.de
+Oktoberfest,Munich,2024,2024-09-21,2024-10-06,16,high,True,False,AK_München,confirmed,oktoberfest.de
+Salzburger Christkindlmarkt,Salzburg,2024,2024-11-21,2024-12-26,36,med,True,False,Salzburg_border,confirmed,christkindlmarkt.co.at
+Tollwood Winter & Christkindlmarkt,Munich,2024,2024-11-25,2024-12-31,37,med,True,False,AK_München,confirmed,tollwood.de
+Mozartwoche,Salzburg,2025,2025-01-23,2025-02-02,11,low,True,False,Salzburg_border,confirmed,mozarteum.at
+Frühlingsfest,Munich,2025,2025-04-25,2025-05-11,17,med,True,False,AK_München,confirmed,fruehlingsfest-muenchen.de
+Tollwood Sommer,Munich,2025,2025-06-25,2025-07-20,26,med,True,False,AK_München,confirmed,tollwood.de
+Kufsteiner Operettensommer,Kufstein,2025,2025-07-10,2025-08-09,31,low,False,True,Kufstein_border,confirmed,operettensommer.com
+Rosenheimer Sommerfestival,Rosenheim,2025,2025-07-18,2025-08-10,24,low,True,True,AD_Rosenheim,confirmed,rosenheimer-sommerfestival.de
+Salzburger Festspiele,Salzburg,2025,2025-07-18,2025-08-30,44,high,True,False,Salzburg_border,confirmed,salzburgerfestspiele.at
+Rosenheimer Herbstfest,Rosenheim,2025,2025-08-30,2025-09-14,16,high,True,True,AD_Rosenheim,confirmed,rosenheimer-herbstfest.de
+Oktoberfest,Munich,2025,2025-09-20,2025-10-05,16,high,True,False,AK_München,confirmed,oktoberfest.de
+Salzburger Christkindlmarkt,Salzburg,2025,2025-11-20,2025-12-26,37,med,True,False,Salzburg_border,confirmed,christkindlmarkt.co.at
+Tollwood Winter & Christkindlmarkt,Munich,2025,2025-11-24,2025-12-31,38,med,True,False,AK_München,confirmed,tollwood.de
+Mozartwoche,Salzburg,2026,2026-01-22,2026-02-01,11,low,True,False,Salzburg_border,estimated,rule:around-Mozart-Jan27
+Frühlingsfest,Munich,2026,2026-04-24,2026-05-10,17,med,True,False,AK_München,estimated,rule:late-April +17d
+Tollwood Sommer,Munich,2026,2026-06-24,2026-07-19,26,med,True,False,AK_München,estimated,rule:late-June + ~4w
+Kufsteiner Operettensommer,Kufstein,2026,2026-07-09,2026-08-08,31,low,False,True,Kufstein_border,estimated,rule:1st-Thu-Jul +~5w
+Rosenheimer Sommerfestival,Rosenheim,2026,2026-07-17,2026-08-09,24,low,True,True,AD_Rosenheim,estimated,rule:Fri-of-3rd-Jul-week +24d
+Salzburger Festspiele,Salzburg,2026,2026-07-17,2026-08-30,45,high,True,False,Salzburg_border,estimated,rule:Fri-before-Jul21 +~44d
+Rosenheimer Herbstfest,Rosenheim,2026,2026-08-29,2026-09-13,16,high,True,True,AD_Rosenheim,estimated,rule:Sat-of-last-Aug-week +15d
+Oktoberfest,Munich,2026,2026-09-19,2026-10-04,16,high,True,False,AK_München,confirmed,oktoberfest.de
+Salzburger Christkindlmarkt,Salzburg,2026,2026-11-19,2026-12-26,38,med,True,False,Salzburg_border,estimated,rule:Thu-before-Advent
+Tollwood Winter & Christkindlmarkt,Munich,2026,2026-11-23,2026-12-31,39,med,True,False,AK_München,estimated,rule:Mon-of-1st-Advent-week
+Mozartwoche,Salzburg,2027,2027-01-21,2027-01-31,11,low,True,False,Salzburg_border,estimated,rule:around-Mozart-Jan27
+Frühlingsfest,Munich,2027,2027-04-23,2027-05-09,17,med,True,False,AK_München,estimated,rule:late-April +17d
+Tollwood Sommer,Munich,2027,2027-06-23,2027-07-18,26,med,True,False,AK_München,estimated,rule:late-June + ~4w
+Kufsteiner Operettensommer,Kufstein,2027,2027-07-08,2027-08-07,31,low,False,True,Kufstein_border,estimated,rule:1st-Thu-Jul +~5w
+Rosenheimer Sommerfestival,Rosenheim,2027,2027-07-16,2027-08-08,24,low,True,True,AD_Rosenheim,estimated,rule:Fri-of-3rd-Jul-week +24d
+Salzburger Festspiele,Salzburg,2027,2027-07-16,2027-08-29,45,high,True,False,Salzburg_border,estimated,rule:Fri-before-Jul21 +~44d
+Rosenheimer Herbstfest,Rosenheim,2027,2027-08-28,2027-09-12,16,high,True,True,AD_Rosenheim,estimated,rule:Sat-of-last-Aug-week +15d
+Oktoberfest,Munich,2027,2027-09-18,2027-10-03,16,high,True,False,AK_München,estimated,rule:Sat-before-Oct1 +16d
+Salzburger Christkindlmarkt,Salzburg,2027,2027-11-18,2027-12-26,39,med,True,False,Salzburg_border,estimated,rule:Thu-before-Advent
+Tollwood Winter & Christkindlmarkt,Munich,2027,2027-11-22,2027-12-31,40,med,True,False,AK_München,estimated,rule:Mon-of-1st-Advent-week
+Mozartwoche,Salzburg,2028,2028-01-20,2028-01-30,11,low,True,False,Salzburg_border,estimated,rule:around-Mozart-Jan27
+Frühlingsfest,Munich,2028,2028-04-21,2028-05-07,17,med,True,False,AK_München,estimated,rule:late-April +17d
+Tollwood Sommer,Munich,2028,2028-06-21,2028-07-16,26,med,True,False,AK_München,estimated,rule:late-June + ~4w
+Kufsteiner Operettensommer,Kufstein,2028,2028-07-06,2028-08-05,31,low,False,True,Kufstein_border,estimated,rule:1st-Thu-Jul +~5w
+Rosenheimer Sommerfestival,Rosenheim,2028,2028-07-21,2028-08-13,24,low,True,True,AD_Rosenheim,estimated,rule:Fri-of-3rd-Jul-week +24d
+Salzburger Festspiele,Salzburg,2028,2028-07-21,2028-09-03,45,high,True,False,Salzburg_border,estimated,rule:Fri-before-Jul21 +~44d
+Rosenheimer Herbstfest,Rosenheim,2028,2028-09-02,2028-09-17,16,high,True,True,AD_Rosenheim,estimated,rule:Sat-of-last-Aug-week +15d
+Oktoberfest,Munich,2028,2028-09-16,2028-10-03,18,high,True,False,AK_München,estimated,rule:Sat-before-Oct1 +16d
+Tollwood Winter & Christkindlmarkt,Munich,2028,2028-11-20,2028-12-31,42,med,True,False,AK_München,estimated,rule:Mon-of-1st-Advent-week
+Salzburger Christkindlmarkt,Salzburg,2028,2028-11-23,2028-12-26,34,med,True,False,Salzburg_border,estimated,rule:Thu-before-Advent
+Mozartwoche,Salzburg,2029,2029-01-25,2029-02-04,11,low,True,False,Salzburg_border,estimated,rule:around-Mozart-Jan27
+Frühlingsfest,Munich,2029,2029-04-27,2029-05-13,17,med,True,False,AK_München,estimated,rule:late-April +17d
+Tollwood Sommer,Munich,2029,2029-06-20,2029-07-15,26,med,True,False,AK_München,estimated,rule:late-June + ~4w
+Kufsteiner Operettensommer,Kufstein,2029,2029-07-05,2029-08-04,31,low,False,True,Kufstein_border,estimated,rule:1st-Thu-Jul +~5w
+Rosenheimer Sommerfestival,Rosenheim,2029,2029-07-20,2029-08-12,24,low,True,True,AD_Rosenheim,estimated,rule:Fri-of-3rd-Jul-week +24d
+Salzburger Festspiele,Salzburg,2029,2029-07-20,2029-09-02,45,high,True,False,Salzburg_border,estimated,rule:Fri-before-Jul21 +~44d
+Rosenheimer Herbstfest,Rosenheim,2029,2029-09-01,2029-09-16,16,high,True,True,AD_Rosenheim,estimated,rule:Sat-of-last-Aug-week +15d
+Oktoberfest,Munich,2029,2029-09-15,2029-10-07,23,high,True,False,AK_München,estimated,rule:Sat-before-Oct1 +16d; possible centenary extension
+Tollwood Winter & Christkindlmarkt,Munich,2029,2029-11-19,2029-12-31,43,med,True,False,AK_München,estimated,rule:Mon-of-1st-Advent-week
+Salzburger Christkindlmarkt,Salzburg,2029,2029-11-22,2029-12-26,35,med,True,False,Salzburg_border,estimated,rule:Thu-before-Advent
