@@ -26,13 +26,13 @@ DIRECTION_LABELS = {
 
 
 def score_to_level(score: float) -> str:
-    if score < 24:
+    if score < 25:
         return "smooth"
-    if score < 29:
+    if score < 31:
         return "light"
-    if score < 34:
+    if score < 37:
         return "moderate"
-    if score < 39:
+    if score < 41:
         return "heavy"
     return "critical"
 
