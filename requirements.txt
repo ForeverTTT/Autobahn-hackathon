@@ -1,0 +1,8 @@
+catboost>=1.2
+pandas>=2.0
+numpy
+matplotlib
+tqdm
+pyarrow
+ipykernel
+jinja2
