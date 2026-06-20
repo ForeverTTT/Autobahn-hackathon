@@ -1,16 +1,27 @@
 import FadeIn from "../components/FadeIn";
 import AnimatedText from "../components/AnimatedText";
 import ContactButton from "../components/ContactButton";
+import { DEMO } from "../config";
 
 const DECOR_BASE =
   "https://shrug-person-78902957.figma.site/_components/v2/ebb2b8f25d8e24d5f0a5ca8af4c950de81aa2fd7";
 
-const ABOUT_TEXT =
-  "With more than five years of experience in design, i focus on branding, web design, and user experience, i truly enjoy working with businesses that aim to stand out and present their best image. Let's build something incredible together!";
+const PROBLEM_TEXT =
+  "Every summer the A8 and A93 become the gateway to the Alps — and kilometres of stop-and-go. The jams are punishing, but they are not random: holidays, weather and roadworks make them predictable weeks ahead. AlpineFlow turns that signal into a forecast you can plan around.";
+
+const STATS = [
+  { value: "420K+", label: "hourly forecasts" },
+  { value: "12", label: "corridor sites" },
+  { value: "88%", label: "peak-hour recall" },
+  { value: "7", label: "explainable factors" },
+];
 
 export default function AboutSection() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-5 sm:px-8 md:px-10 py-20 overflow-hidden">
+    <section
+      id="problem"
+      className="relative min-h-screen flex flex-col items-center justify-center px-5 sm:px-8 md:px-10 py-20 overflow-hidden"
+    >
       {/* Decorative 3D corner objects */}
       <FadeIn
         delay={0.1}
@@ -52,7 +63,7 @@ export default function AboutSection() {
         <img src={`${DECOR_BASE}/Group_134-1.2e04f3ce.png`} alt="" className="w-full" />
       </FadeIn>
 
-      {/* Heading + animated text + button */}
+      {/* Heading + animated text + stats + button */}
       <div className="relative z-10 flex flex-col items-center">
         <FadeIn
           as="h2"
@@ -61,17 +72,37 @@ export default function AboutSection() {
           className="hero-heading font-black uppercase leading-none tracking-tight text-center"
           style={{ fontSize: "clamp(3rem, 12vw, 160px)" }}
         >
-          About me
+          The Problem
         </FadeIn>
 
         <AnimatedText
-          text={ABOUT_TEXT}
-          className="mt-10 sm:mt-14 md:mt-16 text-[#D7E2EA] font-medium text-center leading-relaxed max-w-[560px]"
+          text={PROBLEM_TEXT}
+          className="mt-10 sm:mt-14 md:mt-16 text-[#D7E2EA] font-medium text-center leading-relaxed max-w-[620px]"
           style={{ fontSize: "clamp(1rem, 2vw, 1.35rem)" }}
         />
 
-        <div className="mt-16 sm:mt-20 md:mt-24">
-          <ContactButton />
+        {/* Model-credibility stats */}
+        <FadeIn
+          delay={0.1}
+          className="mt-12 sm:mt-14 md:mt-16 flex flex-wrap justify-center gap-x-10 gap-y-6 sm:gap-x-16"
+        >
+          {STATS.map((s) => (
+            <div key={s.label} className="flex flex-col items-center">
+              <span
+                className="hero-heading font-black leading-none"
+                style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
+              >
+                {s.value}
+              </span>
+              <span className="mt-2 text-[#8b90a6] font-medium uppercase tracking-widest text-[10px] sm:text-xs">
+                {s.label}
+              </span>
+            </div>
+          ))}
+        </FadeIn>
+
+        <div className="mt-14 sm:mt-16 md:mt-20">
+          <ContactButton label="Explore the forecast" href={DEMO.calendar} />
         </div>
       </div>
     </section>

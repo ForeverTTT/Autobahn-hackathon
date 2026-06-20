@@ -3,21 +3,90 @@ API 处理工具
 把 FastAPI 路由中的业务处理逻辑抽出来，供 api_app.py 调用。
 """
 import asyncio
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from ..models import AgentRequest, UserType
 from ..orchestrator import Orchestrator
 from .llm_client import generate
+from ..session import ChatSession
+
+
+@dataclass
+class _SessionEntry:
+    session: ChatSession = field(default_factory=ChatSession)
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+
+class ChatSessionRegistry:
+    """Keep independent multi-turn agent sessions for API clients."""
+
+    def __init__(self):
+        self._sessions: Dict[str, _SessionEntry] = {}
+        self._lock = asyncio.Lock()
+
+    async def chat(
+        self,
+        query: str,
+        user_type: Optional[str] = "traveler",
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        resolved_session_id = session_id or str(uuid4())
+        user_type_enum = UserType(user_type) if user_type else None
+
+        async with self._lock:
+            entry = self._sessions.get(resolved_session_id)
+            if entry is None:
+                entry = _SessionEntry()
+                self._sessions[resolved_session_id] = entry
+
+        async with entry.lock:
+            message = await entry.session.chat_async(query, user_type_enum)
+            context = entry.session.context
+
+            return {
+                "success": True,
+                "session_id": resolved_session_id,
+                "message": message,
+                "advice": message,
+                "history_length": len(entry.session.history),
+                "plan": {
+                    "destination": (
+                        context.parsed_intent.destination
+                        if context and context.parsed_intent
+                        else None
+                    ),
+                    "start_date": (
+                        context.parsed_intent.time_range.start_date
+                        if context and context.parsed_intent
+                        else None
+                    ),
+                    "end_date": (
+                        context.parsed_intent.time_range.end_date
+                        if context and context.parsed_intent
+                        else None
+                    ),
+                },
+            }
+
+    async def clear(self, session_id: str) -> bool:
+        async with self._lock:
+            entry = self._sessions.pop(session_id, None)
+        if entry is not None:
+            async with entry.lock:
+                entry.session.clear()
+        return entry is not None
 
 
 async def handle_chat(
-    orchestrator: Orchestrator,
+    sessions: ChatSessionRegistry,
     query: str,
     user_type: Optional[str] = "traveler",
+    session_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """处理自然语言对话请求。"""
-    user_type_enum = UserType(user_type) if user_type else None
-    return await orchestrator.process(query, user_type_enum)
+    """处理支持追问和修改计划的多轮自然语言对话。"""
+    return await sessions.chat(query, user_type, session_id)
 
 
 async def handle_plan(
