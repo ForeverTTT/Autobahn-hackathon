@@ -4,14 +4,16 @@ import CalendarPage from "./components/CalendarPage";
 // eslint-disable-next-line no-unused-vars
 import MapPage from "./components/MapPage";
 import HourlyMapPage from "./components/HourlyMapPage";
+import MyPlanPage from "./components/MyPlanPage";
 import PillNav from "./components/PillNav";
 import AgentBot from "../agent/AgentBot";
 
-const pages = ["calendar", "map"];
+const pages = ["calendar", "map", "myplan"];
 
 const NAV_ITEMS = [
   { label: "Calendar", href: "#/calendar" },
   { label: "Map", href: "#/map" },
+  { label: "My Plan", href: "#/myplan" },
 ];
 
 function pageFromHash() {
@@ -89,6 +91,7 @@ export default function App() {
         {page === "calendar" && <CalendarPage />}
         {/* "Map" now shows the scroll version (formerly Hourly) */}
         {page === "map" && <HourlyMapPage />}
+        {page === "myplan" && <MyPlanPage />}
       </main>
       <AgentBot />
     </div>
