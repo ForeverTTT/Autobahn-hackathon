@@ -75,6 +75,16 @@ export default function App() {
     <div className="app-shell" ref={shellRef}>
       <header className="topbar" ref={navRef}>
         <div className="topbar-inner">
+          {page === "calendar" && (
+            <a className="app-brand" href="#/calendar" aria-label="AlpineFlow">
+              <img
+                className="app-brand-logo"
+                src={`${import.meta.env.BASE_URL}brand-logo.png`}
+                alt=""
+              />
+              <span>ALPINEFLOW</span>
+            </a>
+          )}
           <PillNav
             items={NAV_ITEMS}
             activeHref={`#/${page}`}

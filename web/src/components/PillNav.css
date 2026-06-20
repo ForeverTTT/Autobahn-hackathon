@@ -63,6 +63,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
+  min-width: 104px;
   padding: 0 var(--pill-pad-x);
   background: var(--pill-bg, #fff);
   color: var(--pill-text, var(--base, #000));
@@ -117,7 +118,15 @@
   will-change: transform, opacity;
 }
 
-/* active-page dot removed per design; keep the selector for clarity */
+/* active page: inverted pill — black background, white label */
+.pill.is-active {
+  background: var(--base, #000);
+}
+
+.pill.is-active .pill-label {
+  color: var(--hover-text, #fff);
+}
+
 .pill.is-active::after {
   content: none;
 }

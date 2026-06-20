@@ -90,6 +90,28 @@ a:focus-visible {
   pointer-events: auto;
 }
 
+/* Brand top-left (calendar only); margin-right:auto keeps PillNav at the right. */
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  margin-right: auto;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.app-brand-logo {
+  display: block;
+  width: 38px;
+  height: auto;
+}
+
+.app-brand span {
+  font-size: 25px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+}
+
 
 .brand {
   display: inline-flex;
@@ -369,7 +391,7 @@ a:focus-visible {
 .calendar-toolbar {
   display: flex;
   min-height: 102px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 28px;
   padding: 20px 26px;
