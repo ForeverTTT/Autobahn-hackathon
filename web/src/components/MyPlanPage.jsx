@@ -295,29 +295,24 @@ export default function MyPlanPage() {
             </div>
           </div>
 
-          <div className="status-rank">
-            <div className="rank-label">Current Time Slot Rank</div>
-            <div
-              className={`rank-value ${currentRank <= 3 ? "rank-bad" : currentRank >= 20 ? "rank-good" : ""}`}
-            >
-              No. {currentRank} / 24
-            </div>
-            <div className="rank-warning">
-              {currentRank <= 5
-                ? "Peak congestion period"
-                : currentRank >= 20
-                  ? "Low traffic period"
-                  : "Moderate traffic"}
+          <div className="status-achievement">
+            <div className="achievement-icon">🏆</div>
+            <div className="achievement-info">
+              <div className="achievement-title">避峰成就</div>
+              <div className="achievement-stats">
+                <span className="avoided-count">已避开 <strong>{Math.round(changedCount * 0.8).toLocaleString()}</strong> 人</span>
+                <span className="percentile">领先 <strong>{Math.round((1 - currentRank / 24) * 100)}%</strong> 的用户</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="achievement-card">
-          <p className="achievement-label">Potential Savings</p>
-          <h3 className="achievement-value">
+        <div className="savings-card">
+          <p className="savings-label">Potential Savings</p>
+          <h3 className="savings-value">
             {timeSavedToRecommended > 0 ? `Save ${timeSavedToRecommended} min` : "Optimal!"}
           </h3>
-          <div className="achievement-badge">
+          <div className="savings-badge">
             Switch to {recommendedHour}:00 for best results
           </div>
         </div>

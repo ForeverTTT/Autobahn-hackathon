@@ -174,52 +174,78 @@
   font-weight: 700;
 }
 
-.status-rank {
+/* ========== Off-Peak Achievement ========== */
+.status-achievement {
   display: none;
-  text-align: right;
+  align-items: center;
+  gap: 0.75rem;
   border-left: 1px solid var(--line, #dfe4dc);
   padding-left: 1.5rem;
 }
 
 @media (min-width: 1024px) {
-  .status-rank {
-    display: block;
+  .status-achievement {
+    display: flex;
   }
 }
 
-.rank-label {
-  font-size: 0.7rem;
+.achievement-icon {
+  font-size: 2rem;
+}
+
+.achievement-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.achievement-title {
+  font-size: 0.75rem;
   color: var(--muted, #667069);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 700;
 }
 
-.rank-value {
-  font-size: 1.75rem;
-  font-family: monospace;
+.achievement-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.avoided-count {
+  font-size: 0.9rem;
+  color: var(--ink, #17201a);
+}
+
+.avoided-count strong {
+  color: var(--green-dark, #1d7a4a);
   font-weight: 800;
-  color: var(--red, #ef554a);
 }
 
-.rank-warning {
-  font-size: 0.75rem;
-  color: var(--orange, #ee8a36);
-  margin-top: 0.25rem;
+.percentile {
+  font-size: 0.85rem;
+  color: var(--muted, #667069);
 }
 
-.achievement-card {
-  background: linear-gradient(135deg, var(--accent, #3d5afe) 0%, #2f49e0 100%);
+.percentile strong {
+  color: var(--accent, #3d5afe);
+  font-weight: 700;
+}
+
+/* ========== Savings Card (Dark Blue) ========== */
+.savings-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: 0 4px 20px rgba(61, 90, 254, 0.25);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.35);
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.achievement-label {
-  color: rgba(255, 255, 255, 0.8);
+.savings-label {
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.75rem;
   margin: 0 0 0.25rem;
   font-weight: 700;
@@ -227,7 +253,7 @@
   letter-spacing: 0.08em;
 }
 
-.achievement-value {
+.savings-value {
   font-size: 1.4rem;
   font-weight: 800;
   color: white;
@@ -235,11 +261,11 @@
   letter-spacing: -0.02em;
 }
 
-.achievement-badge {
+.savings-badge {
   margin-top: 0.5rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.75);
+  background-color: rgba(255, 255, 255, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   width: fit-content;
