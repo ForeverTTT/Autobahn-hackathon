@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ command }) => {
@@ -17,16 +16,6 @@ export default defineConfig(({ command }) => {
     server: {
       proxy: {
         "/api": `http://127.0.0.1:${demoApiPort}`,
-      },
-    },
-    build: {
-      // Multi-page: the main app (index.html) and the standalone pitch deck
-      // (pitch.html) build independently. The frontend is untouched.
-      rollupOptions: {
-        input: {
-          main: resolve(__dirname, "index.html"),
-          pitch: resolve(__dirname, "pitch.html"),
-        },
       },
     },
   };

@@ -13,6 +13,7 @@ import {
   TRAFFIC_LEVELS,
 } from "../lib/trafficData";
 import { DateField, HourField } from "./TimeControls";
+import FactorRadar, { buildFactors } from "./FactorRadar";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -319,11 +320,12 @@ function statusColor(status) {
   return TRAFFIC_LEVELS[status]?.color ?? TRAFFIC_LEVELS.smooth.color;
 }
 
-// Congestion level straight from the predicted vehicles/h, so the map line and
-// the bar chart always agree (both driven by the real forecast).
-function volumeStatus(value) {
-  if (value >= 3200) return "heavy";
-  if (value >= 1600) return "busy";
+// Road-segment colour from the REAL congestion_score (scored_traffic CSV).
+// Thresholds match the dataset's own congestion_level bands:
+// smooth ≤ 20, light 20–40 (busy), moderate > 40 (heavy).
+function congestionStatus(score) {
+  if (score > 40) return "heavy";
+  if (score > 20) return "busy";
   return "smooth";
 }
 
@@ -582,6 +584,8 @@ export default function HourlyMapPage() {
       forecast?.sites?.[site]?.kfz?.[baseIdx + hour] ?? 0;
     const svAt = (site, hour) =>
       forecast?.sites?.[site]?.sv?.[baseIdx + hour] ?? 0;
+    const congAt = (site, hour) =>
+      forecast?.sites?.[site]?.cong?.[baseIdx + hour] ?? 0;
 
     let dayMax = 0;
     if (forecast) {
@@ -618,14 +622,21 @@ export default function HourlyMapPage() {
       .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.ty.toFixed(2)}`)
       .join(" ");
 
-    // per visual map-segment value (for road colouring) via the station mapping
+    // per visual map-segment congestion score (for road colouring) via the
+    // station mapping — REAL congestion_score from scored_traffic.
     const stationFor = SEG_STATION[journeyRoad] ?? [];
-    const segValues = geometry.segments.map((_, j) =>
-      forecast ? kfzAt(stations[stationFor[j] ?? 0]?.site, selectedHour) : 0,
+    const segCong = geometry.segments.map((_, j) =>
+      forecast ? congAt(stations[stationFor[j] ?? 0]?.site, selectedHour) : 0,
     );
 
-    return { points, pathD, truckPathD, max, segValues };
+    return { points, pathD, truckPathD, max, segCong };
   }, [forecast, selectedDate, selectedHour, journeyRoad, dirNumber, geometry]);
+
+  // Global-mode factor radar — MOCK data until factor-attribution is wired.
+  const radarFactors = useMemo(
+    () => buildFactors(`${selectedDate}|${selectedHour}|${journeyRoad}|${dirNumber}`),
+    [selectedDate, selectedHour, journeyRoad, dirNumber],
+  );
 
   // Faithful jEVVvOr scroll-graph, driven imperatively from the shared scroll
   // progress: the line draws in, the dots pop, the focal point rides the line
@@ -883,6 +894,10 @@ export default function HourlyMapPage() {
     };
     applyViewRef.current = applyView;
 
+    // switching road/direction restarts the ride from the beginning
+    lastDRef.current = 0;
+    window.scrollTo(0, 0);
+
     map.invalidateSize();
     applyView(modeRef.current);
 
@@ -902,10 +917,10 @@ export default function HourlyMapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeKey]);
 
-  // Live per-segment colour from the real forecast (date / hour change).
+  // Live per-segment colour from the real congestion_score (date / hour change).
   useEffect(() => {
     segLayersRef.current.forEach((layer, i) => {
-      const status = volumeStatus(chartData.segValues[i] ?? 0);
+      const status = congestionStatus(chartData.segCong[i] ?? 0);
       layer.line.setStyle({ color: statusColor(status) });
     });
   }, [chartData]);
@@ -1004,17 +1019,20 @@ export default function HourlyMapPage() {
             <div className="seg-chart-head">
               <h2>{directionLabel}</h2>
               <span className="seg-chart-kicker">
-                Predicted volume · vehicles / h · {selectedDate} ·{" "}
-                {formatHourRange(selectedHour)}
+                {viewMode === "global"
+                  ? `Factor influence · mock · ${selectedDate}`
+                  : `Predicted volume · vehicles / h · ${selectedDate} · ${formatHourRange(selectedHour)}`}
               </span>
-              <div className="seg-legend">
-                <span>
-                  <i className="lg lg-veh" /> All vehicles
-                </span>
-                <span>
-                  <i className="lg lg-truck" /> Trucks
-                </span>
-              </div>
+              {viewMode === "local" && (
+                <div className="seg-legend">
+                  <span>
+                    <i className="lg lg-veh" /> All vehicles
+                  </span>
+                  <span>
+                    <i className="lg lg-truck" /> Trucks
+                  </span>
+                </div>
+              )}
               <div className="view-toggle" data-mode={viewMode}>
                 <span className="view-toggle-thumb" />
                 <button
@@ -1033,6 +1051,9 @@ export default function HourlyMapPage() {
                 </button>
               </div>
             </div>
+            {viewMode === "global" ? (
+              <FactorRadar factors={radarFactors} />
+            ) : (
             <svg
               className="seg-graph"
               ref={chartRef}
@@ -1115,6 +1136,7 @@ export default function HourlyMapPage() {
                 />
               </g>
             </svg>
+            )}
           </div>
         </div>
       </div>
