@@ -298,10 +298,10 @@ export default function MyPlanPage() {
           <div className="status-achievement">
             <div className="achievement-icon">🏆</div>
             <div className="achievement-info">
-              <div className="achievement-title">避峰成就</div>
+              <div className="achievement-title">Off-Peak Achievement</div>
               <div className="achievement-stats">
-                <span className="avoided-count">已避开 <strong>{Math.round(changedCount * 0.8).toLocaleString()}</strong> 人</span>
-                <span className="percentile">领先 <strong>{Math.round((1 - currentRank / 24) * 100)}%</strong> 的用户</span>
+                <span className="avoided-count">Avoided <strong>{Math.round(changedCount * 0.8).toLocaleString()}</strong> people</span>
+                <span className="percentile">Ahead of <strong>{Math.round((1 - currentRank / 24) * 100)}%</strong> of users</span>
               </div>
             </div>
           </div>
