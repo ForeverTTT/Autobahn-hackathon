@@ -7,7 +7,7 @@ from __future__ import annotations
 import csv
 from typing import Any, Dict, List, Optional
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     import pandas as pd
@@ -382,100 +382,380 @@ class ContextLoader:
     """
 
     def __init__(self):
-        self._weather_df: Optional[pd.DataFrame] = None
-        self._holiday_df: Optional[pd.DataFrame] = None
-        self._events_df: Optional[pd.DataFrame] = None
-        self._construction_df: Optional[pd.DataFrame] = None
+        self._records_cache: Dict[str, List[Dict[str, Any]]] = {}
 
-    def _load_csv(self, filename: str) -> Optional[pd.DataFrame]:
-        """加载 CSV 文件"""
-        if not HAS_PANDAS:
-            return None
+    def _load_semicolon_records(self, filename: str) -> List[Dict[str, Any]]:
+        """加载分号分隔 CSV，并跳过中文说明行。"""
+        if filename in self._records_cache:
+            return self._records_cache[filename]
 
         path = DATA_DIR / filename
         if not path.exists():
-            return None
+            self._records_cache[filename] = []
+            return []
 
         try:
-            # 尝试不同分隔符
-            for sep in [",", ";"]:
-                try:
-                    return pd.read_csv(path, sep=sep)
-                except:
-                    continue
-            return None
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                records = [
+                    row for row in csv.DictReader(f, delimiter=";")
+                    if not self._is_description_row(row)
+                ]
+            self._records_cache[filename] = records
+            return records
         except Exception as e:
             print(f"Error loading {filename}: {e}")
+            self._records_cache[filename] = []
+            return []
+
+    def _is_description_row(self, row: Dict[str, Any]) -> bool:
+        """识别数据文件中的中文字段说明行。"""
+        date_value = row.get("date")
+        road_value = row.get("road")
+        t_start = row.get("t_start")
+        return date_value == "日期" or road_value == "高速路编号" or t_start == "原始时刻"
+
+    def _filter_by_date_range(
+        self,
+        records: List[Dict[str, Any]],
+        start_date: str,
+        end_date: str,
+    ) -> List[Dict[str, Any]]:
+        return [
+            row for row in records
+            if start_date <= str(row.get("date", "")) <= end_date
+        ]
+
+    def _filter_road_context(
+        self,
+        records: List[Dict[str, Any]],
+        road: str = None,
+    ) -> List[Dict[str, Any]]:
+        if not road:
+            return records
+
+        road_lower = road.lower()
+        return [
+            row for row in records
+            if row.get("road") == road
+            or row.get(f"has_{road_lower}_construction") == "1"
+            or row.get(f"{road_lower}_construction_count", "0") not in {"", "0", "0.0"}
+            or row.get(f"affects_{road_lower}_ost") == "1"
+            or row.get(f"affects_{road_lower}_sued") == "1"
+            or row.get(f"{road_lower}_event_count", "0") not in {"", "0", "0.0"}
+            or road in str(row.get("active_roads", ""))
+        ]
+
+    def query_weather(self, start_date: str, end_date: str = None) -> List[Dict[str, Any]]:
+        """查询天气日级数据。"""
+        end_date = end_date or start_date
+        records = self._load_semicolon_records("合并表格，weather日级.csv")
+        return self._filter_by_date_range(records, start_date, end_date)
+
+    def query_holiday(self, start_date: str, end_date: str = None) -> List[Dict[str, Any]]:
+        """查询假期日级数据。"""
+        end_date = end_date or start_date
+        records = self._load_semicolon_records("合并表格，holiday日级.csv")
+        return self._filter_by_date_range(records, start_date, end_date)
+
+    def query_events(self, start_date: str, end_date: str = None, road: str = None) -> List[Dict[str, Any]]:
+        """查询活动日级数据。"""
+        end_date = end_date or start_date
+        records = self._load_semicolon_records("合并表格，special_events日级.csv")
+        rows = self._filter_by_date_range(records, start_date, end_date)
+        return self._filter_road_context(rows, road)
+
+    def query_construction(self, start_date: str, end_date: str = None, road: str = None) -> List[Dict[str, Any]]:
+        """查询施工日级数据。"""
+        end_date = end_date or start_date
+        records = self._load_semicolon_records("合并表格，construction日级.csv")
+        rows = self._filter_by_date_range(records, start_date, end_date)
+        return self._filter_road_context(rows, road)
+
+    def query_temperature_road(
+        self,
+        start_date: str,
+        end_date: str = None,
+        hours: List[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """查询并按小时聚合气温/路温数据。"""
+        end_date = end_date or start_date
+        hour_set = set(hours) if hours else None
+        path = DATA_DIR / "合并表格，时间，气温，路温.csv"
+        if not path.exists():
+            return []
+
+        buckets: Dict[tuple, Dict[str, Any]] = {}
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    ts = str(row.get("t_start", ""))
+                    if len(ts) < 13:
+                        continue
+                    date = ts[:10]
+                    if not (start_date <= date <= end_date):
+                        continue
+                    try:
+                        hour = int(ts[11:13])
+                    except ValueError:
+                        continue
+                    if hour_set is not None and hour not in hour_set:
+                        continue
+
+                    key = (date, hour)
+                    bucket = buckets.setdefault(key, {"date": date, "hour": hour, "lt": [], "fbt": []})
+                    lt = self._to_float(row.get("lt"))
+                    fbt = self._to_float(row.get("fbt"))
+                    if lt is not None:
+                        bucket["lt"].append(lt)
+                    if fbt is not None:
+                        bucket["fbt"].append(fbt)
+        except Exception as e:
+            print(f"Error scanning temperature/road temperature CSV: {e}")
+            return []
+
+        result = []
+        for bucket in buckets.values():
+            lt_values = bucket.pop("lt")
+            fbt_values = bucket.pop("fbt")
+            bucket["air_temp_c"] = round(sum(lt_values) / len(lt_values), 1) if lt_values else None
+            bucket["road_temp_c"] = round(sum(fbt_values) / len(fbt_values), 1) if fbt_values else None
+            result.append(bucket)
+
+        result = sorted(result, key=lambda x: (x["date"], x["hour"]))
+        if result:
+            return result
+
+        return self._query_temperature_road_historical_reference(start_date, end_date, hours)
+
+    def _query_temperature_road_historical_reference(
+        self,
+        start_date: str,
+        end_date: str,
+        hours: List[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """没有精确气温/路温时，按同月同日聚合历史参考。"""
+        target_dates = self._date_range(start_date, end_date)
+        target_by_suffix = {date[5:]: date for date in target_dates}
+        hour_set = set(hours) if hours else None
+        path = DATA_DIR / "合并表格，时间，气温，路温.csv"
+        buckets: Dict[tuple, Dict[str, Any]] = {}
+
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    ts = str(row.get("t_start", ""))
+                    if len(ts) < 13:
+                        continue
+                    source_date = ts[:10]
+                    target_date = target_by_suffix.get(source_date[5:])
+                    if not target_date:
+                        continue
+                    try:
+                        hour = int(ts[11:13])
+                    except ValueError:
+                        continue
+                    if hour_set is not None and hour not in hour_set:
+                        continue
+
+                    key = (target_date, hour)
+                    bucket = buckets.setdefault(
+                        key,
+                        {
+                            "date": target_date,
+                            "hour": hour,
+                            "historical_reference": True,
+                            "source_dates": set(),
+                            "lt": [],
+                            "fbt": [],
+                        },
+                    )
+                    bucket["source_dates"].add(source_date)
+                    lt = self._to_float(row.get("lt"))
+                    fbt = self._to_float(row.get("fbt"))
+                    if lt is not None:
+                        bucket["lt"].append(lt)
+                    if fbt is not None:
+                        bucket["fbt"].append(fbt)
+        except Exception as e:
+            print(f"Error scanning historical temperature/road temperature CSV: {e}")
+            return []
+
+        result = []
+        for bucket in buckets.values():
+            lt_values = bucket.pop("lt")
+            fbt_values = bucket.pop("fbt")
+            source_dates = sorted(bucket.pop("source_dates"))
+            bucket["source_dates"] = source_dates
+            bucket["air_temp_c"] = round(sum(lt_values) / len(lt_values), 1) if lt_values else None
+            bucket["road_temp_c"] = round(sum(fbt_values) / len(fbt_values), 1) if fbt_values else None
+            result.append(bucket)
+
+        return sorted(result, key=lambda x: (x["date"], x["hour"]))
+
+    def query_hourly_traffic(
+        self,
+        start_date: str,
+        end_date: str = None,
+        road: str = None,
+        hours: List[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """查询历史小时交通流量。"""
+        end_date = end_date or start_date
+        hour_set = set(hours) if hours else None
+        path = DATA_DIR / "合并表格，小时交通流量.csv"
+        if not path.exists():
+            return []
+
+        rows = []
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    if self._is_description_row(row):
+                        continue
+                    date = self._parse_german_date(row.get("datum"))
+                    if not date or not (start_date <= date <= end_date):
+                        continue
+                    if road and row.get("road") != road:
+                        continue
+                    try:
+                        hour = int(str(row.get("t_start", "00:00:00"))[:2])
+                    except ValueError:
+                        continue
+                    if hour_set is not None and hour not in hour_set:
+                        continue
+
+                    rows.append({
+                        "date": date,
+                        "hour": hour,
+                        "road": row.get("road"),
+                        "direction": row.get("direction"),
+                        "site_name": row.get("site_name"),
+                        "kfz_h": self._to_float(row.get("kfz_h")),
+                        "sv_h": self._to_float(row.get("sv_h")),
+                        "v_kfz": self._to_float(row.get("v_kfz")),
+                    })
+        except Exception as e:
+            print(f"Error scanning hourly traffic CSV: {e}")
+            return []
+
+        rows = sorted(rows, key=lambda x: (x["date"], x["hour"], x.get("site_name") or ""))
+        if rows:
+            return rows
+
+        return self._query_hourly_traffic_historical_reference(start_date, end_date, road, hours)
+
+    def _query_hourly_traffic_historical_reference(
+        self,
+        start_date: str,
+        end_date: str,
+        road: str = None,
+        hours: List[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """没有精确小时交通时，按同月同日使用历史参考。"""
+        target_dates = self._date_range(start_date, end_date)
+        target_by_suffix = {date[5:]: date for date in target_dates}
+        hour_set = set(hours) if hours else None
+        path = DATA_DIR / "合并表格，小时交通流量.csv"
+        rows = []
+
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                for row in csv.DictReader(f, delimiter=";"):
+                    if self._is_description_row(row):
+                        continue
+                    source_date = self._parse_german_date(row.get("datum"))
+                    if not source_date:
+                        continue
+                    target_date = target_by_suffix.get(source_date[5:])
+                    if not target_date:
+                        continue
+                    if road and row.get("road") != road:
+                        continue
+                    try:
+                        hour = int(str(row.get("t_start", "00:00:00"))[:2])
+                    except ValueError:
+                        continue
+                    if hour_set is not None and hour not in hour_set:
+                        continue
+
+                    rows.append({
+                        "date": target_date,
+                        "source_date": source_date,
+                        "historical_reference": True,
+                        "hour": hour,
+                        "road": row.get("road"),
+                        "direction": row.get("direction"),
+                        "site_name": row.get("site_name"),
+                        "kfz_h": self._to_float(row.get("kfz_h")),
+                        "sv_h": self._to_float(row.get("sv_h")),
+                        "v_kfz": self._to_float(row.get("v_kfz")),
+                    })
+        except Exception as e:
+            print(f"Error scanning historical hourly traffic CSV: {e}")
+            return []
+
+        return sorted(rows, key=lambda x: (x["date"], x["hour"], x.get("site_name") or ""))
+
+    def get_context_range(
+        self,
+        start_date: str,
+        end_date: str = None,
+        road: str = None,
+        hours: List[int] = None,
+    ) -> Dict[str, Any]:
+        """汇总指定时间段内所有非预测上下文数据。"""
+        end_date = end_date or start_date
+        return {
+            "weather": self.query_weather(start_date, end_date),
+            "holiday": self.query_holiday(start_date, end_date),
+            "events": self.query_events(start_date, end_date, road),
+            "construction": self.query_construction(start_date, end_date, road),
+            "temperature_road": self.query_temperature_road(start_date, end_date, hours),
+            "hourly_traffic": self.query_hourly_traffic(start_date, end_date, road, hours),
+        }
+
+    def _parse_german_date(self, value: Any) -> Optional[str]:
+        try:
+            return datetime.strptime(str(value), "%d.%m.%Y").strftime("%Y-%m-%d")
+        except (TypeError, ValueError):
+            return None
+
+    def _date_range(self, start_date: str, end_date: str) -> List[str]:
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+        days = (end - start).days
+        return [
+            (start + timedelta(days=offset)).strftime("%Y-%m-%d")
+            for offset in range(days + 1)
+        ]
+
+    def _to_float(self, value: Any) -> Optional[float]:
+        try:
+            if value in {None, ""}:
+                return None
+            return float(str(value).replace(",", "."))
+        except (TypeError, ValueError):
             return None
 
     def get_weather(self, date: str) -> Dict[str, Any]:
         """获取天气数据"""
-        if self._weather_df is None:
-            self._weather_df = self._load_csv("合并表格，weather日级.csv")
-
-        if self._weather_df is None:
-            return {}
-
-        try:
-            row = self._weather_df[self._weather_df["date"].astype(str) == date]
-            if len(row) > 0:
-                return row.iloc[0].to_dict()
-        except:
-            pass
-
-        return {}
+        rows = self.query_weather(date, date)
+        return rows[0] if rows else {}
 
     def get_holiday(self, date: str) -> Dict[str, Any]:
         """获取假期数据"""
-        if self._holiday_df is None:
-            self._holiday_df = self._load_csv("合并表格，holiday日级.csv")
-
-        if self._holiday_df is None:
-            return {"is_holiday": False, "is_school_holiday": False}
-
-        try:
-            row = self._holiday_df[self._holiday_df["date"].astype(str) == date]
-            if len(row) > 0:
-                return row.iloc[0].to_dict()
-        except:
-            pass
-
+        rows = self.query_holiday(date, date)
+        if rows:
+            return rows[0]
         return {"is_holiday": False, "is_school_holiday": False}
 
     def get_events(self, date: str) -> List[Dict[str, Any]]:
         """获取活动数据"""
-        if self._events_df is None:
-            self._events_df = self._load_csv("合并表格，special_events日级.csv")
-
-        if self._events_df is None:
-            return []
-
-        try:
-            rows = self._events_df[self._events_df["date"].astype(str) == date]
-            return rows.to_dict("records")
-        except:
-            pass
-
-        return []
+        return self.query_events(date, date)
 
     def get_construction(self, date: str, road: str = None) -> List[Dict[str, Any]]:
         """获取施工数据"""
-        if self._construction_df is None:
-            self._construction_df = self._load_csv("合并表格，construction日级.csv")
-
-        if self._construction_df is None:
-            return []
-
-        try:
-            mask = self._construction_df["date"].astype(str) == date
-            if road:
-                mask &= self._construction_df["road"] == road
-            rows = self._construction_df[mask]
-            return rows.to_dict("records")
-        except:
-            pass
-
-        return []
+        return self.query_construction(date, date, road)
 
 
 # 全局实例
