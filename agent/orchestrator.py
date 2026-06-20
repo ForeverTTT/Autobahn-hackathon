@@ -100,6 +100,7 @@ class Orchestrator:
             request=request,
             parsed_intent=parsed,  # 传递完整的解析结果
             forecast=forecast_data,
+            context_data=context_result.data.get("context", {}) if context_result and context_result.success else {},
             context_factors=context_result.data.get("factors", []) if context_result and context_result.success else [],
             search_factors=search_result.data.get("factors", []) if search_result and search_result.success else [],
         )

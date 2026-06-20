@@ -2,6 +2,7 @@
 GenerationAgent - 响应生成Agent
 根据用户画像和时间范围生成针对性的决策建议
 """
+import re
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 
@@ -55,6 +56,7 @@ class GenerationAgent(BaseAgent):
         request: AgentRequest,
         parsed_intent: ParsedIntent = None,
         forecast: DailyForecast = None,
+        context_data: Dict[str, Any] = None,
         context_factors: List[ExternalFactor] = None,
         search_factors: List[ExternalFactor] = None,
     ) -> AgentResponse:
@@ -85,7 +87,7 @@ class GenerationAgent(BaseAgent):
             elif time_range and time_range.duration_days > 1:
                 # 中等时间范围（2-14天）：生成日历视图
                 result = self._generate_calendar_response(
-                    request, parsed_intent, forecast, all_factors, route
+                    request, parsed_intent, forecast, all_factors, route, context_data or {}
                 )
             else:
                 # 短时间范围（1天）：根据用户画像生成
@@ -370,6 +372,7 @@ class GenerationAgent(BaseAgent):
         forecast: DailyForecast,
         factors: List[ExternalFactor],
         route,
+        context_data: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """
         生成中等时间范围（一周左右）的日历视图
@@ -381,10 +384,15 @@ class GenerationAgent(BaseAgent):
 
         # 找最佳日
         best_day = min(calendar, key=lambda d: d["score"]) if calendar else None
+        hourly_recommendations = self._build_hourly_context_recommendations(
+            context_data or {},
+            best_day["date"] if best_day else None,
+            request.hours,
+        )
 
         # 生成建议文本
         advice = self._format_calendar_advice(
-            request, parsed_intent, route, calendar, best_day, factors
+            request, parsed_intent, route, calendar, best_day, factors, hourly_recommendations
         )
 
         return {
@@ -395,6 +403,7 @@ class GenerationAgent(BaseAgent):
             "data": {
                 "calendar": calendar,
                 "best_day": best_day,
+                "hourly_recommendations": hourly_recommendations,
                 "factor_knowledge_doc": self.factor_knowledge.get("doc_path"),
             },
             "factors": factors,
@@ -437,6 +446,15 @@ class GenerationAgent(BaseAgent):
 
     def _estimate_day_score(self, day: datetime, forecast, factors) -> int:
         """估算某天的拥堵分数"""
+        forecast_records = self._daily_forecast_records_for_date(forecast, day.strftime("%Y-%m-%d"))
+        forecast_scores = [
+            self._to_float(record.get("congestion_score"))
+            for record in forecast_records
+        ]
+        forecast_scores = [score for score in forecast_scores if score is not None]
+        if forecast_scores:
+            return int(round(sum(forecast_scores) / len(forecast_scores)))
+
         score = 30  # 基础分
 
         # 周末加分
@@ -479,10 +497,18 @@ class GenerationAgent(BaseAgent):
             reasons.append("周日返程")
 
         for f in factors:
-            if f.impact in ["moderate", "high", "very_high"]:
+            if f.impact in ["moderate", "high", "very_high"] and self._factor_matches_day(f, day):
                 reasons.append(f.name)
 
         return reasons[:2]
+
+    def _factor_matches_day(self, factor: ExternalFactor, day: datetime) -> bool:
+        """Only attach date-specific context factors to the matching calendar day."""
+        text = f"{factor.name} {factor.description}"
+        dates = re.findall(r"\d{4}-\d{2}-\d{2}", text)
+        if not dates:
+            return True
+        return day.strftime("%Y-%m-%d") in dates
 
     def _format_calendar_advice(
         self,
@@ -492,14 +518,20 @@ class GenerationAgent(BaseAgent):
         calendar: List[Dict],
         best_day: Dict,
         factors: List[ExternalFactor],
+        hourly_recommendations: List[Dict[str, Any]] = None,
     ) -> str:
         """格式化日历建议（包含往返）"""
         time_range = parsed_intent.time_range
         trip_plan = parsed_intent.trip_plan
+        range_text = (
+            f"{time_range.start_date} 至 {time_range.end_date}"
+            if time_range.start_date != time_range.end_date
+            else time_range.start_date
+        )
 
         lines = [
             f"### 📅 出行日历: {route.name if route else 'A8'}",
-            f"**时间范围**: {time_range.description}",
+            f"**时间范围**: {range_text}",
         ]
 
         # 显示行程类型
@@ -519,7 +551,7 @@ class GenerationAgent(BaseAgent):
             factor_labels = self._format_factor_labels(day.get("factor_explanations", []))
             if factor_labels:
                 reason_parts.append(factor_labels)
-            reason_str = ", ".join(reason_parts) if reason_parts else "-"
+            reason_str = "，".join(reason_parts) if reason_parts else "-"
             lines.append(
                 f"| {day['date']} | {day['weekday']} | {day['emoji']} {day['level']} | {reason_str} |"
             )
@@ -534,6 +566,19 @@ class GenerationAgent(BaseAgent):
                 lines.append(f"💡 {best_day['weekday']}全天路况良好，可灵活安排出发时间")
             else:
                 lines.append(f"💡 建议 {best_day['weekday']} 上午出发，避开下午高峰")
+
+            if hourly_recommendations:
+                lines.extend([
+                    "",
+                    "#### 🕒 最佳去程日每小时建议",
+                    "",
+                    "| 时间 | 建议 | ContextAgent 依据 |",
+                    "|------|------|-------------------|",
+                ])
+                for item in hourly_recommendations:
+                    lines.append(
+                        f"| {item['time']} | {item['recommendation']} | {item['reason']} |"
+                    )
 
             if best_day.get("factor_explanations"):
                 lines.extend([
@@ -550,18 +595,15 @@ class GenerationAgent(BaseAgent):
                 "",
             ])
 
-            # 根据日历数据分析返程
-            weekend_days = [d for d in calendar if d["weekday"] in ["周六", "周日"]]
-            if weekend_days:
-                # 找返程最佳日
-                best_return = min(weekend_days, key=lambda d: d["score"])
+            best_return = self._choose_return_day(calendar, best_day, trip_plan)
+            if best_return:
                 lines.append(f"✅ **最佳返程日**: {best_return['weekday']} ({best_return['date']})")
                 lines.append("")
                 lines.append("💡 **返程时间建议**:")
-                lines.append("- 周六返程：全天相对畅通")
-                lines.append("- 周日返程：建议 12:00 前出发，避开下午返城高峰")
+                lines.append("- 优先选择上午或中午前返程，避开 15:00-19:00 返城高峰")
+                lines.append("- 如果必须周日返程，建议 12:00 前上路")
             else:
-                lines.append("💡 工作日返程通常比周末更畅通")
+                lines.append("💡 当前时间范围内没有晚于去程的返程候选日，建议扩大查询范围。")
 
         # 添加重要警告
         important = [f for f in factors if f.impact in ["high", "very_high"]]
@@ -570,6 +612,144 @@ class GenerationAgent(BaseAgent):
             lines.append(f"⚠️ {important[0].name}: {important[0].description}")
 
         return "\n".join(lines)
+
+    def _choose_return_day(
+        self,
+        calendar: List[Dict[str, Any]],
+        best_day: Dict[str, Any],
+        trip_plan,
+    ) -> Optional[Dict[str, Any]]:
+        """Choose a return date that is after the outbound date."""
+        if not calendar or not best_day:
+            return None
+
+        try:
+            outbound = datetime.strptime(best_day["date"], "%Y-%m-%d")
+        except (KeyError, TypeError, ValueError):
+            return None
+
+        stay_days = getattr(trip_plan, "stay_days", 0) or 1
+        earliest_return = outbound + timedelta(days=max(1, stay_days))
+        candidates = []
+        for day in calendar:
+            try:
+                date_obj = datetime.strptime(day["date"], "%Y-%m-%d")
+            except (KeyError, TypeError, ValueError):
+                continue
+            if date_obj >= earliest_return:
+                candidates.append(day)
+
+        if not candidates:
+            return None
+        return min(candidates, key=lambda item: item["score"])
+
+    def _build_hourly_context_recommendations(
+        self,
+        context_data: Dict[str, Any],
+        target_date: str,
+        hours: List[int],
+    ) -> List[Dict[str, Any]]:
+        """Build hourly advice from ContextAgent hourly traffic and temperature rows."""
+        if not context_data or not target_date:
+            return []
+
+        target_hours = sorted(set(hours or list(range(6, 22))))
+        traffic_rows = self._context_rows_for_date(context_data.get("hourly_traffic", []), target_date)
+        temp_rows = self._context_rows_for_date(context_data.get("temperature_road", []), target_date)
+        historical = context_data.get("historical_same_period", {}) if isinstance(context_data, dict) else {}
+        historical_traffic_rows = self._context_rows_for_date(
+            historical.get("hourly_traffic", []) if isinstance(historical, dict) else [],
+            target_date,
+        )
+
+        recommendations = []
+        for hour in target_hours:
+            traffic = self._average_rows([row for row in traffic_rows if self._to_int(row.get("hour")) == hour])
+            historical_traffic = self._average_rows([
+                row for row in historical_traffic_rows
+                if self._to_int(row.get("hour")) == hour
+            ])
+            temperature = self._average_rows([row for row in temp_rows if self._to_int(row.get("hour")) == hour])
+
+            row = traffic or historical_traffic
+            recommendation, reason = self._score_hourly_context(row, temperature, bool(traffic))
+            recommendations.append({
+                "hour": hour,
+                "time": f"{hour:02d}:00",
+                "recommendation": recommendation,
+                "reason": reason,
+            })
+
+        return recommendations
+
+    def _context_rows_for_date(self, rows: List[Dict[str, Any]], target_date: str) -> List[Dict[str, Any]]:
+        return [row for row in rows or [] if isinstance(row, dict) and str(row.get("date")) == target_date]
+
+    def _average_rows(self, rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        if not rows:
+            return None
+
+        result: Dict[str, Any] = {"count": len(rows)}
+        for field in ["kfz_h", "sv_h", "v_kfz", "air_temp_c", "road_temp_c"]:
+            values = [self._to_float(row.get(field)) for row in rows]
+            values = [value for value in values if value is not None]
+            if values:
+                result[field] = round(sum(values) / len(values), 1)
+
+        result["historical_reference"] = any(row.get("historical_reference") for row in rows)
+        return result
+
+    def _score_hourly_context(
+        self,
+        traffic: Optional[Dict[str, Any]],
+        temperature: Optional[Dict[str, Any]],
+        has_current_context: bool,
+    ) -> tuple:
+        risk = 0
+        reasons = []
+
+        if traffic:
+            speed = traffic.get("v_kfz")
+            volume = traffic.get("kfz_h")
+            if speed is not None:
+                reasons.append(f"均速约 {speed:g} km/h")
+                if speed < 80:
+                    risk += 2
+                elif speed < 95:
+                    risk += 1
+            if volume is not None:
+                reasons.append(f"流量约 {volume:g} veh/h")
+                if volume >= 3000:
+                    risk += 2
+                elif volume >= 2200:
+                    risk += 1
+            if traffic.get("historical_reference") or not has_current_context:
+                reasons.append("历史同期参考")
+        else:
+            reasons.append("无小时交通记录")
+
+        if temperature:
+            air_temp = temperature.get("air_temp_c")
+            road_temp = temperature.get("road_temp_c")
+            if air_temp is not None:
+                reasons.append(f"气温约 {air_temp:g}°C")
+                if air_temp >= 35:
+                    risk += 1
+            if road_temp is not None:
+                reasons.append(f"路温约 {road_temp:g}°C")
+                if road_temp <= 0:
+                    risk += 2
+
+        if risk == 0:
+            recommendation = "✅ 推荐"
+        elif risk == 1:
+            recommendation = "🟢 可选"
+        elif risk <= 3:
+            recommendation = "🟠 谨慎"
+        else:
+            recommendation = "🔴 避开"
+
+        return recommendation, "，".join(reasons[:4])
 
     def _daily_forecast_records(self, forecast) -> List[Dict[str, Any]]:
         """Normalize daily forecast payloads into a list of station-day records."""
@@ -607,22 +787,41 @@ class GenerationAgent(BaseAgent):
                 labels.append(str(label))
             else:
                 labels.append(f"{label} {value:.1f}%")
-        return " / ".join(labels)
+        return "、".join(labels)
 
     def _format_factor_insight_lines(self, explanations: List[Dict[str, Any]]) -> List[str]:
         """Format markdown-guided factor insights for user-facing advice."""
         lines = []
-        cautions = []
-        for item in explanations:
-            lines.append(f"- **{item.get('label', item.get('name'))}**: {item.get('message')}")
-            caution = item.get("caution")
-            if caution and caution not in cautions:
-                cautions.append(caution)
-
-        for caution in cautions[:2]:
-            lines.append(f"- 注: {caution}")
+        for item in explanations[:3]:
+            label = item.get("label", item.get("name"))
+            value = item.get("value")
+            value_text = f" {value:.1f}%" if value is not None else ""
+            lines.append(f"- **{label}{value_text}**：{self._short_factor_message(item)}")
 
         return lines
+
+    def _short_factor_message(self, item: Dict[str, Any]) -> str:
+        """Concise factor explanation for the calendar advice."""
+        name = item.get("name", "")
+        if name == "Weather and Temperature":
+            return "表示季节性天气/路温修正，不等同实时天气预报。"
+        if name == "Date and Time Pattern":
+            return "日期、星期和季节节奏在推动车流。"
+        if name == "Special Events":
+            return "沿线活动可能增加额外交通，建议结合实时搜索确认。"
+        if name == "Construction Impact":
+            return "施工影响需结合 ContextAgent 和 Tavily 搜索保守判断。"
+        if name == "Holiday Effect":
+            return "假期会提高家庭出游和返程流量。"
+        return item.get("message") or item.get("explanation") or "模型认为该因素对拥堵有可见贡献。"
+
+    def _to_int(self, value: Any, default: int = None):
+        try:
+            if value in {None, ""}:
+                return default
+            return int(float(str(value).replace(",", ".")))
+        except (TypeError, ValueError):
+            return default
 
     def _to_float(self, value: Any, default: float = None):
         try:
