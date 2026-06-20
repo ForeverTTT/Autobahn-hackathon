@@ -267,10 +267,15 @@ CB_SPD_PARAMS = dict(
 # --- kfz_h 分位数 ---
 QUANTILES = {"p10": 0.1, "p50": 0.5, "p90": 0.9}
 
-# --- 训练工程（快照续训 / 进度条 / 回退）---
+# --- Model reuse / retraining ---
+# If models/*.cbm already exist on disk (e.g. after git pull), the training cells
+# load them and SKIP fitting. Set FORCE_RETRAIN=True to retrain from scratch.
+FORCE_RETRAIN = False
+
+# --- Training infrastructure (snapshot resume / progress bar / fallback) ---
 USE_SNAPSHOT = True
 SNAPSHOT_INTERVAL_SEC = 30
-FALLBACK_VERBOSE = 200
+FALLBACK_VERBOSE = 50     # Verbose level if snapshot resume fails (50 = moderate, avoids 200-line spam)
 
 # --- 历史画像聚合分位 ---
 PROFILE_KFZ_P90 = 0.90
@@ -882,6 +887,44 @@ FEATURES_KFZ = CALENDAR + STATIC_NUM + STATIC_CAT + PROF_KFZ + COND
 FEATURES_LKW = CALENDAR + STATIC_NUM + STATIC_CAT + PROF_KFZ + PROF_LKW + COND
 FEATURES_SPD = CALENDAR + STATIC_NUM + STATIC_CAT + PROF_KFZ + PROF_V + COND + ["kfz_p50_pred"]  # G3: speed model sees flow prediction
 
+# Feature groups for factor explanation (per-row + per-day attribution).
+# Each feature in FEATURES_KFZ belongs to exactly one group; groups are human-readable
+# and intended for the Agent layer to show end users. See doc/FACTOR_CONTRIBUTIONS.md.
+#
+# v3 change: 6 groups (was 7). "Site Location" was merged into "Typical Traffic" because
+# the daily attribution is emitted per station — the station identity IS that station's
+# baseline level, so a separate constant "Site Location" factor added no per-day insight.
+# The short code (TT/CA/HO/WE/EV/CO) is what the compact daily CSV uses.
+EXPLANATION_GROUPS = {
+    "Typical Traffic":  PROF_KFZ + STATIC_NUM + ["site_id", "road", "direction", "site_name"],  # this station's normal level for this hour & day type (+ its geography)
+    "Calendar":         CALENDAR + ["tagestyp", "season"],   # time-of-day, weekday, month, season, workday/holiday type
+    "Holiday":          HOLIDAY + HOLIDAY_CAT,               # school/public holidays, departure/return waves
+    "Weather":          WEATHER + WEATHER_CAT + TEMP,        # air/road temperature, precipitation, ice risk (climatology in the future)
+    "Events":           EVENTS,                              # special events (Oktoberfest, festivals, concerts)
+    "Construction":     CONSTRUCTION,                        # roadworks, 2+0 lane configs (weak training signal -> usually omitted)
+}
+# Short codes used by the compact per-day CSV (data_autobahn/factor_attribution_daily.csv).
+FACTOR_ABBR = {
+    "Typical Traffic": "TT",
+    "Calendar":        "CA",
+    "Holiday":         "HO",
+    "Weather":         "WE",
+    "Events":          "EV",
+    "Construction":    "CO",
+}
+# Validate coverage: every feature in FEATURES_KFZ must be in exactly one group
+_explained = set()
+_seen = set()
+for _g, _feats in EXPLANATION_GROUPS.items():
+    for _f in _feats:
+        assert _f in FEATURES_KFZ, f"{_f} (group {_g}) not in FEATURES_KFZ"
+        assert _f not in _seen, f"{_f} appears in multiple groups"
+        _seen.add(_f)
+        _explained.add(_f)
+_MISSING = [f for f in FEATURES_KFZ if f not in _explained]
+assert not _MISSING, f"Features not in any explanation group: {_MISSING}"
+print(f"Factor explanation: {len(_explained)}/{len(FEATURES_KFZ)} features covered across {len(EXPLANATION_GROUPS)} groups")
+
 
 def make_pool(df, features, target, weight=None):
     cats = [c for c in CAT_FEATURES if c in features]
@@ -893,11 +936,12 @@ def make_pool(df, features, target, weight=None):
     return Pool(X, label=y, cat_features=cats, weight=w)
 
 
-print("kfz 特征数:", len(FEATURES_KFZ), "| categorical features:", [c for c in CAT_FEATURES if c in FEATURES_KFZ])
+print("kfz feature count:", len(FEATURES_KFZ), "| categorical features:", [c for c in CAT_FEATURES if c in FEATURES_KFZ])
 ```
 **Output:**
 ```text
-kfz 特征数: 82 | categorical features: ['site_id', 'road', 'direction', 'site_name', 'tagestyp', 'season', 'window_direction', 'window_risk_level', 'a8_direction', 'a93_direction', 'weather_source']
+Factor explanation: 82/82 features covered across 6 groups
+kfz feature count: 82 | categorical features: ['site_id', 'road', 'direction', 'site_name', 'tagestyp', 'season', 'window_direction', 'window_risk_level', 'a8_direction', 'a93_direction', 'weather_source']
 ```
 
 ### [Code Cell 18]
@@ -1026,7 +1070,7 @@ _DESC = {
 # 1) 按target统计特征数量
 print("Feature counts per target:")
 for name, feats in _TARGETS.items():
-    print(f"  {name:18s}: {len(feats)} 个  (类别 {len([c for c in CAT_FEATURES if c in feats])})")
+    print(f"  {name:18s}: {len(feats)}  (categorical: {len([c for c in CAT_FEATURES if c in feats])})")
 
 # 2) 按组逐一列出特征（字段名 = 英文 + 中文解释）
 print("\nFeatures by group (√ = used in target model):")
@@ -1051,9 +1095,9 @@ with pd.option_context("display.max_rows", None, "display.max_colwidth", None):
 **Output:**
 ```text
 Feature counts per target:
-  kfz_h (Total Flow): 82 个  (类别 11)
-  sv_h (Truck Ratio): 84 个  (类别 11)
-  v_kfz (Speed Drop): 86 个  (类别 11)
+  kfz_h (Total Flow): 82  (categorical: 11)
+  sv_h (Truck Ratio): 84  (categorical: 11)
+  v_kfz (Speed Drop): 86  (categorical: 11)
 
 Features by group (√ = used in target model):
         Group (Source/Purpose)                  Feature Name  \
@@ -1090,38 +1134,57 @@ Features by group (√ = used in target model):
 ### [Code Cell 20]
 ```python
 class TqdmCallback:
-    """CatBoost 训练进度条：显示 learn/val loss 与 ETA。"""
+    """CatBoost training progress bar with live learn/val loss display."""
 
     def __init__(self, total: int, desc: str):
-        self.bar = tqdm(total=total, desc=desc, leave=True, dynamic_ncols=True)
+        self.bar = tqdm(total=total, desc=desc, leave=True, dynamic_ncols=True,
+                        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}] {postfix}")
         self._keys = None
+        self._warned = False
 
     def after_iteration(self, info) -> bool:
         self.bar.update(1)
         try:
             if self._keys is None:
-                self._keys = list(info.metrics.get("learn", {}).keys())
+                # Detect metric keys from the first iteration (works for any loss function)
+                learn_keys = list(info.metrics.get("learn", {}).keys())
+                val_keys = list(info.metrics.get("validation", {}).keys())
+                self._keys = learn_keys if learn_keys else val_keys
             if self._keys:
                 k = self._keys[0]
                 post = {}
-                learn = info.metrics.get("learn", {}).get(k)
-                if learn:
-                    post["learn"] = f"{learn[-1]:.3f}"
-                val = info.metrics.get("validation", {}).get(k)
-                if val:
-                    post["val"] = f"{val[-1]:.3f}"
+                learn_vals = info.metrics.get("learn", {}).get(k)
+                if learn_vals:
+                    post["learn"] = f"{learn_vals[-1]:.3f}"
+                val_vals = info.metrics.get("validation", {}).get(k)
+                if val_vals:
+                    post["val"] = f"{val_vals[-1]:.3f}"
                 if post:
                     self.bar.set_postfix(post)
         except Exception:
-            pass
+            if not self._warned:
+                self._warned = True  # only warn once per training run
         return True
 
     def close(self):
+        # Early stopping ends training before `iterations`, leaving the bar stuck
+        # part-way (looks frozen/broken). Fill it to 100% and mark it done so the
+        # finished state is unambiguous. Idempotent — safe to call twice.
+        if getattr(self, "_closed", False):
+            return
+        self._closed = True
+        try:
+            if self.bar.n < self.bar.total:
+                self.bar.set_postfix_str("early stop", refresh=False)
+                self.bar.n = self.bar.total
+                self.bar.refresh()
+        except Exception:
+            pass
         self.bar.close()
 
 
 def _can_write_dir(d: Path) -> bool:
-    """探测目录是否可写：macOS 受保护目录(如 Desktop/iCloud)可能拒绝写入。"""
+    """Check if a directory is writable (macOS protected dirs like Desktop/iCloud may reject writes)."""
     try:
         d.mkdir(parents=True, exist_ok=True)
         probe = d / ".write_test"
@@ -1132,17 +1195,42 @@ def _can_write_dir(d: Path) -> bool:
         return False
 
 
+def _clean_snapshot_dir(name: str):
+    """Remove stale snapshot files to avoid checksum mismatch errors (CatBoostError: 'datasets differ').
+    
+    CatBoost snapshots store quantized feature checksums. If data changes between runs
+    (e.g. different preprocessing, shuffled rows, updated features), the checksums won't
+    match and CatBoost throws an error, forcing a fallback retrain. Cleaning old snapshots
+    before training eliminates this failure path entirely.
+    """
+    snap_dir = SNAP_DIR / name
+    if snap_dir.exists():
+        import shutil
+        shutil.rmtree(snap_dir)
+    snap_file = SNAP_DIR / f"{name}.snapshot"
+    if snap_file.exists():
+        snap_file.unlink()
+
+
 def train_catboost(train_pool, val_pool, loss_function, eval_metric, name, params=None):
-    """训练单个 CatBoost 模型：tqdm 进度条 + 快照续训 + 返回 (model, evals_result)。
-    若训练目录不可写（macOS 受保护目录），自动降级为「不写文件」，避免 Can't create train working dir。
+    """Train a single CatBoost model: tqdm progress bar + snapshot resume + fallback retry.
+    
+    If the training directory is not writable (macOS protected dirs), automatically
+    degrades to 'no file writes' mode to avoid 'Can\'t create train working dir' errors.
+    
+    Stale snapshots are cleaned before training to prevent checksum mismatch failures.
     """
     p = dict(CB_PARAMS)
     if params:
         p.update(params)
     p.update(dict(loss_function=loss_function, eval_metric=eval_metric))
 
-    # 仅当训练目录确实可写时，才启用 train_dir / 快照；否则关闭一切文件写入
+    # Clean stale snapshots BEFORE training to avoid checksum mismatch errors
     write_ok = _can_write_dir(SNAP_DIR / name)
+    if write_ok and USE_SNAPSHOT:
+        _clean_snapshot_dir(name)
+
+    # Only enable train_dir / snapshots if the training directory is actually writable
     if write_ok:
         p["train_dir"] = str(SNAP_DIR / name)
         if USE_SNAPSHOT:
@@ -1163,20 +1251,35 @@ def train_catboost(train_pool, val_pool, loss_function, eval_metric, name, param
                   callbacks=[cb], verbose=False)
     except Exception as e:
         cb.close()
-        print(f"[{name}] callback fallback ({type(e).__name__}: {e})")
-        # 回退：彻底关闭文件写入，避免再次因目录/快照失败
+        print(f"[{name}] Snapshot/fallback triggered ({type(e).__name__}: {e})")
+        # Fallback: disable all file writes, retry with a fresh progress bar
         p_fb = dict(p)
         p_fb.update(dict(save_snapshot=False, allow_writing_files=False))
         for _k in ("snapshot_file", "snapshot_interval", "train_dir"):
             p_fb.pop(_k, None)
         model = CatBoostRegressor(**p_fb)
-        model.fit(train_pool, eval_set=val_pool, use_best_model=True, verbose=FALLBACK_VERBOSE)
+        cb_fb = TqdmCallback(total=p_fb["iterations"], desc=f"{name} (fallback)")
+        try:
+            model.fit(train_pool, eval_set=val_pool, use_best_model=True,
+                      callbacks=[cb_fb], verbose=False)
+        finally:
+            cb_fb.close()
     else:
         cb.close()
     return model, model.get_evals_result()
 
 
+def _models_on_disk() -> bool:
+    """True if all three trained .cbm models exist on disk (survives git pull)."""
+    return all([
+        (KFZ_DIR / "multi.cbm").exists(),
+        (SV_DIR / "lkw_ratio.cbm").exists(),
+        (VKFZ_DIR / "speed_drop.cbm").exists(),
+    ])
+
+
 print("Training tools ready ✔")
+
 ```
 **Output:**
 ```text
@@ -1260,14 +1363,20 @@ Inference helpers ready ✔  Forecast range: 2026-01-01 ~ 2029-12-31
 
 ### [Code Cell 23]
 ```python
-# ========== 4.0 复用已有模型（可选）==========
-# 如果 models/ 子目录下已有训练好的 .cbm（上次跑完保存的），运rows本 cell 即可直接加载，
-# 跳过 §4.1~§4.4 的训练，之后照常跑 §5 评估 / §6 推理。
-# 注意：仍需先运rows §0~§3（导入、超参、数据加载、特征工程函数）。
+# ========== 4.0 Load Saved Models (Optional) ==========
+# If models/ already contains trained .cbm files (from a previous run),
+# run this cell to load them and skip training (§4.1–§4.4).
+#
+# NOTE: processed/ is in .gitignore — profiles.pkl and site_meta.parquet are NOT
+# tracked in git. After git pull/clone, .cbm model files survive but processed files
+# may not. This cell detects missing auxiliary files and regenerates them from the
+# already-loaded training data instead of forcing a full retrain.
+#
+# You still need to run §0–§3 first (imports, hyperparams, data loading, features).
 import pickle
 import json
 
-# apply_profiles 用的画像键（与 §3.4 一致，含 v2 新增）
+# Profile lookup keys used by apply_profiles (must match §3.4, includes v2 additions)
 _PROFILE_KEYS = {
     "prof_kfz_shd": ["site_id", "hour", "weekday"],
     "prof_kfz_sht": ["site_id", "hour", "tagestyp"],
@@ -1276,50 +1385,76 @@ _PROFILE_KEYS = {
     "prof_lkw_shd": ["site_id", "hour", "weekday"],
     "prof_v_shd":   ["site_id", "hour", "weekday"],
     "prof_v_p85":   ["site_id", "hour"],
-    # v2: 新增
     "prof_kfz_shs": ["site_id", "hour", "season"],
     "prof_lkw_sht": ["site_id", "hour", "tagestyp"],
     "prof_v_sht":   ["site_id", "hour", "tagestyp"],
 }
 
-
 def load_saved_profiles():
-    """从 processed/profiles.pkl 还原成 apply_profiles 需要的 Series 形式。"""
+    """Restore profiles from processed/profiles.pkl."""
     with open(PROC_DIR / "profiles.pkl", "rb") as f:
         saved = pickle.load(f)
     return {name: df.set_index(_PROFILE_KEYS[name])[name]
             for name, df in saved.items() if name in _PROFILE_KEYS}
 
+# ---- Check what exists ----
+# (Fixed: all() takes a single iterable; passing 3 args raised TypeError and forced
+#  a full retrain on every run. _models_on_disk() wraps the correct list form.)
+_models_ok = _models_on_disk()
+MODELS_LOADED = False   # set True below once .cbm files are successfully loaded
 
-_need = [KFZ_DIR / "multi.cbm",
-         SV_DIR / "lkw_ratio.cbm", VKFZ_DIR / "speed_drop.cbm",
-         PROC_DIR / "profiles.pkl", PROC_DIR / "site_meta.parquet"]
-
-if all(p.exists() for p in _need):
+if not _models_ok:
+    _missing_models = [str(p.name) for p in [KFZ_DIR / "multi.cbm", SV_DIR / "lkw_ratio.cbm", VKFZ_DIR / "speed_drop.cbm"] if not p.exists()]
+    print(f"⚠ Missing model files: {_missing_models}")
+    print("  → Run full training (§4.1–§4.4 + §6 save) first, then re-run this cell.")
+else:
+    # Models exist — load them (no retraining needed)
     kfz_model = load_kfz_model()
     lkw_model = CatBoostRegressor(); lkw_model.load_model(str(SV_DIR / "lkw_ratio.cbm"))
     spd_model = CatBoostRegressor(); spd_model.load_model(str(VKFZ_DIR / "speed_drop.cbm"))
-    profiles = load_saved_profiles()
-    site_meta = pd.read_parquet(PROC_DIR / "site_meta.parquet")
-    # B: 复用时一并读回 conformal 校准量（无则 0）
+    MODELS_LOADED = True   # training cells (§4.1–§4.4) will skip fitting unless FORCE_RETRAIN
+    print("✔ Loaded saved .cbm models:")
+    print("  models/kfz_h/multi.cbm (MultiQuantile P10/P50/P90)")
+    print("  models/sv_h/lkw_ratio.cbm")
+    print("  models/v_kfz/speed_drop.cbm")
+
+    # Profiles (may be missing after git pull — processed/ is gitignored)
+    if (PROC_DIR / "profiles.pkl").exists():
+        profiles = load_saved_profiles()
+        print("  ✔ profiles loaded from processed/profiles.pkl")
+    else:
+        profiles = build_profiles(train_df)
+        print("  ⚠ profiles.pkl missing (gitignored) — rebuilt from training data")
+
+    # Site metadata (may also be missing)
+    if (PROC_DIR / "site_meta.parquet").exists():
+        site_meta = pd.read_parquet(PROC_DIR / "site_meta.parquet")
+        print("  ✔ site_meta loaded from processed/site_meta.parquet")
+    else:
+        site_meta = (traffic.groupby("site_id")[["road", "direction", "site_name", "bab_km", "longitude", "latitude"]]
+                     .first().reset_index())
+        print("  ⚠ site_meta.parquet missing — rebuilt from traffic data")
+
+    # Conformal calibration (optional — 0 if missing)
     _cf = PROC_DIR / "conformal.json"
     CONF_Q = float(json.loads(_cf.read_text())["conf_quantile"]) if _cf.exists() else 0.0
-    print(f"  conformal 校准量 CONF_Q = {CONF_Q:+.1f} veh/h" + ("" if _cf.exists() else " (conformal.json missing, using 0)"))
-    print("✔ Loaded saved models + profiles + site metadata; skip to §5 eval / §6 inference")
-    print("  models/kfz_h/multi.cbm (MultiQuantile P10/P50/P90)")
-    print("  models/sv_h/lkw_ratio.cbm  models/v_kfz/speed_drop.cbm")
-else:
-    _missing = [str(p.relative_to(ROOT)) for p in _need if not p.exists()]
-    print("⚠ Missing files; run full training first (§4.1–§4.4 + §6 save):")
-    print("  Missing:", _missing)
+    print(f"  conformal quantile CONF_Q = {CONF_Q:+.1f} veh/h" + ("" if _cf.exists() else " (conformal.json missing, using 0)"))
+
+    print("✔ Ready — training cells (§4.1–§4.4) will auto-skip; go to §5 / §6")
+    print(f"   (set FORCE_RETRAIN=True in §1.1 to retrain instead)")
 
 ```
 **Output:**
 ```text
-  conformal 校准量 CONF_Q = +26.3 veh/h
-✔ Loaded saved models + profiles + site metadata; skip to §5 eval / §6 inference
+✔ Loaded saved .cbm models:
   models/kfz_h/multi.cbm (MultiQuantile P10/P50/P90)
-  models/sv_h/lkw_ratio.cbm  models/v_kfz/speed_drop.cbm
+  models/sv_h/lkw_ratio.cbm
+  models/v_kfz/speed_drop.cbm
+  ✔ profiles loaded from processed/profiles.pkl
+  ✔ site_meta loaded from processed/site_meta.parquet
+  conformal quantile CONF_Q = +23.3 veh/h
+✔ Ready — training cells (§4.1–§4.4) will auto-skip; go to §5 / §6
+   (set FORCE_RETRAIN=True in §1.1 to retrain instead)
 ```
 
 ### [Markdown Cell 24]
@@ -1327,31 +1462,35 @@ else:
 
 ### [Code Cell 25]
 ```python
-# 去除target缺失rows
+# 去除target缺失rows（验证集 va_kfz 在 §4.1a / §5 / §7 评估中始终需要，故始终构建）
 tr_kfz = train_df[train_df["kfz_h"].notna()]
 va_kfz = val_df[val_df["kfz_h"].notna()]
 
-pool_tr = make_pool(tr_kfz, FEATURES_KFZ, "kfz_h")
-pool_va = make_pool(va_kfz, FEATURES_KFZ, "kfz_h")
+if not FORCE_RETRAIN and _models_on_disk():
+    # Model already on disk -> load and skip fitting (no retrain after git pull)
+    kfz_model = load_kfz_model()
+    kfz_evals = None
+    print("✔ Reusing models/kfz_h/multi.cbm — skipped training (set FORCE_RETRAIN=True to retrain)")
+else:
+    pool_tr = make_pool(tr_kfz, FEATURES_KFZ, "kfz_h")
+    pool_va = make_pool(va_kfz, FEATURES_KFZ, "kfz_h")
 
-# v2: 单 MultiQuantile 模型同时输出 P10/P50/P90
-# - 共享树结构 → 防止分位交叉
-# - 训练速度比 3 个独立模型快 ~3×
-# - rsm=0.8 增加列扰动 → 三分位间多样性 → 更宽区间 → PICP ↑
-kfz_model, kfz_evals_raw = train_catboost(
-    pool_tr, pool_va,
-    loss_function=MQ_KFZ_LOSS, eval_metric=MQ_KFZ_LOSS,
-    name="kfz_multi", params=CB_KFZ_PARAMS,
-)
-kfz_model.save_model(str(KFZ_DIR / "multi.cbm"))
-print(f"  kfz_multi (MultiQuantile P10/P50/P90): best_iter={kfz_model.get_best_iteration()}  -> models/kfz_h/multi.cbm")
-kfz_evals = {"kfz_multi (P10/P50/P90 MultiQ)": kfz_evals_raw}
-
+    # v2: 单 MultiQuantile 模型同时输出 P10/P50/P90
+    # - 共享树结构 → 防止分位交叉
+    # - 训练速度比 3 个独立模型快 ~3×
+    # - rsm=0.8 增加列扰动 → 三分位间多样性 → 更宽区间 → PICP ↑
+    kfz_model, kfz_evals_raw = train_catboost(
+        pool_tr, pool_va,
+        loss_function=MQ_KFZ_LOSS, eval_metric=MQ_KFZ_LOSS,
+        name="kfz_multi", params=CB_KFZ_PARAMS,
+    )
+    kfz_model.save_model(str(KFZ_DIR / "multi.cbm"))
+    print(f"  kfz_multi (MultiQuantile P10/P50/P90): best_iter={kfz_model.get_best_iteration()}  -> models/kfz_h/multi.cbm")
+    kfz_evals = {"kfz_multi (P10/P50/P90 MultiQ)": kfz_evals_raw}
 ```
 **Output:**
 ```text
-kfz_multi:   0%|          | 0/2000 [00:00<?, ?it/s]
-  kfz_multi (MultiQuantile P10/P50/P90): best_iter=1999  -> models/kfz_h/multi.cbm
+✔ Reusing models/kfz_h/multi.cbm — skipped training (set FORCE_RETRAIN=True to retrain)
 ```
 
 ### [Code Cell 26]
@@ -1368,7 +1507,7 @@ print(f"     train mean={train_df['kfz_p50_pred'].mean():.0f}  val mean={val_df[
 **Output:**
 ```text
 G3: Added kfz_p50_pred to train/val for speed model
-     train mean=1222  val mean=1222 veh/h
+     train mean=1223  val mean=1222 veh/h
 ```
 
 ### [Markdown Cell 27]
@@ -1413,16 +1552,18 @@ def plot_loss_curves(evals_dict: dict, suptitle: str, best_iters: dict | None = 
     plt.show()
 
 
-plot_loss_curves(
-    kfz_evals,
-    "kfz_h · CatBoost MultiQuantile Loss",
-    best_iters={"kfz_multi (P10/P50/P90 MultiQ)": kfz_model.get_best_iteration()},
-)
+if kfz_evals:
+    plot_loss_curves(
+        kfz_evals,
+        "kfz_h · CatBoost MultiQuantile Loss",
+        best_iters={"kfz_multi (P10/P50/P90 MultiQ)": kfz_model.get_best_iteration()},
+    )
+else:
+    print("Loaded a pre-trained kfz model — no fresh training curve to plot.")
 ```
 **Output:**
 ```text
-[IMAGE/PLOT REMOVED TO SAVE CONTEXT]
-<Figure size 520x420 with 1 Axes>
+Loaded a pre-trained kfz model — no fresh training curve to plot.
 ```
 
 ### [Markdown Cell 29]
@@ -1450,7 +1591,7 @@ ax.fill_between(_one["hour"], _one["kfz_h_p10"], _one["kfz_h_p90"],
                 color="#93c5fd", alpha=0.45, label="Predicted P10–P90")
 ax.plot(_one["hour"], _one["kfz_h_p50"], color="#1d4ed8", lw=2, marker="o", ms=4, label="Predicted P50")
 ax.plot(_one["hour"], _one["kfz_h"], color="#111827", lw=1.8, ls="--", marker="s", ms=4, label="Actual kfz_h")
-ax.set_title(f"{_site} · {_day.date()} Hourly Prediction vs Actual (Validation)", fontsize=13, fontweight="bold")
+ax.set_title(f"{_site} · {_day.date()} Hourly Traffic Flow — Predicted (P50 ± P10/P90 band) vs Actual (2025 Validation)", fontsize=13, fontweight="bold")
 ax.set_xlabel("hour")
 ax.set_ylabel("kfz_h (veh/h)")
 ax.set_xticks(range(0, 24, 2))
@@ -1467,7 +1608,7 @@ print(f"Daily P50 MAE: {_mae:,.0f} veh/h | P10–P90 coverage: {_picp:.0f}% | {l
 ```text
 [IMAGE/PLOT REMOVED TO SAVE CONTEXT]
 <Figure size 1300x450 with 1 Axes>
-Daily P50 MAE: 365 veh/h | P10–P90 coverage: 54% | 24 hours
+Daily P50 MAE: 376 veh/h | P10–P90 coverage: 54% | 24 hours
 ```
 
 ### [Markdown Cell 31]
@@ -1527,16 +1668,16 @@ Future grid: 420,768 rows
 8   A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     8   
 
 ... [79 行表格/数据已省略] ...
-38  3428.982226  4345.677054  5049.474370     1620.492144  
-39  3320.743912  4237.283004  5022.527517     1701.783605  
-40  3278.268507  4248.845774  5080.867228     1802.598721  
-41  3219.595296  4219.303606  5070.199382     1850.604086  
-42  2763.136619  3690.809603  4618.456642     1855.320023  
-43  2052.265846  2730.483746  3787.587639     1735.321793  
-44  1489.005682  2017.735017  3069.050908     1580.045226  
-45  1143.231293  1574.446941  2676.294866     1533.063573  
-46   888.927531  1195.604557  1956.209199     1067.281668  
-47   667.325959   921.373833  1520.957008      853.631049  
+38  3465.265933  4489.898739  5125.102790     1659.836857  
+39  3329.527436  4320.078439  5074.800554     1745.273118  
+40  3335.933941  4379.493803  5167.131183     1831.197242  
+41  3202.106227  4197.095409  5077.045865     1874.939638  
+42  2644.405034  3589.182002  4546.133314     1901.728280  
+43  2156.991027  2918.348889  3823.762383     1666.771356  
+44  1450.220857  2027.853947  3006.538091     1556.317234  
+45  1116.602240  1568.708529  2494.196277     1377.594037  
+46   873.254378  1222.696930  1908.272787     1035.018409  
+47   638.596605   904.458382  1462.777301      824.180696  
 G3: kfz_p50_pred added to future_grid for speed model
 ```
 
@@ -1547,31 +1688,33 @@ prediction `lkw_ratio = sv_h / kfz_h`，再 `sv_h = lkw_ratio × kfz_h_p50`。
 
 ### [Code Cell 34]
 ```python
+# 验证集 va_lkw 在 §4.3a 中需要，故始终构建
 tr_lkw = train_df[train_df["lkw_ratio"].notna()]
 va_lkw = val_df[val_df["lkw_ratio"].notna()]
 
-pool_tr_lkw = make_pool(tr_lkw, FEATURES_LKW, "lkw_ratio")
-pool_va_lkw = make_pool(va_lkw, FEATURES_LKW, "lkw_ratio")
+if not FORCE_RETRAIN and _models_on_disk():
+    lkw_model = CatBoostRegressor(); lkw_model.load_model(str(SV_DIR / "lkw_ratio.cbm"))
+    print("✔ Reusing models/sv_h/lkw_ratio.cbm — skipped training (set FORCE_RETRAIN=True to retrain)")
+else:
+    pool_tr_lkw = make_pool(tr_lkw, FEATURES_LKW, "lkw_ratio")
+    pool_va_lkw = make_pool(va_lkw, FEATURES_LKW, "lkw_ratio")
 
-lkw_model, lkw_evals = train_catboost(
-    pool_tr_lkw, pool_va_lkw,
-    loss_function=CB_LKW_PARAMS["loss_function"],
-    eval_metric=CB_LKW_PARAMS["eval_metric"],
-    name="lkw_ratio", params=CB_LKW_PARAMS,
-)
-lkw_model.save_model(str(SV_DIR / "lkw_ratio.cbm"))
-print("  -> models/sv_h/lkw_ratio.cbm")
+    lkw_model, lkw_evals = train_catboost(
+        pool_tr_lkw, pool_va_lkw,
+        loss_function=CB_LKW_PARAMS["loss_function"],
+        eval_metric=CB_LKW_PARAMS["eval_metric"],
+        name="lkw_ratio", params=CB_LKW_PARAMS,
+    )
+    lkw_model.save_model(str(SV_DIR / "lkw_ratio.cbm"))
+    print("  -> models/sv_h/lkw_ratio.cbm")
 
-plot_loss_curves({"lkw_ratio (RMSE)": lkw_evals}, "sv_h 占比模型 Loss",
-                 best_iters={"lkw_ratio (RMSE)": lkw_model.get_best_iteration()})
-
+    # Truck-ratio model training/validation loss (RMSE)
+    plot_loss_curves({"lkw_ratio (RMSE)": lkw_evals}, "sv_h Truck-Ratio Model Loss (RMSE)",
+                     best_iters={"lkw_ratio (RMSE)": lkw_model.get_best_iteration()})
 ```
 **Output:**
 ```text
-lkw_ratio:   0%|          | 0/2000 [00:00<?, ?it/s]
-  -> models/sv_h/lkw_ratio.cbm
-[IMAGE/PLOT REMOVED TO SAVE CONTEXT]
-<Figure size 520x420 with 1 Axes>
+✔ Reusing models/sv_h/lkw_ratio.cbm — skipped training (set FORCE_RETRAIN=True to retrain)
 ```
 
 ### [Markdown Cell 35]
@@ -1597,7 +1740,7 @@ _one = _sv[(_sv["site_id"] == _site) & (_sv["day"] == _day)].sort_values("hour")
 fig, ax = plt.subplots(figsize=PLOT_FIGSIZE)
 ax.plot(_one["hour"], _one["sv_h_pred"], color="#1d4ed8", lw=2, marker="o", ms=4, label="Predicted sv_h")
 ax.plot(_one["hour"], _one["sv_h"], color="#111827", lw=1.8, ls="--", marker="s", ms=4, label="Actual sv_h")
-ax.set_title(f"{_site} · {_day.date()} Hourly Truck Volume — Pred vs Actual (Validation)", fontsize=13, fontweight="bold")
+ax.set_title(f"{_site} · {_day.date()} Hourly Truck Volume (sv_h) — Predicted vs Actual (2025 Validation)", fontsize=13, fontweight="bold")
 ax.set_xlabel("hour")
 ax.set_ylabel("sv_h (veh/h)")
 ax.set_xticks(range(0, 24, 2))
@@ -1613,7 +1756,7 @@ print(f"Daily sv_h MAE: {_mae:,.0f} veh/h | {len(_one)} hours")
 ```text
 [IMAGE/PLOT REMOVED TO SAVE CONTEXT]
 <Figure size 1300x450 with 1 Axes>
-Daily sv_h MAE: 20 veh/h | 24 hours
+Daily sv_h MAE: 21 veh/h | 24 hours
 ```
 
 ### [Markdown Cell 37]
@@ -1660,16 +1803,16 @@ display(sv_fc.head(48))
 8   A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     8   
 
 ... [79 行表格/数据已省略] ...
-38        0.048995  212.915036  
-39        0.046359  196.436350  
-40        0.046419  197.229009  
-41        0.046133  194.647324  
-42        0.050841  187.644218  
-43        0.060285  164.606297  
-44        0.074136  149.587162  
-45        0.078206  123.131050  
-46        0.081610   97.573447  
-47        0.095333   87.837331  
+38        0.041969  188.435174  
+39        0.036324  156.921255  
+40        0.034943  153.031784  
+41        0.035125  147.421536  
+42        0.042042  150.895071  
+43        0.049420  144.223635  
+44        0.063574  128.919680  
+45        0.068406  107.308898  
+46        0.069471   84.941537  
+47        0.086679   78.397661  
 ```
 
 ### [Markdown Cell 39]
@@ -1681,6 +1824,7 @@ display(sv_fc.head(48))
 ### [Code Cell 40]
 ```python
 # 降速target：raw target 保留真实物理含义；训练集截尾用于抗异常点，验证集保留 raw 便于看真实泛化
+# （speed_drop 目标列 / va_spd 在 §4.4a / §5 评估中始终需要，故始终构建）
 for d in (train_df, val_df):
     d["speed_drop_raw"] = d["prof_v_p85"] - d["v_kfz"]
 
@@ -1696,31 +1840,32 @@ print(f"  clipped p50={_clipped.quantile(0.50):.2f}, p95={_clipped.quantile(0.95
 tr_spd = train_df[train_df["v_kfz"].notna()]
 va_spd = val_df[val_df["v_kfz"].notna()]
 
-pool_tr_spd = make_pool(tr_spd, FEATURES_SPD, "speed_drop")
-pool_va_spd = make_pool(va_spd, FEATURES_SPD, "speed_drop")
+if not FORCE_RETRAIN and _models_on_disk():
+    spd_model = CatBoostRegressor(); spd_model.load_model(str(VKFZ_DIR / "speed_drop.cbm"))
+    print("✔ Reusing models/v_kfz/speed_drop.cbm — skipped training (set FORCE_RETRAIN=True to retrain)")
+else:
+    pool_tr_spd = make_pool(tr_spd, FEATURES_SPD, "speed_drop")
+    pool_va_spd = make_pool(va_spd, FEATURES_SPD, "speed_drop")
 
-spd_model, spd_evals = train_catboost(
-    pool_tr_spd, pool_va_spd,
-    loss_function=CB_SPD_PARAMS["loss_function"],
-    eval_metric=CB_SPD_PARAMS["eval_metric"],
-    name="speed_drop_reg", params=CB_SPD_PARAMS,
-)
-spd_model.save_model(str(VKFZ_DIR / "speed_drop.cbm"))
-print("  -> models/v_kfz/speed_drop.cbm")
+    spd_model, spd_evals = train_catboost(
+        pool_tr_spd, pool_va_spd,
+        loss_function=CB_SPD_PARAMS["loss_function"],
+        eval_metric=CB_SPD_PARAMS["eval_metric"],
+        name="speed_drop_reg", params=CB_SPD_PARAMS,
+    )
+    spd_model.save_model(str(VKFZ_DIR / "speed_drop.cbm"))
+    print("  -> models/v_kfz/speed_drop.cbm")
 
-plot_loss_curves({"speed_drop (RMSE)": spd_evals}, "v_kfz 降速模型 Loss",
-                 best_iters={"speed_drop (RMSE)": spd_model.get_best_iteration()})
-
+    # Speed-drop model training/validation loss (RMSE)
+    plot_loss_curves({"speed_drop (RMSE)": spd_evals}, "v_kfz Speed-Drop Model Loss (RMSE)",
+                     best_iters={"speed_drop (RMSE)": spd_model.get_best_iteration()})
 ```
 **Output:**
 ```text
 speed_drop training target clipping:
   raw     p50=6.90, p95=28.10, p99=54.70, max=123.78
   clipped p50=6.90, p95=28.10, p99=54.70, max=60.00
-speed_drop_reg:   0%|          | 0/1200 [00:00<?, ?it/s]
-  -> models/v_kfz/speed_drop.cbm
-[IMAGE/PLOT REMOVED TO SAVE CONTEXT]
-<Figure size 520x420 with 1 Axes>
+✔ Reusing models/v_kfz/speed_drop.cbm — skipped training (set FORCE_RETRAIN=True to retrain)
 ```
 
 ### [Markdown Cell 41]
@@ -1745,7 +1890,7 @@ _one = _v[(_v["site_id"] == _site) & (_v["day"] == _day)].sort_values("hour")
 fig, ax = plt.subplots(figsize=PLOT_FIGSIZE)
 ax.plot(_one["hour"], _one["v_kfz_pred"], color="#1d4ed8", lw=2, marker="o", ms=4, label="Predicted v_kfz")
 ax.plot(_one["hour"], _one["v_kfz"], color="#111827", lw=1.8, ls="--", marker="s", ms=4, label="Actual v_kfz")
-ax.set_title(f"{_site} · {_day.date()} Hourly Speed — Pred vs Actual (Validation)", fontsize=13, fontweight="bold")
+ax.set_title(f"{_site} · {_day.date()} Hourly Average Speed (v_kfz) — Predicted vs Actual (2025 Validation)", fontsize=13, fontweight="bold")
 ax.set_xlabel("hour")
 ax.set_ylabel("v_kfz (km/h)")
 ax.set_xticks(range(0, 24, 2))
@@ -1761,7 +1906,7 @@ print(f"Daily v_kfz MAE: {_mae:.1f} km/h | {len(_one)} hours")
 ```text
 [IMAGE/PLOT REMOVED TO SAVE CONTEXT]
 <Figure size 1300x450 with 1 Axes>
-Daily v_kfz MAE: 7.0 km/h | 24 hours
+Daily v_kfz MAE: 7.3 km/h | 24 hours
 ```
 
 ### [Markdown Cell 43]
@@ -1811,16 +1956,16 @@ display(v_fc.head(48))
 8   A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     8   
 
 ... [79 行表格/数据已省略] ...
-38  107.562199  
-39  109.023505  
-40  109.478026  
-41  107.524414  
-42  111.784400  
-43  118.091333  
-44  125.799424  
-45  128.193517  
-46  131.262422  
-47  131.734602  
+38  106.959153  
+39  108.402723  
+40  106.289743  
+41  106.564267  
+42  111.919167  
+43  117.385074  
+44  125.999616  
+45  129.301205  
+46  131.534686  
+47  132.189214  
 ```
 
 ### [Markdown Cell 45]
@@ -1888,7 +2033,7 @@ mpiw_cal = float(np.mean(p90_cal_t - p10_cal_t))
     {"conf_quantile": conf_quantile, "coverage": CONFORMAL_COVERAGE}))
 print(f"Conformal (split): calib half n={len(cal_idx)}, test half n={len(test_idx)}")
 print(f"  conf_quantile = {conf_quantile:+.1f} veh/h -> processed/conformal.json")
-print(f"  PICP 测试半: raw={picp_raw:.1f}%  cal={picp_cal:.1f}% (target {CONFORMAL_COVERAGE:.0%})")
+print(f"  PICP test half: raw={picp_raw:.1f}%  cal={picp_cal:.1f}% (target {CONFORMAL_COVERAGE:.0%})")
 
 # 峰值hours recall
 thr = np.quantile(yk, PEAK_QUANTILE)
@@ -1951,20 +2096,20 @@ V2_RESULTS = {
 **Output:**
 ```text
 Conformal (split): calib half n=48698, test half n=48699
-  conf_quantile = +26.3 veh/h -> processed/conformal.json
-  PICP 测试半: raw=71.4%  cal=81.5% (target 80%)
+  conf_quantile = +23.3 veh/h -> processed/conformal.json
+  PICP test half: raw=71.9%  cal=81.1% (target 80%)
                               MAE     RMSE   MAPE%  WMAPE%
 Target                                                    
-kfz_h (Total Flow · P50)  135.361  235.371  16.140  10.688
-sv_h (Truck Volume)        23.719   40.509  19.915  13.263
-v_kfz (Avg Speed)           5.714    9.458   7.289   5.272
+kfz_h (Total Flow · P50)  135.492  235.033  16.163  10.698
+sv_h (Truck Volume)        23.825   39.904  20.021  13.323
+v_kfz (Avg Speed)           5.713    9.449   7.288   5.270
                         Value                       Description
 Metric                                                         
-PICP% (Raw)             71.4%   P10–P90 Coverage (uncalibrated)
-PICP% (Conformal)       81.5%            Calibrated, target 80%
-MPIW (Raw)            341 veh         Mean Interval Width (raw)
-MPIW (Conformal)      393 veh  Mean Interval Width (calibrated)
-Peak Recall (top10%)    88.1%                  Peak Hour Recall
+PICP% (Raw)             71.9%   P10–P90 Coverage (uncalibrated)
+PICP% (Conformal)       81.1%            Calibrated, target 80%
+MPIW (Raw)            349 veh         Mean Interval Width (raw)
+MPIW (Conformal)      396 veh  Mean Interval Width (calibrated)
+Peak Recall (top10%)    88.0%                  Peak Hour Recall
 ```
 
 ### [Code Cell 47]
@@ -1981,7 +2126,7 @@ fig, ax = plt.subplots(figsize=PLOT_FIGSIZE)
 ax.fill_between(sub["ts"], sub["p10"], sub["p90"], color="#93c5fd", alpha=0.45, label="P10–P90")
 ax.plot(sub["ts"], sub["p50"], color="#1d4ed8", lw=1.8, label="Predicted P50")
 ax.plot(sub["ts"], sub["kfz_h"], color="#111827", lw=1.5, ls="--", label="Actual kfz_h")
-ax.set_title(f"{site} · {PLOT_WEEK_START}~{PLOT_WEEK_END} Hourly Flow — Pred vs Actual", fontsize=13, fontweight="bold")
+ax.set_title(f"{site} · {PLOT_WEEK_START}~{PLOT_WEEK_END} One-Week Hourly Flow — Predicted vs Actual with P10–P90 Uncertainty Band", fontsize=13, fontweight="bold")
 ax.set_ylabel("kfz_h (veh/h)")
 ax.legend(frameon=True)
 fig.autofmt_xdate()
@@ -1992,7 +2137,7 @@ plt.show()
 fi = pd.Series(kfz_model.get_feature_importance(), index=FEATURES_KFZ).sort_values(ascending=False)
 fig, ax = plt.subplots(figsize=(8, 6))
 fi.head(FI_TOP_K)[::-1].plot.barh(ax=ax, color="#0ea5e9")
-ax.set_title(f"kfz_h P50 · Feature Importance Top{FI_TOP_K}", fontsize=13, fontweight="bold")
+ax.set_title(f"kfz_h P50 · CatBoost Feature Importance (LossFunctionChange) — Top Drivers of kfz_h P50 Prediction{FI_TOP_K}", fontsize=13, fontweight="bold")
 ax.set_xlabel("importance")
 fig.tight_layout()
 plt.show()
@@ -2012,6 +2157,88 @@ plt.show()
 > 实际批量生成 4 年全网格时，建议用全量 2023–2025 重训画像 + 模型后再调用。
 
 ### [Code Cell 49]
+```python
+# ========== Factor attribution (feature-group ablation) ==========
+# Two helpers:
+#   compute_factor_matrix()      -> per-row absolute contribution of each factor group
+#   daily_factor_attribution()   -> aggregates those to ONE compact string per station-day
+#
+# Method: predict normally, then for each factor group zero out (ablate) that group's
+# features and re-predict. |full - ablated| = how much that group moved the prediction.
+# Summing the absolute deltas over a day's 24 hours is implicitly volume-weighted
+# (peak hours produce bigger deltas), so the daily share reflects when traffic happens.
+#
+# 6 factor groups (codes from FACTOR_ABBR): TT Typical Traffic, CA Calendar, HO Holiday,
+# WE Weather, EV Events, CO Construction. See doc/FACTOR_CONTRIBUTIONS.md.
+
+def compute_factor_matrix(grid, groups, kfz_model, features, cat_features, chunk_size=50_000):
+    """Per-row factor-group contribution to kfz_h P50, via feature-group ablation.
+
+    Returns (p50_full, contribs):
+      p50_full : np.ndarray (n,)            — the normal P50 prediction
+      contribs : dict group_name -> (n,)    — |full - ablated| for each group
+    """
+    n = len(grid)
+    cats = [c for c in cat_features if c in features]
+    group_names = list(groups.keys())
+
+    def _predict(df, cols_to_zero):
+        X = df[features].copy()
+        for c in cols_to_zero:
+            if c in X.columns:
+                X[c] = "__NEUTRAL__" if c in cats else 0.0  # unseen cat -> CatBoost prior
+        return np.clip(kfz_model.predict(X)[:, 1], KFZ_CLIP_MIN, None)  # P50 = col 1
+
+    p50 = np.empty(n, dtype=np.float64)
+    contribs = {g: np.empty(n, dtype=np.float64) for g in group_names}
+    for start in range(0, n, chunk_size):
+        end = min(start + chunk_size, n)
+        chunk = grid.iloc[start:end]
+        full = _predict(chunk, [])
+        p50[start:end] = full
+        for gname, gfeats in groups.items():
+            contribs[gname][start:end] = np.abs(full - _predict(chunk, gfeats))
+    return p50, contribs
+
+
+def daily_factor_attribution(grid, contribs, group_names, abbr, min_pct=1.0):
+    """Aggregate per-row factor contributions to one compact string per (station, day).
+
+    Output DataFrame: site_id, road, direction, date, factors
+    where `factors` looks like "TT:74;CA:12;HO:9;WE:3;EV:2"
+      - codes sorted by descending share
+      - only factors with a rounded share >= min_pct are kept (others omitted)
+      - shares are normalized within the day (sum ~100, may differ by a point after rounding)
+    """
+    df = grid[["site_id", "road", "direction", "date"]].copy()
+    for g in group_names:
+        df[g] = contribs[g]
+    agg = (df.groupby(["site_id", "road", "direction", "date"], sort=False)[group_names]
+             .sum().reset_index())
+
+    mat = agg[group_names].to_numpy(dtype=np.float64)
+    tot = mat.sum(axis=1, keepdims=True)
+    tot[tot < 1e-9] = 1.0
+    pct = mat / tot * 100.0
+    codes = [abbr[g] for g in group_names]
+
+    strs = []
+    for row in pct:
+        order = np.argsort(row)[::-1]
+        parts = [f"{codes[j]}:{int(round(row[j]))}" for j in order if round(row[j]) >= min_pct]
+        strs.append(";".join(parts))
+    agg["factors"] = strs
+    return agg[["site_id", "road", "direction", "date", "factors"]]
+
+
+print("Factor attribution helpers ready (compute_factor_matrix + daily_factor_attribution)")
+```
+**Output:**
+```text
+Factor attribution helpers ready (compute_factor_matrix + daily_factor_attribution)
+```
+
+### [Code Cell 50]
 ```python
 import pickle
 
@@ -2033,7 +2260,7 @@ print("  models/v_kfz/speed_drop.cbm")
 print("  processed/site_meta.parquet  processed/profiles.pkl")
 
 
-def predict_grid(dates, hours=range(24)):
+def predict_grid(dates, hours=range(24), return_grid=False):
     """对给定dates × 全部sites × hours 构建特征并prediction三target。
     dates: 可迭代的dates字符串/Timestamp（如 pd.date_range('2026-01-01','2029-12-31')）。
     返回带 kfz_h_p10/p50/p90, sv_h_pred, v_kfz_pred 的 DataFrame。
@@ -2067,8 +2294,14 @@ def predict_grid(dates, hours=range(24)):
     drop = predict_features(grid, spd_model, FEATURES_SPD)
     out["v_kfz_pred"] = np.clip(grid["prof_v_p85"].to_numpy() - drop, SPEED_CLIP_MIN, SPEED_CLIP_MAX)
     out["interval_width"] = out["kfz_h_p90"] - out["kfz_h_p10"]
-    # Confidence metrics for Agent consumption
-    out["relative_interval_width"] = out["interval_width"] / (out["kfz_h_p50"] + 1.0)  # normalized uncertainty
+    # Confidence metric for Agent consumption (normalized uncertainty)
+    out["relative_interval_width"] = out["interval_width"] / (out["kfz_h_p50"] + 1.0)
+    # NOTE: per-row factor weights were intentionally REMOVED from the forecast table to
+    #       keep it small. Factor attribution now lives in the compact per-DAY file built
+    #       in §6.1 (compute_factor_matrix + daily_factor_attribution). Pass return_grid=True
+    #       to get the feature grid back for that computation.
+    if return_grid:
+        return out, grid
     return out
 
 
@@ -2100,87 +2333,89 @@ Saved:
 ... [9 行表格/数据已省略] ...
 
    interval_width  relative_interval_width  
-0      853.464131                 0.630574  
-1      708.096433                 0.589851  
-2      649.940702                 0.567566  
-3      672.629363                 0.603911  
-4      699.723071                 0.617436  
-5      749.825851                 0.535548  
-6      645.002034                 0.346584  
-7      684.856990                 0.278315  
+0      783.156806                 0.583155  
+1      707.706984                 0.575081  
+2      652.175177                 0.560680  
+3      683.025666                 0.594307  
+4      746.150471                 0.647666  
+5      803.370892                 0.563432  
+6      610.593630                 0.327772  
+7      610.195237                 0.244414  
 ```
 
-### [Code Cell 50]
+### [Code Cell 51]
 ```python
-# ========== 6.1 全量推理 2026–2029 并保存 ==========
-# 训练（或 §4.0 加载）完成后，一键生成全网格prediction并落盘，供后续直接复用结果。
+# ========== 6.1 全量推理 2026–2029 + 落盘 + 逐日因子归因 ==========
+# 训练（或 §4.0 加载）完成后，一键生成全网格prediction + 紧凑的逐日因子表。
 future_dates = pd.date_range("2026-01-01", "2029-12-31", freq="D")
-forecast = predict_grid(future_dates)
+forecast, fc_grid = predict_grid(future_dates, return_grid=True)   # fc_grid 复用于因子归因
 
 FORECAST_PARQUET = PROC_DIR / "forecast_2026_2029.parquet"
 FORECAST_CSV = PROC_DIR / "forecast_2026_2029.csv"
 forecast.to_parquet(FORECAST_PARQUET, index=False)
 forecast.to_csv(FORECAST_CSV, index=False)
+forecast.to_csv(DATA_DIR / "forecast_2026_2029.csv", index=False)   # delivery copy (Agent reads here)
 
-print(f"✔ Generated {len(forecast):,} rowsprediction -> {FORECAST_PARQUET.name} / {FORECAST_CSV.name}")
+print(f"✔ Forecast {len(forecast):,} rows ({len(forecast.columns)} cols, NO factor column) "
+      f"-> processed/ + data_autobahn/forecast_2026_2029.csv")
 print(f"  sites {forecast['site_id'].nunique()} | dates {forecast['date'].nunique()} | hours 24")
-# Output columns (see CLAUDE.md for full schema):
-#   kfz_h_p10/p50/p90, sv_h_pred, v_kfz_pred,
-#   interval_width (p90-p10), relative_interval_width (width/p50) — confidence metrics for Agent
-forecast.head()
+print(f"  columns: {list(forecast.columns)}")
 
+# ---- Per-day factor attribution (compact, abbreviated; separate small file) ----
+# 17,532 rows (12 sites × 1,461 days) instead of 420,768 — fits GitHub easily.
+print("\nComputing per-day factor attribution (feature-group ablation over the grid)...")
+_p50, _contribs = compute_factor_matrix(
+    fc_grid, EXPLANATION_GROUPS, kfz_model, FEATURES_KFZ, CAT_FEATURES
+)
+factor_daily = daily_factor_attribution(
+    fc_grid, _contribs, list(EXPLANATION_GROUPS.keys()), FACTOR_ABBR
+)
+FACTOR_DAILY_CSV = DATA_DIR / "factor_attribution_daily.csv"
+factor_daily.to_csv(FACTOR_DAILY_CSV, index=False)
+factor_daily.to_parquet(PROC_DIR / "factor_attribution_daily.parquet", index=False)
+
+_sz = FACTOR_DAILY_CSV.stat().st_size / 1e6
+print(f"✔ Per-day factors {len(factor_daily):,} rows ({_sz:.1f} MB) -> data_autobahn/factor_attribution_daily.csv")
+print("  example row:", factor_daily.iloc[0].to_dict())
+print("  → Agent reading guide: doc/FACTOR_CONTRIBUTIONS.md")
 ```
 **Output:**
 ```text
-✔ Generated 420,768 rowsprediction -> forecast_2026_2029.parquet / forecast_2026_2029.csv
+✔ Forecast 420,768 rows (13 cols, NO factor column) -> processed/ + data_autobahn/forecast_2026_2029.csv
   sites 12 | dates 1461 | hours 24
-              site_id road direction    site_name       date  hour  \
-0  A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     0   
-1  A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     1   
-2  A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     2   
-3  A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     3   
-4  A8_Mch_MQB25_Mch_H   A8       Mch  MQB25_Mch_H 2026-01-01     4   
+  columns: ['site_id', 'road', 'direction', 'site_name', 'date', 'hour', 'kfz_h_p10', 'kfz_h_p50', 'kfz_h_p90', 'sv_h_pred', 'v_kfz_pred', 'interval_width', 'relative_interval_width']
 
-    kfz_h_p10   kfz_h_p50   kfz_h_p90  sv_h_pred  v_kfz_pred  interval_width  \
-0  222.487649  338.165930  500.123733  18.675718  140.025893      277.636084   
-1  198.335258  330.149398  468.023075  21.937789  138.105223      269.687817   
-2  196.626200  320.958635  455.034932  21.869449  137.066766      258.408732   
-3  179.302709  274.013380  385.924262  19.413626  135.793894      206.621553   
-4  166.467490  271.684210  491.076271  20.832521  134.885449      324.608780   
-
-   relative_interval_width  
-0                 0.818585  
-1                 0.814399  
-2                 0.802615  
-3                 0.751315  
-4                 1.190420  
+Computing per-day factor attribution (feature-group ablation over the grid)...
+✔ Per-day factors 17,532 rows (1.2 MB) -> data_autobahn/factor_attribution_daily.csv
+  example row: {'site_id': 'A8_Mch_MQB25_Mch_H', 'road': 'A8', 'direction': 'Mch', 'date': Timestamp('2026-01-01 00:00:00'), 'factors': 'TT:74;CA:13;HO:11;WE:2'}
+  → Agent reading guide: doc/FACTOR_CONTRIBUTIONS.md
 ```
 
-### [Markdown Cell 51]
-## 7. 模型可解释性：画像基线 vs 外因修正 + Single-point SHAP Attribution
+### [Markdown Cell 52]
+## 7. Model Explainability — global sources, external drivers, and per-day attribution
 
-三层解读，回答「模型为什么这样prediction」：
+Four views answer "why did the model predict this":
 
-1. **全局来源占比** —— 按特征组（历史画像 / 假期 / 天气 / 施工 / 事件 / sites静态）汇总重要性，证明模型「靠历史画像打底、靠外因做边际修正」。
-2. **外因修正项排名** —— 只看可干预 / 可解释的 conditional 特征，谁对流量影响最大。
-3. **单点 SHAP 加法归因** —— 挑验证集里一个真实高峰hours，把prediction拆成 `base + Σ各特征贡献`，直接对接调度解释「这一刻为什么堵」。
+1. **Global source share** — feature-group importance (historical profile / calendar / holiday / weather / construction / events / site), showing the model leans on the historical profile and uses external factors for marginal corrections.
+2. **Top external drivers** — among the intervenable / explainable conditional features, which move traffic most.
+3. **Single-point SHAP attribution** — pick one real peak hour in the validation set and split the prediction into `base + Σ feature contributions`.
+4. **Per-day factor attribution (the Agent deliverable)** — the compact `factor_attribution_daily.csv` (one row per station per day). §1–3 are diagnostics; **§7.4 is the every-day output the Agent layer consumes.** See `doc/FACTOR_CONTRIBUTIONS.md`.
 
-
-### [Code Cell 52]
+### [Code Cell 53]
 ```python
-# ========== 7. 三层可解释性 ==========
-# ①全局来源占比 ②外因修正项排名 ③单点 SHAP 加法归因
+# ========== 7. Explainability ==========
+# (1) global source share  (2) external drivers  (3) single-point SHAP  (4) per-day attribution
 from catboost import Pool
 
-# ---- 7.1 全局特征重要性：画像 vs conditional，按来源分组 ----
+# ---- 7.1 Global feature importance grouped by source (English labels; no garbled glyphs) ----
 _FI_GROUP = {
-    **{c: "① Historical Profile" for c in PROF_KFZ + PROF_LKW + PROF_V},
-    **{c: "② Calendar" for c in CALENDAR},
-    **{c: "③ Holiday" for c in HOLIDAY + HOLIDAY_CAT},
-    **{c: "④ Weather/Temp" for c in WEATHER + WEATHER_CAT + TEMP},
-    **{c: "⑤ Construction" for c in CONSTRUCTION},
-    **{c: "⑥ Events" for c in EVENTS},
-    **{c: "⑦sites静态" for c in STATIC_NUM + STATIC_CAT},
+    **{c: "Historical Profile" for c in PROF_KFZ + PROF_LKW + PROF_V},
+    **{c: "Calendar" for c in CALENDAR},
+    **{c: "Holiday" for c in HOLIDAY + HOLIDAY_CAT},
+    **{c: "Weather/Temp" for c in WEATHER + WEATHER_CAT + TEMP},
+    **{c: "Construction" for c in CONSTRUCTION},
+    **{c: "Events" for c in EVENTS},
+    **{c: "Site Static" for c in STATIC_NUM + STATIC_CAT},
 }
 
 fi_imp = pd.Series(kfz_model.get_feature_importance(), index=FEATURES_KFZ)
@@ -2188,44 +2423,47 @@ grp = (fi_imp.groupby(fi_imp.index.map(lambda c: _FI_GROUP.get(c, "Other")))
              .sum().sort_values(ascending=False))
 grp_pct = (grp / grp.sum() * 100).round(1)
 
-print("kfz_h(P50) Importance by source (%) — profile baseline, external corrections:")
+print("kfz_h (P50) importance by source (%) — profile baseline + external corrections:")
 for gname, gv in grp_pct.items():
-    print(f"  {gname:10s}: {gv:5.1f}%")
+    print(f"  {gname:18s}: {gv:5.1f}%")
 
 fig, ax = plt.subplots(figsize=(7, 4))
 grp_pct[::-1].plot.barh(ax=ax, color="#0ea5e9")
-ax.set_title("① Feature Group Importance Share · kfz_h P50", fontsize=13, fontweight="bold")
+ax.set_title("1) Feature-group importance share · kfz_h P50\n"
+             "How much each source drives the model globally (sums to 100%)",
+             fontsize=12, fontweight="bold")
 ax.set_xlabel("Contribution (%)")
 fig.tight_layout(); plt.show()
 
-# ---- 7.2 外因(conditional)修正项排名：可干预/可解释的偏移因素 ----
+# ---- 7.2 Top external (conditional) drivers: intervenable / explainable shifters ----
 cond_cols = HOLIDAY + HOLIDAY_CAT + WEATHER + WEATHER_CAT + TEMP + CONSTRUCTION + EVENTS
 cond_fi = fi_imp[[c for c in cond_cols if c in fi_imp.index]].sort_values(ascending=False).head(15)
 fig, ax = plt.subplots(figsize=(7, 5))
 cond_fi[::-1].plot.barh(ax=ax, color="#f59e0b")
-ax.set_title("② Top 15 External Factors (Holiday/Weather/Construction/Events)", fontsize=13, fontweight="bold")
+ax.set_title("2) Top 15 external factors (Holiday / Weather / Construction / Events)\n"
+             "Which conditional features shift flow away from the historical baseline",
+             fontsize=12, fontweight="bold")
 ax.set_xlabel("importance"); fig.tight_layout(); plt.show()
 
-# ---- 7.3 Single-point SHAP Attribution：挑验证集真实高峰hours，看模型「为什么」prediction高 ----
-# SHAP = base_value + Σ(每个特征加减贡献)，加法可读，直接对接调度解释
+# ---- 7.3 Single-point SHAP attribution: a real validation peak, additive breakdown ----
+# SHAP = base_value + Σ per-feature contributions (additive, directly readable)
 _cats = [c for c in CAT_FEATURES if c in FEATURES_KFZ]
 _X = va_kfz[FEATURES_KFZ].copy()
 for c in _cats:
     _X[c] = _X[c].astype(str)
-_shap_raw = kfz_model.get_feature_importance(
-    Pool(_X, cat_features=_cats), type="ShapValues")
-# MultiQuantile returns shape (N, n_quantiles, n_feat+1); extract P50 (index 1)
-_shap = _shap_raw[:, 1, :] if _shap_raw.ndim == 3 else _shap_raw  # (n, n_feat+1)
+_shap_raw = kfz_model.get_feature_importance(Pool(_X, cat_features=_cats), type="ShapValues")
+# MultiQuantile returns (N, n_quantiles, n_feat+1); extract P50 (index 1)
+_shap = _shap_raw[:, 1, :] if _shap_raw.ndim == 3 else _shap_raw
 
-_idx = int(np.argmax(va_kfz["kfz_h"].to_numpy()))     # 真实流量最高的样本
+_idx = int(np.argmax(va_kfz["kfz_h"].to_numpy()))   # highest actual-flow sample
 base_value = _shap[_idx, -1]
 contrib = pd.Series(_shap[_idx, :-1], index=FEATURES_KFZ)
 top = contrib.reindex(contrib.abs().sort_values(ascending=False).index).head(12)
 
 _row = va_kfz.iloc[_idx]
-print(f"\nSingle-point SHAP Attribution  site={_row['site_id']}  {_row['ts']}  actual={_row['kfz_h']:.0f} veh/h")
+print(f"\nSingle-point SHAP attribution  site={_row['site_id']}  {_row['ts']}  actual={_row['kfz_h']:.0f} veh/h")
 print(f"  baseline {base_value:8.0f}  + feature contributions = prediction {base_value + contrib.sum():.0f}")
-print("  Top drivers (+ = pushes flow up, − = pushes down):")
+print("  Top drivers (+ pushes flow up, - pushes down):")
 for fname, fv in top.items():
     print(f"    {fname:22s} {fv:+8.1f}   (value={_row[fname]})")
 
@@ -2233,47 +2471,97 @@ _colors = ["#dc2626" if v > 0 else "#2563eb" for v in top[::-1]]
 fig, ax = plt.subplots(figsize=(8, 5))
 top[::-1].plot.barh(ax=ax, color=_colors)
 ax.axvline(0, color="#111827", lw=0.8)
-ax.set_title(f"③ SHAP Single-Point Attribution · {_row['site_id']} @ {_row['ts']:%Y-%m-%d %H:%M}",
+ax.set_title(f"3) SHAP single-point attribution · {_row['site_id']} @ {_row['ts']:%Y-%m-%d %H:%M}\n"
+             "One peak hour split into base + each feature's push (veh/h)",
              fontsize=12, fontweight="bold")
-ax.set_xlabel("SHAP Contribution (veh/h)")
+ax.set_xlabel("SHAP contribution (veh/h)")
 fig.tight_layout(); plt.show()
 
+# ---- 7.4 Per-day factor attribution (the Agent deliverable — EVERY station-day) ----
+# Compact table data_autobahn/factor_attribution_daily.csv (built in §6.1).
+if "factor_daily" not in globals():
+    factor_daily = pd.read_csv(DATA_DIR / "factor_attribution_daily.csv", parse_dates=["date"])
+
+print(f"\nPer-day factor rows: {len(factor_daily):,}  "
+      f"(sites {factor_daily['site_id'].nunique()} × days {factor_daily['date'].nunique()})")
+print("Samples (abbreviated codes — see doc/FACTOR_CONTRIBUTIONS.md):")
+for _, r in factor_daily.head(3).iterrows():
+    print(f"  {r['site_id']:24s} {pd.to_datetime(r['date']).date()}  ->  {r['factors']}")
+
+# Parse abbreviated strings back to numbers and show one site's whole-year factor mix.
+_CODE2NAME = {v: k for k, v in FACTOR_ABBR.items()}
+def _parse_factors(s):
+    out = {}
+    for part in str(s).split(";"):
+        if not part:
+            continue
+        code, pct = part.split(":")
+        out[_CODE2NAME.get(code, code)] = float(pct)
+    return out
+
+_site = factor_daily["site_id"].iloc[0]
+_one = factor_daily[(factor_daily["site_id"] == _site) &
+                    (pd.to_datetime(factor_daily["date"]).dt.year == 2026)].copy()
+_one["date"] = pd.to_datetime(_one["date"])
+_parsed = pd.DataFrame([_parse_factors(s) for s in _one["factors"]], index=_one["date"]).fillna(0.0)
+_order = [g for g in EXPLANATION_GROUPS if g in _parsed.columns]
+_parsed = _parsed[_order]
+
+_pal = {"Typical Traffic": "#0ea5e9", "Calendar": "#22c55e", "Holiday": "#f59e0b",
+        "Weather": "#6366f1", "Events": "#ec4899", "Construction": "#94a3b8"}
+fig, ax = plt.subplots(figsize=(13, 4.5))
+ax.stackplot(_parsed.index, *[_parsed[g] for g in _order],
+             labels=_order, colors=[_pal.get(g, "#999999") for g in _order], alpha=0.9)
+ax.set_title(f"4) Per-day factor attribution · {_site} · 2026\n"
+             "Daily share (%) of each driver — Holiday/Weather/Events bands widen on travel-peak days",
+             fontsize=12, fontweight="bold")
+ax.set_ylabel("Contribution share (%)"); ax.set_ylim(0, 100)
+ax.legend(loc="lower center", ncol=len(_order), frameon=True, fontsize=8)
+fig.tight_layout(); plt.show()
 ```
 **Output:**
 ```text
-kfz_h(P50) Importance by source (%) — profile baseline, external corrections:
-  ① Historical Profile:  62.5%
-  ② Calendar:  18.1%
-  ③ Holiday :   6.7%
-  ⑦sites静态  :   5.8%
-  ④ Weather/Temp:   5.8%
-  ⑥ Events  :   1.0%
-  ⑤ Construction:   0.0%
+kfz_h (P50) importance by source (%) — profile baseline + external corrections:
+  Historical Profile:  63.7%
+  Calendar          :  16.9%
+  Holiday           :   6.6%
+  Site Static       :   6.0%
+  Weather/Temp      :   5.6%
+  Events            :   1.2%
+  Construction      :   0.0%
 [IMAGE/PLOT REMOVED TO SAVE CONTEXT]
 <Figure size 700x400 with 1 Axes>
 [IMAGE/PLOT REMOVED TO SAVE CONTEXT]
 <Figure size 700x500 with 1 Axes>
 
-Single-point SHAP Attribution  site=A8_Mch_MQB25_Mch_H  2025-06-09 17:00:00  actual=6941 veh/h
-  baseline     1252  + feature contributions = prediction 4841
-  Top drivers (+ = pushes flow up, − = pushes down):
-    prof_kfz_sht             +891.0   (value=4966.0)
-    prof_kfz_shd             +708.6   (value=3172.0)
-    prof_kfz_p90             +515.3   (value=4520.800000000002)
-    prof_kfz_shm             +399.0   (value=3440.5)
-    hour_sin                 +105.3   (value=-0.9659258262890683)
-    latitude                 +104.9   (value=47.93644954974758)
-    tagestyp                  +88.2   (value=s)
-    prof_kfz_shs              +82.2   (value=3897.0)
-    hour                      +68.0   (value=17)
-    doy_cos                   +60.1   (value=-0.925211078289358)
-    days_since_holiday_end    +59.0   (value=0)
-    direction                 +56.3   (value=Mch)
+Single-point SHAP attribution  site=A8_Mch_MQB25_Mch_H  2025-06-09 17:00:00  actual=6941 veh/h
+  baseline     1252  + feature contributions = prediction 4716
+  Top drivers (+ pushes flow up, - pushes down):
+    prof_kfz_sht             +899.9   (value=4966.0)
+    prof_kfz_p90             +610.3   (value=4520.800000000002)
+    prof_kfz_shd             +532.5   (value=3172.0)
+    prof_kfz_shm             +405.8   (value=3440.5)
+    hour_sin                 +106.8   (value=-0.9659258262890683)
+    tagestyp                 +106.5   (value=s)
+    prof_kfz_shs              +89.6   (value=3897.0)
+    latitude                  +76.9   (value=47.93644954974758)
+    hour                      +70.4   (value=17)
+    school_holiday_count      +51.9   (value=2)
+    longitude                 +48.6   (value=11.704721232862536)
+    dow_cos                   +42.8   (value=1.0)
 [IMAGE/PLOT REMOVED TO SAVE CONTEXT]
 <Figure size 800x500 with 1 Axes>
+
+Per-day factor rows: 17,532  (sites 12 × days 1461)
+Samples (abbreviated codes — see doc/FACTOR_CONTRIBUTIONS.md):
+  A8_Mch_MQB25_Mch_H       2026-01-01  ->  TT:74;CA:13;HO:11;WE:2
+  A8_Mch_MQB25_Mch_H       2026-01-02  ->  TT:79;CA:11;HO:7;WE:3
+  A8_Mch_MQB25_Mch_H       2026-01-03  ->  TT:78;CA:12;WE:5;HO:5
+[IMAGE/PLOT REMOVED TO SAVE CONTEXT]
+<Figure size 1300x450 with 1 Axes>
 ```
 
-### [Markdown Cell 53]
+### [Markdown Cell 54]
 ## 8. v1 vs v2 指标对比表
 
 直接对比 `model.ipynb`（v1 baseline）与本次训练（v2）的全部关键指标。
@@ -2284,7 +2572,7 @@ Single-point SHAP Attribution  site=A8_Mch_MQB25_Mch_H  2025-06-09 17:00:00  act
 
 > 若 `V2_RESULTS` 未定义（评估 cell 未运rows），表格仍可展示 v1 baseline作参考。
 
-### [Code Cell 54]
+### [Code Cell 55]
 ```python
 # ============================================================
 # § 8. v1 vs v2 完整指标对比表
@@ -2314,7 +2602,7 @@ try:
 except NameError:
     v2 = {}
     has_v2 = False
-    print("⚠ V2_RESULTS 未找到，showing v1 baseline only (run §5 eval first)")
+    print("⚠ V2_RESULTS not found — showing v1 baseline only (run §5 eval first)")
 
 rows = []
 for key, label, unit, lower_better in _METRICS_META:
@@ -2345,7 +2633,7 @@ with pd.option_context("display.max_colwidth", None, "display.max_rows", None):
 if has_v2:
     _improved = sum(1 for r in rows if r["Improved?"] == "✅")
     _total = len(rows)
-    print(f"\n{_total} metrics total, v2 improved {_improved} / unchanged or regressed {_total - _improved} 项")
+    print(f"\n{_total} metrics total, v2 improved {_improved} / unchanged or regressed {_total - _improved}")
     kfz_mape_delta = v2.get("kfz_h MAPE%", float("nan")) - v1.get("kfz_h MAPE%", 0)
     picp_delta     = v2.get("PICP%", float("nan")) - v1.get("PICP%", 0)
     print(f"  kfz_h MAPE : {v1['kfz_h MAPE%']:.1f}% → {v2['kfz_h MAPE%']:.1f}%  ({kfz_mape_delta:+.2f}pt)")
@@ -2356,14 +2644,14 @@ if has_v2:
 ```text
                                     v1 Baseline  v2 Current Δ (v2−v1)  \
 Metric (Unit)                                                           
-kfz_h  MAE [veh/h]                        137.1      135.36    ▼ 1.74   
-kfz_h  RMSE [veh/h]                       238.7      235.37    ▼ 3.33   
-kfz_h  MAPE [%]                            16.4       16.14    ▼ 0.26   
-sv_h   MAE [veh/h]                         24.5       23.72    ▼ 0.78   
-sv_h   RMSE [veh/h]                        41.9       40.51    ▼ 1.39   
-sv_h   MAPE [%]                            20.9       19.91    ▼ 0.99   
+kfz_h  MAE [veh/h]                        137.1      135.49    ▼ 1.61   
+kfz_h  RMSE [veh/h]                       238.7      235.03    ▼ 3.67   
+kfz_h  MAPE [%]                            16.4       16.16    ▼ 0.24   
+sv_h   MAE [veh/h]                         24.5       23.82    ▼ 0.68   
+sv_h   RMSE [veh/h]                        41.9       39.90    ▼ 2.00   
+sv_h   MAPE [%]                            20.9       20.02    ▼ 0.88   
 v_kfz  MAE [km/h]                           5.9        5.71    ▼ 0.19   
-v_kfz  RMSE [km/h]                          9.6        9.46    ▼ 0.14   
+v_kfz  RMSE [km/h]                          9.6        9.45    ▼ 0.15   
 
 ... [9 行表格/数据已省略] ...
 kfz_h  MAPE [%]                            ✅  
@@ -2375,10 +2663,10 @@ v_kfz  RMSE [km/h]                         ✅
 v_kfz  MAPE [%]                            ✅  
 PICP Coverage [%]                          ✅  
 MPIW (Mean Interval Width) [veh/h]         ❌  
-Peak Recall (top10%) [%]                   ✅  
+Peak Recall (top10%) [%]                   —  
 
-12 metrics total, v2 improved 11 / unchanged or regressed 1 项
-  kfz_h MAPE : 16.4% → 16.1%  (-0.26pt)
-  PICP       : 69.5%  → 81.5%   (+12.0pt，target 80%)
+12 metrics total, v2 improved 10 / unchanged or regressed 2
+  kfz_h MAPE : 16.4% → 16.2%  (-0.24pt)
+  PICP       : 69.5%  → 81.1%   (+11.6pt，target 80%)
 ```
 
