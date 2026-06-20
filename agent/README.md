@@ -334,57 +334,171 @@ https://autobahn.api.bund.dev/
 
 ---
 
-## 5. 目录结构
+## 5. 多轮对话 (ChatSession)
+
+### 支持的追问类型
+
+| 类型 | 关键词 | 示例 | 处理方式 |
+|------|--------|------|----------|
+| 追问原因 | 为什么、原因 | "为什么推荐这个时间" | 读取保存的数据，生成解释 |
+| 修改计划 | 改成、换成 | "改成周日呢" | 重新查询，对比建议 |
+| 假设问题 | 如果、假如 | "如果下午2点出发呢" | 分析特定时间的数据 |
+| 询问细节 | 天气、返程 | "那天天气怎么样" | 从保存的因素中提取 |
+| 确认 | 好的、可以 | "好的" | 结束对话 |
+
+### 会话上下文
+
+```python
+@dataclass
+class SessionContext:
+    # 解析结果
+    parsed_intent: ParsedIntent      # 用户意图、目的地、日期等
+
+    # 原始数据 (用于解释原因)
+    forecast_data: Dict              # 各时段预测数据
+    context_factors: List            # 影响因素 (节假日、天气等)
+    search_factors: List             # 实时因素 (施工、事故等)
+
+    # 生成的建议
+    advice: str                      # 当前计划
+```
+
+### 多轮对话流程
+
+```
+用户: "周六去萨尔茨堡"
+        │
+        ▼
+┌─────────────────┐
+│  检测: 新查询    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│  调用全部 Agent (Forecast/Context/Search) │
+└────────┬────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  保存到 Session  │  ← 保存预测数据、因素、建议
+└────────┬────────┘
+         │
+         ▼
+AI: "建议早上7点出发..."
+
+═══════════════════════════════════════════
+
+用户: "为什么"
+        │
+        ▼
+┌─────────────────┐
+│ 检测: 追问原因   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ 读取 Session 数据│  ← 不重新调用 Agent
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ LLM 生成解释     │  ← 用具体数据解释
+└────────┬────────┘
+         │
+         ▼
+AI: "因为7点流量只有1600辆/h，10点会增加到2800辆/h..."
+```
+
+---
+
+## 6. 目录结构
 
 ```
 agent/
-├── orchestrator.py         # Agent 调度器
-├── chat_assistant.py       # 对话式助手 (推荐入口)
-├── base.py                 # Agent 基类
+├── __init__.py             # 模块入口，导出所有公共接口
+├── orchestrator.py         # Agent 调度器 (chat, ask, get_plan)
+├── session.py              # 多轮对话会话管理 (ChatSession)
+├── models.py               # 数据模型定义
+├── personas.py             # 用户画像定义
 ├── config.py               # 配置
-├── tools/
-│   ├── api_app.py          # FastAPI 服务入口
-│   ├── api_handlers.py     # API 业务处理
-│   ├── llm_client.py       # LLM 客户端
 │
 ├── agents/
+│   ├── __init__.py
+│   ├── intent_parser.py    # 意图解析Agent
 │   ├── forecast_agent.py   # 预测Agent
-│   ├── explanation_agent.py # 上下文Agent (原Explanation)
-│   ├── retrieval_agent.py  # 搜索Agent (原Retrieval)
-│   └── generation_agent.py # 响应生成Agent
+│   ├── context_agent.py    # 上下文Agent
+│   ├── search_agent.py     # 搜索Agent
+│   ├── generation_agent.py # 响应生成Agent
+│   └── prompt.py           # Prompt 模板
 │
 ├── tools/
-│   ├── data_loader.py      # 数据加载 (渐进式)
-│   ├── congestion_score.py # 拥堵分数计算
-│   └── travel_assistant.py # 出行助手工具
+│   ├── __init__.py
+│   ├── llm_client.py       # LLM 客户端
+│   ├── prediction_loader.py # 预测数据加载
+│   ├── context_loader.py   # 上下文数据加载
+│   └── congestion.py       # 拥堵分数计算
 │
-├── graph_rag/
-│   └── graph_rag.py        # 本地图查询
-│
-└── langgraph/              # 可选工作流
-    ├── nodes.py
-    ├── graph.py
-    └── state.py
+├── test.ipynb              # 基础测试 Notebook
+└── test_session.ipynb      # 多轮对话测试 Notebook
 ```
 
 ---
 
 ## 6. 使用方式
 
-### 对话式使用 (推荐)
+### 方式 1: 简单对话 (无状态)
 
 ```python
-from agent.chat_assistant import ChatAssistant
+from agent import chat
 
-assistant = ChatAssistant()
+# 单次问答
+print(chat("周六去萨尔茨堡，什么时候出发好？"))
+```
 
-# 自然语言问答
-response = assistant.chat("这周六想去萨尔茨堡，什么时候出发最好？")
-print(response)
+### 方式 2: 多轮对话 (推荐)
 
-# 继续对话
-response = assistant.chat("有施工吗？")
-print(response)
+```python
+from agent import ChatSession
+
+session = ChatSession()
+
+# 第一轮: 获取计划
+print(session.chat("周六去萨尔茨堡"))
+
+# 第二轮: 追问原因
+print(session.chat("为什么"))  # AI 会用具体数据解释
+
+# 第三轮: 修改计划
+print(session.chat("改成周日呢"))  # AI 会对比周六周日
+
+# 第四轮: 假设问题
+print(session.chat("如果我只能下午2点出发呢"))
+
+# 第五轮: 询问细节
+print(session.chat("那天天气怎么样"))
+```
+
+### 方式 3: 全局会话 (最简便)
+
+```python
+from agent import chat_session, clear_session
+
+# 直接对话，自动保存上下文
+print(chat_session("周六去萨尔茨堡"))
+print(chat_session("为什么"))  # 自动关联上一轮
+
+# 开始新话题
+clear_session()
+print(chat_session("后天去因斯布鲁克"))
+```
+
+### 方式 4: 带调试信息
+
+```python
+from agent import ask
+
+# verbose=True 显示 Agent 调度过程
+print(ask("明天去萨尔茨堡", verbose=True))
 ```
 
 ### API 使用

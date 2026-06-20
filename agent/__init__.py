@@ -6,14 +6,21 @@ AlpineFlow AI Agent 层
 - 外部因素分析
 - 实时信息搜索
 - 个性化建议生成
+- 多轮对话
 
 使用方式:
+    # 方式1: 简单对话（无状态）
     from agent import chat
-
-    # 对话式交互（推荐）
     print(chat("周六去萨尔茨堡，什么时候出发好？"))
 
-    # 带调试信息
+    # 方式2: 多轮对话（推荐）
+    from agent import ChatSession
+    session = ChatSession()
+    print(session.chat("周六去萨尔茨堡"))
+    print(session.chat("为什么"))
+    print(session.chat("改成周日呢"))
+
+    # 方式3: 带调试信息
     from agent import ask
     print(ask("明天去萨尔茨堡", verbose=True))
 """
@@ -84,6 +91,17 @@ from .agents.prompt import (
     get_generation_persona_prompt,
 )
 
+# Session (多轮对话)
+from .session import (
+    ChatSession,
+    FollowUpType,
+    Message,
+    SessionContext,
+    get_session,
+    chat_session,
+    clear_session,
+)
+
 __all__ = [
     # 模型
     "UserType",
@@ -130,6 +148,14 @@ __all__ = [
     "build_generation_prompt",
     "get_agent_prompt",
     "get_generation_persona_prompt",
+    # Session
+    "ChatSession",
+    "FollowUpType",
+    "Message",
+    "SessionContext",
+    "get_session",
+    "chat_session",
+    "clear_session",
 ]
 
 __version__ = "1.0.0"
