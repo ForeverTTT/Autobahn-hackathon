@@ -338,11 +338,14 @@ https://autobahn.api.bund.dev/
 
 ```
 agent/
-├── api.py                  # FastAPI 服务入口
 ├── orchestrator.py         # Agent 调度器
 ├── chat_assistant.py       # 对话式助手 (推荐入口)
 ├── base.py                 # Agent 基类
 ├── config.py               # 配置
+├── tools/
+│   ├── api_app.py          # FastAPI 服务入口
+│   ├── api_handlers.py     # API 业务处理
+│   ├── llm_client.py       # LLM 客户端
 │
 ├── agents/
 │   ├── forecast_agent.py   # 预测Agent
@@ -388,7 +391,7 @@ print(response)
 
 ```bash
 # 启动服务
-uvicorn agent.api:create_app --factory --reload --port 8000
+uvicorn agent.tools.api_app:create_app --factory --reload --port 8000
 
 # 请求出行计划
 curl -X POST http://localhost:8000/api/plan \

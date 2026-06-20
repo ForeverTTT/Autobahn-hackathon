@@ -85,7 +85,7 @@ CatBoost 输出：
 
 ## 5. Agent 层
 
-主入口：`agent/api.py`
+主入口：`agent/tools/api_app.py`
 
 ```mermaid
 flowchart TB
@@ -134,7 +134,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 pip install -r agent/requirements.txt
-uvicorn agent.api:create_app --factory --reload --port 8000
+uvicorn agent.tools.api_app:create_app --factory --reload --port 8000
 ```
 
 主要端点：
@@ -255,5 +255,5 @@ npm run build
 
 - `npm run build`：通过。
 - `python3 -m compileall -q agent`：通过。
-- `agent.api` 直接导入：当前裸环境缺少 `numpy`，安装根目录和 `agent/requirements.txt` 后才能启动。
+- `agent.tools.api_app` 直接导入：当前裸环境缺少 `numpy`，安装根目录和 `agent/requirements.txt` 后才能启动。
 - 交付预测行数、日期范围、主键和分位数顺序检查：通过。
