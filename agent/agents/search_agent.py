@@ -1,28 +1,41 @@
 """
-SearchAgent - 搜索Agent
-实时搜索更新数据（天气预报、施工公告、活动信息）
+SearchAgent - Tavily-only Search-o1 Agent
+分别搜索天气、施工、活动、事故信息，并归纳为 ExternalFactor。
 """
-from typing import List
-from datetime import datetime, timedelta
+import asyncio
+import json
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from urllib import error as urlerror
+from urllib import request as urlrequest
 
+from .. import config
 from .base import BaseAgent
 from ..models import AgentRequest, AgentResponse, ExternalFactor
 
 
+@dataclass
+class TavilySearchTask:
+    """一次 Tavily 搜索任务。"""
+    factor_type: str
+    name: str
+    query: str
+    max_results: int = config.TAVILY_MAX_RESULTS
+
+
 class SearchAgent(BaseAgent):
     """
-    搜索Agent
+    Tavily-only Search-o1 Agent
 
-    职责:
-    - 实时搜索天气预报（最近15天）
-    - 搜索政府施工公告
-    - 搜索活动信息（音乐节、啤酒节等）
-    - 搜索事故/临时封路信息
+    流程:
+    1. 将交通风险拆成 weather / construction / event / incident 四类
+    2. 分别调用 Tavily 搜索
+    3. 从搜索摘要和来源中判断影响强度
+    4. 输出 ExternalFactor，供 GenerationAgent 使用
 
-    注: 当前使用模拟数据，实际应接入:
-    - 天气 API: OpenWeatherMap / DWD
-    - 施工 API: https://autobahn.api.bund.dev/
-    - 活动 API: 本地活动日历
+    配置:
+    - 设置环境变量 TAVILY_API_KEY
     """
 
     @property
@@ -30,182 +43,196 @@ class SearchAgent(BaseAgent):
         return "SearchAgent"
 
     async def process(self, request: AgentRequest) -> AgentResponse:
-        """处理搜索请求"""
+        """处理搜索请求。"""
         try:
-            date = request.date
-            road = request.road
+            tasks = self._build_search_plan(request)
+
+            if not config.TAVILY_API_KEY:
+                return self._success({
+                    "factors": [],
+                    "date": request.date,
+                    "road": request.road,
+                    "search_plan": [task.__dict__ for task in tasks],
+                    "sources": [],
+                    "errors": ["TAVILY_API_KEY not set in agent/config.py or environment"],
+                    "search_time": datetime.now().isoformat(),
+                })
+
+            results = await asyncio.gather(
+                *[self._run_search_task(task) for task in tasks],
+                return_exceptions=True,
+            )
 
             factors: List[ExternalFactor] = []
+            sources: List[Dict[str, Any]] = []
+            errors: List[str] = []
 
-            # 1. 天气预报（实时）
-            weather = await self._search_weather(date)
-            factors.extend(weather)
+            for task, result in zip(tasks, results):
+                if isinstance(result, Exception):
+                    errors.append(f"{task.factor_type}: {result}")
+                    continue
 
-            # 2. 施工公告（实时）
-            construction = await self._search_construction(date, road)
-            factors.extend(construction)
+                factor = self._result_to_factor(task, result)
+                if factor:
+                    factors.append(factor)
 
-            # 3. 活动信息（实时）
-            events = await self._search_events(date)
-            factors.extend(events)
-
-            # 4. 事故信息（实时）
-            incidents = await self._search_incidents(date, road)
-            factors.extend(incidents)
+                sources.extend(self._extract_sources(task, result))
 
             return self._success({
                 "factors": factors,
-                "date": date,
-                "road": road,
+                "date": request.date,
+                "road": request.road,
+                "search_plan": [task.__dict__ for task in tasks],
+                "sources": sources,
+                "errors": errors,
                 "search_time": datetime.now().isoformat(),
             })
 
         except Exception as e:
             return self._error(f"Search error: {str(e)}")
 
-    async def _search_weather(self, date: str) -> List[ExternalFactor]:
-        """
-        搜索天气预报
+    def _build_search_plan(self, request: AgentRequest) -> List[TavilySearchTask]:
+        """为天气、施工、活动、事故分别生成 Tavily 查询。"""
+        road = request.road or "A8"
+        date = request.date
+        destination = request.destination or ""
+        route_hint = self._route_hint(road, destination)
 
-        实际应接入: OpenWeatherMap API / DWD (德国气象局)
-        限制: 只能获取未来 15 天
-        """
-        factors = []
+        template_values = {
+            "date": date,
+            "road": road,
+            "destination": destination,
+            "route_hint": route_hint,
+        }
 
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-        today = datetime.now()
-        days_ahead = (date_obj - today).days
-
-        # 只能预报未来15天
-        if days_ahead > 15:
-            factors.append(ExternalFactor(
-                type="weather",
-                name="天气预报不可用",
-                description=f"距离目标日期 {days_ahead} 天，超出15天预报范围",
-                impact="low",
-                source="search"
-            ))
-            return factors
-
-        # 模拟天气预报（实际应调用 API）
-        # TODO: 接入真实天气 API
-        import random
-        weather_options = [
-            ("sunny", "晴天", "none"),
-            ("cloudy", "多云", "none"),
-            ("light_rain", "小雨", "low"),
-            ("heavy_rain", "大雨", "moderate"),
-            ("snow", "降雪", "high"),
+        return [
+            TavilySearchTask(
+                factor_type=factor_type,
+                name=task_config["name"].format(**template_values),
+                query=task_config["query_template"].format(**template_values),
+            )
+            for factor_type, task_config in config.SEARCH_TASKS.items()
         ]
 
-        # 根据月份调整概率
-        month = date_obj.month
-        if month in [11, 12, 1, 2]:
-            weights = [0.2, 0.3, 0.2, 0.1, 0.2]  # 冬季更可能降雪
-        elif month in [4, 5, 10]:
-            weights = [0.3, 0.3, 0.3, 0.1, 0.0]  # 春秋多雨
-        else:
-            weights = [0.5, 0.3, 0.15, 0.05, 0.0]  # 夏季多晴
+    async def _run_search_task(self, task: TavilySearchTask) -> Dict[str, Any]:
+        """异步运行单个 Tavily 搜索任务。"""
+        return await asyncio.to_thread(self._post_tavily, task)
 
-        weather_code, weather_name, impact = random.choices(weather_options, weights)[0]
+    def _post_tavily(self, task: TavilySearchTask) -> Dict[str, Any]:
+        """调用 Tavily Search API。"""
+        payload = {
+            "api_key": config.TAVILY_API_KEY,
+            "query": task.query,
+            "search_depth": config.TAVILY_SEARCH_DEPTH,
+            "include_answer": config.TAVILY_INCLUDE_ANSWER,
+            "include_raw_content": config.TAVILY_INCLUDE_RAW_CONTENT,
+            "max_results": task.max_results,
+        }
 
-        if impact != "none":
-            factors.append(ExternalFactor(
-                type="weather",
-                name=f"天气预报: {weather_name}",
-                description=f"预计 {date} {weather_name}，请注意行车安全",
-                impact=impact,
-                source="search"
-            ))
+        req = urlrequest.Request(
+            config.TAVILY_ENDPOINT,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
 
-        return factors
+        try:
+            with urlrequest.urlopen(req, timeout=config.TAVILY_TIMEOUT_SECONDS) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urlerror.HTTPError as e:
+            detail = e.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Tavily HTTP {e.code}: {detail}") from e
+        except urlerror.URLError as e:
+            raise RuntimeError(f"Tavily request failed: {e.reason}") from e
 
-    async def _search_construction(self, date: str, road: str) -> List[ExternalFactor]:
-        """
-        搜索施工公告
+    def _result_to_factor(
+        self,
+        task: TavilySearchTask,
+        result: Dict[str, Any],
+    ) -> Optional[ExternalFactor]:
+        """将 Tavily 结果归纳成 ExternalFactor。"""
+        evidence = self._collect_evidence_text(result)
+        if not evidence:
+            return None
 
-        实际应接入: https://autobahn.api.bund.dev/
-        """
-        factors = []
+        impact = self._estimate_impact(task.factor_type, evidence)
+        if impact == "none":
+            return None
 
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        description = self._build_description(result)
+        if not description:
+            return None
 
-        # 模拟施工数据（实际应调用 Autobahn API）
-        # TODO: 接入 Autobahn API
+        return ExternalFactor(
+            type=task.factor_type,
+            name=task.name,
+            description=description,
+            impact=impact,
+            source="search",
+        )
 
-        # A8 施工
-        if road == "A8":
-            if datetime(2026, 6, 1) <= date_obj <= datetime(2026, 9, 30):
-                factors.append(ExternalFactor(
-                    type="construction",
-                    name="A8 桥梁翻新工程",
-                    description="Rosenheim 附近 (km 85-90)，右车道封闭，预计延误 10-15 分钟",
-                    impact="moderate",
-                    source="search"
-                ))
+    def _collect_evidence_text(self, result: Dict[str, Any]) -> str:
+        """收集用于判断影响强度的搜索文本。"""
+        parts: List[str] = []
+        answer = result.get("answer")
+        if answer:
+            parts.append(str(answer))
 
-        # A93 施工
-        if road == "A93":
-            if datetime(2026, 7, 1) <= date_obj <= datetime(2026, 8, 31):
-                factors.append(ExternalFactor(
-                    type="construction",
-                    name="A93 路面维修",
-                    description="Kiefersfelden 边境附近，限速 80 km/h",
-                    impact="low",
-                    source="search"
-                ))
+        for item in result.get("results", [])[:config.SEARCH_EVIDENCE_RESULTS]:
+            parts.append(str(item.get("title", "")))
+            parts.append(str(item.get("content", "")))
 
-        return factors
+        return " ".join(parts).lower()
 
-    async def _search_events(self, date: str) -> List[ExternalFactor]:
-        """
-        搜索活动信息
+    def _build_description(self, result: Dict[str, Any]) -> str:
+        """生成给下游使用的简短描述。"""
+        answer = result.get("answer")
+        if answer:
+            return self._truncate(str(answer), config.SEARCH_DESCRIPTION_LIMIT)
 
-        重大活动对交通影响很大
-        """
-        factors = []
+        for item in result.get("results", []):
+            content = item.get("content")
+            if content:
+                return self._truncate(str(content), config.SEARCH_DESCRIPTION_LIMIT)
 
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        return ""
 
-        # 萨尔茨堡音乐节 (7月中 - 8月底)
-        if datetime(2026, 7, 18) <= date_obj <= datetime(2026, 8, 31):
-            factors.append(ExternalFactor(
-                type="event",
-                name="萨尔茨堡音乐节",
-                description="Salzburg Festival 期间，A8 往萨尔茨堡方向下午拥堵加剧",
-                impact="high",
-                source="search"
-            ))
+    def _estimate_impact(self, factor_type: str, text: str) -> str:
+        """用保守关键词规则判断交通影响强度。"""
+        if self._contains_any(text, config.HIGH_IMPACT_TERMS.get(factor_type, [])):
+            return "high"
+        if self._contains_any(text, config.MODERATE_IMPACT_TERMS.get(factor_type, [])):
+            return "moderate"
 
-        # 慕尼黑啤酒节 (9月中 - 10月初)
-        if datetime(2026, 9, 19) <= date_obj <= datetime(2026, 10, 4):
-            factors.append(ExternalFactor(
-                type="event",
-                name="慕尼黑啤酒节",
-                description="Oktoberfest 期间，慕尼黑周边交通压力极大，周末尤为严重",
-                impact="very_high",
-                source="search"
-            ))
+        return "none"
 
-        # 圣诞市场 (11月底 - 12月底)
-        if datetime(2026, 11, 25) <= date_obj <= datetime(2026, 12, 26):
-            factors.append(ExternalFactor(
-                type="event",
-                name="圣诞市场季",
-                description="各地圣诞市场开放，周末市区及周边交通繁忙",
-                impact="moderate",
-                source="search"
-            ))
+    def _extract_sources(
+        self,
+        task: TavilySearchTask,
+        result: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
+        """保留 Tavily 来源，便于调试和演示。"""
+        sources = []
+        for item in result.get("results", [])[:config.SEARCH_SOURCE_RESULTS]:
+            sources.append({
+                "type": task.factor_type,
+                "title": item.get("title"),
+                "url": item.get("url"),
+                "score": item.get("score"),
+            })
+        return sources
 
-        return factors
+    def _route_hint(self, road: str, destination: str) -> str:
+        """根据道路和目的地生成搜索范围提示。"""
+        road_upper = road.upper()
+        route_template = config.ROUTE_HINTS.get(road_upper, config.ROUTE_HINTS["default"])
+        return route_template.format(road=road, destination=destination).strip()
 
-    async def _search_incidents(self, date: str, road: str) -> List[ExternalFactor]:
-        """
-        搜索事故/临时封路信息
+    def _contains_any(self, text: str, terms: List[str]) -> bool:
+        return any(term in text for term in terms)
 
-        实际应接入实时交通信息 API
-        """
-        # 当前不模拟事故（事故是实时的，无法预测）
-        # 实际应用中应接入实时交通信息 API
-
-        return []
+    def _truncate(self, text: str, limit: int) -> str:
+        text = " ".join(text.split())
+        if len(text) <= limit:
+            return text
+        return text[: limit - 3].rstrip() + "..."
