@@ -8,7 +8,7 @@
 
 ## 1. 总体架构
 
-当前 Agent 层由五个部分组成：
+当前 Agent 层由五个专职 Agent 加一个底层 GraphRAG 能力组成：
 
 ```mermaid
 flowchart TB
@@ -19,21 +19,25 @@ flowchart TB
     ORC --> EA["ExplanationAgent<br/>规则归因解释"]
     ORC --> RA["RetrievalAgent<br/>施工 / 活动 / 事件"]
     ORC --> SA["SimulationAgent<br/>What-if 模拟"]
-    ORC --> GA["GraphRAGAgent<br/>图谱上下文"]
+    ORC --> SDR["StructuredDecisionResult<br/>结构化决策结果"]
+    SDR --> GA["GenerationAgent<br/>最终响应生成"]
 
     FA --> DL["PredictionDataLoader"]
     EA --> GR["GraphRAG"]
     RA --> GR
-    GA --> GR
     SA --> CS["CongestionScore / Scenario Logic"]
+    FA --> SDR
+    EA --> SDR
+    RA --> SDR
+    SA --> SDR
 
     DL --> PRED[("data_autobahn/forecast_2026_2029.csv")]
     GR --> META[("data_autobahn/合并表格，小时交通流量.csv")]
     GR --> EXT[("data_autobahn/日级条件 CSV")]
-    CS --> OUT["结构化决策结果"]
-    PRED --> OUT
-    META --> OUT
-    EXT --> OUT
+    CS --> SDR
+    PRED --> SDR
+    META --> SDR
+    EXT --> SDR
 
     classDef entry fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef agent fill:#fef3c7,stroke:#d97706,color:#78350f;
@@ -42,7 +46,7 @@ flowchart TB
     class U,API,ORC entry;
     class FA,EA,RA,SA,GA agent;
     class DL,GR,CS tool;
-    class PRED,META,EXT,OUT data;
+    class PRED,META,EXT,SDR data;
 ```
 
 更具体地说：
@@ -60,7 +64,7 @@ flowchart LR
     AGENTS --> A2["explanation_agent.py"]
     AGENTS --> A3["retrieval_agent.py"]
     AGENTS --> A4["simulation_agent.py"]
-    AGENTS --> A5["graph_rag_agent.py"]
+    AGENTS --> A5["generation_agent.py"]
 
     TOOLS --> T1["data_loader.py"]
     TOOLS --> T2["congestion_score.py"]
@@ -90,8 +94,11 @@ sequenceDiagram
     Graph->>Data: 按 date / road / site / hour 读取本地数据
     Data-->>Graph: 预测与影响因素
     Graph-->>Agents: 图语义结果
-    Agents-->>ORC: forecast + explanation + simulation + graph_context
-    ORC-->>API: 结构化响应
+    Agents-->>ORC: forecast + retrieval + explanation + simulation
+    ORC->>ORC: 形成 StructuredDecisionResult
+    ORC->>Agents: GenerationAgent 根据结构化决策结果生成最终响应
+    Agents-->>ORC: summary + recommendations + details
+    ORC-->>API: 结构化最终响应
     API-->>User: JSON 结果
 ```
 
@@ -137,7 +144,7 @@ agent/
 │   ├── explanation_agent.py
 │   ├── retrieval_agent.py
 │   ├── simulation_agent.py
-│   └── graph_rag_agent.py
+│   └── generation_agent.py
 │
 ├── graph_rag/
 │   ├── __init__.py
@@ -221,6 +228,7 @@ data_autobahn/forecast_2026_2029.csv
 - 是否旅游季
 - 是否有天气影响
 - 是否经过瓶颈路段
+- GraphRAG 提供的天气、施工、节假日、活动和预测上下文
 
 它适合给前端展示「为什么堵」。
 
@@ -235,6 +243,7 @@ data_autobahn/forecast_2026_2029.csv
 - 施工信息
 - 特殊活动
 - 事故/事件占位
+- GraphRAG 图谱因素与用户相关上下文
 - 外部因素 warning
 
 之后如果要接真实 API，例如 Autobahn 施工 API、活动 API、天气 API，可以优先扩展这个 Agent。
@@ -260,21 +269,23 @@ data_autobahn/forecast_2026_2029.csv
 - 替代方案
 - 出行建议
 
-### GraphRAGAgent
+### GenerationAgent
 
-位置：`agents/graph_rag_agent.py`
+位置：`agents/generation_agent.py`
 
-职责：把 `GraphRAG` 包装成一个可被 Orchestrator 调用的 Agent。
+职责：把 Orchestrator 收集到的结构化结果汇总成最终响应。
 
-它支持几类请求：
+它不直接查询底层数据，也不直接拼 raw agent outputs，而是消费 Orchestrator 生成的 `structured_decision_result` 节点：
 
-| action | 作用 |
+| 输入 | 作用 |
 |---|---|
-| `cypher` | 执行本地 Cypher-like 查询 |
-| `factors` | 查询某路段某日期的影响因素 |
-| `explain` | 查询预测 + 影响因素，并生成解释上下文 |
-| `stats` | 返回图谱统计信息 |
-| `context` | 返回适合某类用户的图谱上下文 |
+| `forecast` | 提取峰值小时、拥堵等级和日度摘要 |
+| `external_factors` | 汇总施工、活动、事故和 GraphRAG 因素 warning |
+| `explanation` | 汇总规则归因和 GraphRAG 解释上下文 |
+| `simulation` | 汇总 What-if 场景影响 |
+| `plan` | 生成出发时间、到达时间和个性化建议 |
+
+最终输出保留 `details` 里的结构化决策结果，同时提供 `summary`、`key_findings` 和 `recommendations` 给前端或 LLM 使用。
 
 ---
 
@@ -569,14 +580,16 @@ flowchart LR
     ORC --> FA["ForecastAgent"]
     ORC --> RA["RetrievalAgent"]
     ORC --> EA["ExplanationAgent"]
-    ORC --> GA["GraphRAGAgent"]
+    ORC --> SDR["StructuredDecisionResult<br/>结构化决策结果"]
 
-    FA --> JOIN["结果汇总"]
-    RA --> JOIN
-    EA --> JOIN
-    GA --> JOIN
+    FA --> SDR
+    RA --> SDR
+    EA --> SDR
+    RA --> GR["GraphRAG"]
+    EA --> GR
 
-    JOIN --> PERSONAL["按 user_type 个性化"]
+    SDR --> GEN["GenerationAgent"]
+    GEN --> PERSONAL["按 user_type 个性化"]
     PERSONAL --> RESP["Plan / Advice / Warnings / graph_context"]
 ```
 

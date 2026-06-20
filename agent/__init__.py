@@ -7,7 +7,7 @@ __all__ = []
 
 # Travel Assistant - 个性化出行助手
 try:
-    from .travel_assistant import (
+    from .tools.travel_assistant import (
         TravelAssistant,
         UserType,
         TravelPlan,
@@ -52,14 +52,14 @@ except ImportError:
 # Legacy Agent System (rule-based)
 try:
     from .orchestrator import OrchestratorAgent
-    from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GraphRAGAgent
+    from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GenerationAgent
     __all__.extend([
         "OrchestratorAgent",
         "ForecastAgent",
         "ExplanationAgent",
         "RetrievalAgent",
         "SimulationAgent",
-        "GraphRAGAgent",
+        "GenerationAgent",
     ])
 except ImportError:
     pass  # Legacy modules optional

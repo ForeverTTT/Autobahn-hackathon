@@ -15,7 +15,7 @@ class AgentType(Enum):
     EXPLANATION = "explanation"
     RETRIEVAL = "retrieval"
     SIMULATION = "simulation"
-    GRAPH_RAG = "graph_rag"
+    GENERATION = "generation"
 
 
 @dataclass

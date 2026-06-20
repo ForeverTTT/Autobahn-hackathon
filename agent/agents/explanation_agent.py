@@ -8,6 +8,7 @@ import math
 
 from ..base import BaseAgent, AgentType, AgentResponse
 from ..config import AgentConfig, default_config
+from ..graph_rag import GraphRAG
 
 
 class ExplanationAgent(BaseAgent):
@@ -47,10 +48,12 @@ class ExplanationAgent(BaseAgent):
     def __init__(self, config: AgentConfig = None):
         super().__init__(AgentType.EXPLANATION, config or default_config)
         self._holiday_cache: Dict[str, str] = {}
+        self.graph = GraphRAG()
 
     async def initialize(self) -> bool:
-        """加载假期和事件数据"""
+        """加载假期、事件和 GraphRAG 数据"""
         self._holiday_cache = self.HOLIDAYS_2026.copy()
+        await self.graph.initialize()
         self._initialized = True
         return True
 
@@ -76,6 +79,8 @@ class ExplanationAgent(BaseAgent):
         try:
             date_str = request.get("date", datetime.now().strftime("%Y-%m-%d"))
             site_id = request.get("site_id", "A8_001")
+            road = request.get("road")
+            hour = int(request.get("hour", 8))
             prediction = request.get("prediction", {})
             weather = request.get("weather", {})
 
@@ -114,6 +119,11 @@ class ExplanationAgent(BaseAgent):
             if segment_factor:
                 factors.append(segment_factor)
 
+            # 7. GraphRAG 因素：从本地虚拟图读取天气、施工、节假日、活动和预测上下文
+            graph_context = self.graph.explain_congestion(site_id, date_str, hour)
+            graph_factors = self._normalize_graph_factors(graph_context.get("factors", []))
+            factors.extend(graph_factors)
+
             # 生成综合解释
             explanation = self._generate_explanation(factors, date, prediction)
 
@@ -126,8 +136,11 @@ class ExplanationAgent(BaseAgent):
                     "factors": factors,
                     "explanation": explanation,
                     "confidence_factors": confidence_factors,
+                    "graph_context": graph_context,
                     "date": date_str,
                     "site_id": site_id,
+                    "road": road or graph_context.get("road"),
+                    "hour": hour,
                 },
                 message="Explanation generated successfully",
                 agent_type=self.agent_type,
@@ -149,8 +162,34 @@ class ExplanationAgent(BaseAgent):
             "weather_impact_analysis",
             "historical_pattern_matching",
             "factor_attribution",
+            "graph_rag_factor_attribution",
             "natural_language_explanation",
         ]
+
+    def _normalize_graph_factors(self, graph_factors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Convert GraphRAG factor nodes into explanation factors."""
+        normalized = []
+        impact_magnitude = {
+            "very_high": 0.6,
+            "high": 0.4,
+            "moderate": 0.25,
+            "low": 0.1,
+            "none": 0.0,
+        }
+
+        for factor in graph_factors:
+            impact = str(factor.get("impact", "low"))
+            normalized.append({
+                "type": factor.get("type", "graph_factor"),
+                "name": factor.get("name", "GraphRAG factor"),
+                "impact": impact,
+                "direction": "increase" if impact in {"moderate", "high", "very_high"} else "normal",
+                "magnitude": impact_magnitude.get(impact, 0.1),
+                "description": factor.get("description", "GraphRAG detected a relevant traffic factor"),
+                "source": "graph_rag",
+            })
+
+        return normalized
 
     def _analyze_holiday(self, date_str: str, date: datetime) -> Optional[Dict[str, Any]]:
         """分析公共假期影响"""

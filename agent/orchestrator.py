@@ -9,7 +9,7 @@ from enum import Enum
 
 from .base import BaseAgent, AgentType, AgentResponse, AgentMessage
 from .config import AgentConfig, default_config
-from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GraphRAGAgent
+from .agents import ForecastAgent, ExplanationAgent, RetrievalAgent, SimulationAgent, GenerationAgent
 
 
 class QueryIntent(Enum):
@@ -39,14 +39,14 @@ class OrchestratorAgent(BaseAgent):
         self.explanation_agent = ExplanationAgent(self.config)
         self.retrieval_agent = RetrievalAgent(self.config)
         self.simulation_agent = SimulationAgent(self.config)
-        self.graph_rag_agent = GraphRAGAgent(self.config)
+        self.generation_agent = GenerationAgent(self.config)
 
         self._agents = {
             AgentType.FORECAST: self.forecast_agent,
             AgentType.EXPLANATION: self.explanation_agent,
             AgentType.RETRIEVAL: self.retrieval_agent,
             AgentType.SIMULATION: self.simulation_agent,
-            AgentType.GRAPH_RAG: self.graph_rag_agent,
+            AgentType.GENERATION: self.generation_agent,
         }
 
     async def initialize(self) -> bool:
@@ -58,7 +58,7 @@ class OrchestratorAgent(BaseAgent):
                 self.explanation_agent.initialize(),
                 self.retrieval_agent.initialize(),
                 self.simulation_agent.initialize(),
-                self.graph_rag_agent.initialize(),
+                self.generation_agent.initialize(),
             ]
             results = await asyncio.gather(*init_tasks)
 
@@ -92,31 +92,39 @@ class OrchestratorAgent(BaseAgent):
             # 2. 提取参数
             params = self._extract_params(request)
 
-            # 3. 根据意图协调Agent
+            # 3. 根据意图协调Agent，先形成结构化决策结果
             if intent == QueryIntent.FORECAST:
-                result = await self._handle_forecast(params)
+                decision_payload = await self._handle_forecast(params)
             elif intent == QueryIntent.EXPLAIN:
-                result = await self._handle_explain(params)
+                decision_payload = await self._handle_explain(params)
             elif intent == QueryIntent.WHAT_IF:
-                result = await self._handle_what_if(params)
+                decision_payload = await self._handle_what_if(params)
             elif intent == QueryIntent.PLAN_TRIP:
-                result = await self._handle_plan_trip(params)
+                decision_payload = await self._handle_plan_trip(params)
             elif intent == QueryIntent.COMPARE:
-                result = await self._handle_compare(params)
+                decision_payload = await self._handle_compare(params)
             else:
-                result = await self._handle_general(params)
+                decision_payload = await self._handle_general(params)
 
-            # 4. 个性化响应
-            personalized = self._personalize_response(
-                result, params.get("user_type", "tourist")
+            structured_decision_result = self._build_structured_decision_result(
+                intent,
+                params,
+                decision_payload,
             )
+
+            # 4. GenerationAgent 基于结构化决策结果生成最终响应
+            generated = await self.generation_agent.process({
+                "structured_decision_result": structured_decision_result,
+            })
+            final_data = generated.data if generated.success else structured_decision_result
+            personalized = self._personalize_response(final_data, params.get("user_type", "tourist"))
 
             return AgentResponse(
                 success=True,
                 data=personalized,
                 message="Request processed successfully",
                 agent_type=self.agent_type,
-                confidence=result.get("confidence", 0.85)
+                confidence=generated.confidence if generated.success else structured_decision_result.get("confidence", 0.85)
             )
 
         except Exception as e:
@@ -132,9 +140,39 @@ class OrchestratorAgent(BaseAgent):
         return [
             "intent_parsing",
             "multi_agent_coordination",
+            "generation_agent_synthesis",
             "response_aggregation",
             "personalization",
         ]
+
+    def _build_structured_decision_result(
+        self,
+        intent: QueryIntent,
+        params: Dict[str, Any],
+        decision_payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Build the single structured-decision node consumed by GenerationAgent."""
+        return {
+            "node": "structured_decision_result",
+            "type": decision_payload.get("type", intent.value),
+            "intent": intent.value,
+            "query": params.get("query", ""),
+            "date": params.get("date"),
+            "road": params.get("road"),
+            "site_id": params.get("site_id"),
+            "direction": params.get("direction"),
+            "user_type": params.get("user_type", "tourist"),
+            "forecast": decision_payload.get("forecast") or decision_payload.get("base_forecast"),
+            "external_factors": decision_payload.get("external_factors"),
+            "explanation": decision_payload.get("explanation"),
+            "simulation": decision_payload.get("simulation"),
+            "plan": decision_payload.get("plan"),
+            "comparison": decision_payload.get("comparison"),
+            "graph_context": decision_payload.get("graph_context"),
+            "message": decision_payload.get("message"),
+            "confidence": decision_payload.get("confidence", 0.85),
+            "agent_outputs": decision_payload,
+        }
 
     def _parse_intent(self, request: Dict[str, Any]) -> QueryIntent:
         """解析用户意图"""
@@ -199,25 +237,19 @@ class OrchestratorAgent(BaseAgent):
         retrieval_task = self.retrieval_agent.process({
             "date": params["date"],
             "road": params["road"],
+            "site_id": params["site_id"],
+            "user_type": params.get("user_type", "tourist"),
             "query_types": ["construction", "events"],
         })
 
-        graph_task = self.graph_rag_agent.process({
-            "action": "explain",
-            "date": params["date"],
-            "road": params["road"],
-            "site_id": params["site_id"],
-            "hour": params["hours"][0] if params.get("hours") else 8,
-        })
-
-        forecast_result, retrieval_result, graph_result = await asyncio.gather(
-            forecast_task, retrieval_task, graph_task
-        )
+        forecast_result, retrieval_result = await asyncio.gather(forecast_task, retrieval_task)
 
         # 获取解释
         explanation_result = await self.explanation_agent.process({
             "date": params["date"],
+            "road": params["road"],
             "site_id": params["site_id"],
+            "hour": params["hours"][0] if params.get("hours") else 8,
             "prediction": forecast_result.data if forecast_result.success else {},
         })
 
@@ -225,13 +257,12 @@ class OrchestratorAgent(BaseAgent):
             "type": "forecast",
             "forecast": forecast_result.data if forecast_result.success else None,
             "external_factors": retrieval_result.data if retrieval_result.success else None,
-            "graph_context": graph_result.data if graph_result.success else None,
+            "graph_context": (explanation_result.data or {}).get("graph_context") if explanation_result.success else None,
             "explanation": explanation_result.data if explanation_result.success else None,
             "confidence": min(
                 forecast_result.confidence,
                 retrieval_result.confidence,
-                explanation_result.confidence,
-                graph_result.confidence
+                explanation_result.confidence
             )
         }
 
@@ -249,24 +280,18 @@ class OrchestratorAgent(BaseAgent):
         # 再获取解释
         explanation_result = await self.explanation_agent.process({
             "date": params["date"],
-            "site_id": params["site_id"],
-            "prediction": forecast_result.data if forecast_result.success else {},
-        })
-
-        graph_result = await self.graph_rag_agent.process({
-            "action": "explain",
-            "date": params["date"],
             "road": params["road"],
             "site_id": params["site_id"],
             "hour": params["hours"][0] if params.get("hours") else 8,
+            "prediction": forecast_result.data if forecast_result.success else {},
         })
 
         return {
             "type": "explanation",
             "forecast": forecast_result.data if forecast_result.success else None,
             "explanation": explanation_result.data if explanation_result.success else None,
-            "graph_context": graph_result.data if graph_result.success else None,
-            "confidence": min(explanation_result.confidence, graph_result.confidence)
+            "graph_context": (explanation_result.data or {}).get("graph_context") if explanation_result.success else None,
+            "confidence": explanation_result.confidence
         }
 
     async def _handle_what_if(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -310,22 +335,20 @@ class OrchestratorAgent(BaseAgent):
             self.retrieval_agent.process({
                 "date": params["date"],
                 "road": params["road"],
+                "site_id": params["site_id"],
+                "user_type": params.get("user_type", "tourist"),
                 "query_types": ["construction", "events", "incidents"],
             }),
             self.explanation_agent.process({
                 "date": params["date"],
-                "site_id": params["site_id"],
-            }),
-            self.graph_rag_agent.process({
-                "action": "context",
-                "date": params["date"],
                 "road": params["road"],
-                "user_type": params.get("user_type", "tourist"),
+                "site_id": params["site_id"],
+                "hour": 8,
             }),
         ]
 
         results = await asyncio.gather(*tasks)
-        forecast_result, retrieval_result, explanation_result, graph_result = results
+        forecast_result, retrieval_result, explanation_result = results
 
         # 生成出行计划
         plan = self._generate_trip_plan(
@@ -341,7 +364,7 @@ class OrchestratorAgent(BaseAgent):
             "forecast": forecast_result.data if forecast_result.success else None,
             "external_factors": retrieval_result.data if retrieval_result.success else None,
             "explanation": explanation_result.data if explanation_result.success else None,
-            "graph_context": graph_result.data if graph_result.success else None,
+            "graph_context": (retrieval_result.data or {}).get("graph_context") if retrieval_result.success else None,
             "confidence": 0.85
         }
 

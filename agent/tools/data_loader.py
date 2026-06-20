@@ -9,6 +9,8 @@ Data Loader for Agent System
 4. data_autobahn/合并表格，special_events日级.csv - 活动数据
 5. data_autobahn/合并表格，construction日级.csv - 施工数据
 """
+from __future__ import annotations
+
 import os
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, date

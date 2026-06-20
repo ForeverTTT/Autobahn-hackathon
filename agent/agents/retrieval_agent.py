@@ -9,6 +9,7 @@ import json
 
 from ..base import BaseAgent, AgentType, AgentResponse
 from ..config import AgentConfig, default_config
+from ..graph_rag import GraphRAG
 
 
 class RetrievalAgent(BaseAgent):
@@ -89,10 +90,12 @@ class RetrievalAgent(BaseAgent):
     def __init__(self, config: AgentConfig = None):
         super().__init__(AgentType.RETRIEVAL, config or default_config)
         self._api_available = False
+        self.graph = GraphRAG()
 
     async def initialize(self) -> bool:
-        """初始化API连接"""
+        """初始化API连接和 GraphRAG 数据"""
         # TODO: 初始化真实API连接（Autobahn API, Event APIs等）
+        await self.graph.initialize()
         self._api_available = True
         self._initialized = True
         return True
@@ -112,6 +115,8 @@ class RetrievalAgent(BaseAgent):
         try:
             date_str = request.get("date", datetime.now().strftime("%Y-%m-%d"))
             road = request.get("road")
+            site_id = request.get("site_id")
+            user_type = request.get("user_type", "tourist")
             query_types = request.get("query_types", ["construction", "events"])
 
             results = {
@@ -120,6 +125,8 @@ class RetrievalAgent(BaseAgent):
                 "constructions": [],
                 "events": [],
                 "incidents": [],
+                "graph_factors": [],
+                "graph_context": None,
                 "warnings": []
             }
 
@@ -141,6 +148,11 @@ class RetrievalAgent(BaseAgent):
             for result in query_results:
                 if result:
                     results.update(result)
+
+            graph_context = self.graph.get_user_relevant_info(user_type, date_str, road or "A8")
+            graph_factor_result = self.graph.query_factors(site_id or road or "A8", date_str)
+            results["graph_context"] = graph_context
+            results["graph_factors"] = graph_factor_result.get("factors", [])
 
             # 生成警告
             results["warnings"] = self._generate_warnings(results)
@@ -171,6 +183,7 @@ class RetrievalAgent(BaseAgent):
             "construction_info_retrieval",
             "event_search",
             "incident_monitoring",
+            "graph_rag_context_retrieval",
             "real_time_updates",
             "web_search",
         ]
@@ -259,6 +272,16 @@ class RetrievalAgent(BaseAgent):
                     "recommendation": "Plan extra travel time"
                 })
 
+        # GraphRAG 因素警告
+        for factor in results.get("graph_factors", []):
+            if factor.get("impact") in {"high", "very_high"}:
+                warnings.append({
+                    "type": factor.get("type", "graph_factor"),
+                    "severity": factor.get("impact", "high"),
+                    "message": factor.get("description", factor.get("name", "GraphRAG factor detected")),
+                    "recommendation": "Use GraphRAG context when planning departure time"
+                })
+
         return warnings
 
     def _calculate_overall_impact(self, results: Dict[str, Any]) -> Dict[str, Any]:
@@ -287,6 +310,16 @@ class RetrievalAgent(BaseAgent):
 
         # 事故影响
         impact_score += len(results.get("incidents", [])) * 0.2
+
+        # GraphRAG 因素影响
+        graph_impact_scores = {
+            "very_high": 0.35,
+            "high": 0.25,
+            "moderate": 0.15,
+            "low": 0.05,
+        }
+        for factor in results.get("graph_factors", []):
+            impact_score += graph_impact_scores.get(str(factor.get("impact", "low")), 0.0)
 
         # 归一化
         impact_score = min(1.0, impact_score)
