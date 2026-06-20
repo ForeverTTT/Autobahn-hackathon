@@ -57,6 +57,12 @@ class ChatRequest(BaseModel):
     user_type: str = Field(default="tourist", description="User type for personalization")
 
 
+class GraphQueryRequest(BaseModel):
+    """Graph Cypher query request"""
+    cypher: str = Field(..., description="Read-only Cypher subset query")
+    params: Dict[str, Any] = Field(default={}, description="Query parameters")
+
+
 # ============ API Service ============
 
 def create_app() -> "FastAPI":
@@ -236,6 +242,14 @@ def create_app() -> "FastAPI":
     async def graph_stats():
         """获取知识图谱统计"""
         return graph_rag.get_statistics()
+
+    @app.post("/api/graph/query")
+    async def graph_query(request: GraphQueryRequest):
+        """执行本地 Graph RAG 的受控 Cypher 查询"""
+        try:
+            return {"rows": graph_rag.query_cypher(request.cypher, request.params)}
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
 
     @app.get("/api/graph/factors")
     async def get_factors(

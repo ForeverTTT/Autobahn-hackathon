@@ -36,7 +36,9 @@ PROJECT_ROOT = Path(__file__).parent.parent
 # 数据目录
 DATA_DIR = PROJECT_ROOT / "data_autobahn"
 EXTERNAL_DIR = PROJECT_ROOT / "external"
+PROCESSED_DIR = PROJECT_ROOT / "processed"
 PREDICTIONS_DIR = PROJECT_ROOT / "predictions"  # 存放预测结果
+DEFAULT_PREDICTIONS_FILE = PROCESSED_DIR / "forecast_2026_2029.parquet"
 
 
 # ============ 预测数据格式定义 ============
@@ -99,7 +101,7 @@ class PredictionDataLoader:
         Args:
             predictions_path: 预测文件路径 (.parquet 或 .csv)
         """
-        self.predictions_path = predictions_path or str(PREDICTIONS_DIR / "predictions.parquet")
+        self.predictions_path = predictions_path or str(DEFAULT_PREDICTIONS_FILE)
         self._file_path: Optional[Path] = None
         self._file_format: Optional[str] = None
         self._initialized = False
@@ -130,6 +132,10 @@ class PredictionDataLoader:
                 parquet_path = path.with_suffix(".parquet")
                 if parquet_path.exists():
                     path = parquet_path
+
+        # Backward compatibility for old sample data if processed forecasts are absent.
+        if not path.exists() and (PREDICTIONS_DIR / "predictions.csv").exists():
+            path = PREDICTIONS_DIR / "predictions.csv"
 
         if not path.exists():
             print(f"Warning: Predictions file not found: {path}")
@@ -163,11 +169,18 @@ class PredictionDataLoader:
 
         try:
             if self._file_format == ".parquet":
-                # Parquet 支持谓词下推，只读取需要的行
-                df = pd.read_parquet(
-                    self._file_path,
-                    filters=[("date", "==", date)]
-                )
+                # Parquet 支持谓词下推，只读取需要的行。真实 processed 数据的 date 是 timestamp，
+                # 旧样例数据可能是 string，所以这里同时兼容两种格式。
+                try:
+                    df = pd.read_parquet(
+                        self._file_path,
+                        filters=[("date", "==", pd.Timestamp(date))]
+                    )
+                except Exception:
+                    df = pd.read_parquet(
+                        self._file_path,
+                        filters=[("date", "==", date)]
+                    )
             elif self._file_format == ".csv":
                 # CSV 需要分块读取过滤
                 chunks = []
@@ -184,9 +197,7 @@ class PredictionDataLoader:
             else:
                 return None
 
-            # 确保日期列是字符串格式
-            if len(df) > 0 and "date" in df.columns:
-                df["date"] = df["date"].astype(str)
+            df = self._normalize_prediction_columns(df)
 
             # 添加到缓存
             self._cache[date] = df
@@ -202,6 +213,37 @@ class PredictionDataLoader:
         except Exception as e:
             print(f"Error loading predictions for {date}: {e}")
             return None
+
+    def _normalize_prediction_columns(self, df: "pd.DataFrame") -> "pd.DataFrame":
+        """Normalize processed forecast columns to the legacy agent schema."""
+        if df is None or len(df) == 0:
+            return df
+
+        df = df.copy()
+
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+
+        # Current processed files use *_pred names; older agent code expects *_p50.
+        aliases = {
+            "sv_h_pred": "sv_h_p50",
+            "v_kfz_pred": "v_kfz_p50",
+        }
+        for source, target in aliases.items():
+            if source in df.columns and target not in df.columns:
+                df[target] = df[source]
+
+        # Optional model-training flags are not part of the final processed forecast.
+        defaults = {
+            "tagestyp": "w",
+            "is_holiday": False,
+            "is_school_holiday": False,
+        }
+        for column, value in defaults.items():
+            if column not in df.columns:
+                df[column] = value
+
+        return df
 
     def query(
         self,
@@ -315,7 +357,7 @@ class PredictionDataLoader:
             return {}
 
         kfz_values = [r["kfz_h_p50"] for r in records]
-        speed_values = [r["v_kfz_p50"] for r in records]
+        speed_values = [r.get("v_kfz_p50", r.get("v_kfz_pred", 0)) for r in records]
 
         # 找出高峰小时
         peak_record = max(records, key=lambda x: x["kfz_h_p50"])

@@ -6,6 +6,11 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 from langchain_core.tools import tool
 
+from ..graph_rag import GraphRAG
+
+
+_GRAPH_RAG = GraphRAG()
+
 
 @tool
 def get_traffic_forecast(
@@ -228,6 +233,20 @@ def get_best_departure_time(
     }
 
 
+@tool
+def query_traffic_graph(cypher: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+    """
+    查询本地交通 Graph RAG。
+
+    支持受控 Cypher 子集，例如：
+    MATCH (f:Forecast) WHERE f.date = $date AND f.road = $road RETURN f LIMIT 24
+    """
+    if params is None:
+        params = {}
+    rows = _GRAPH_RAG.query_cypher(cypher, params)
+    return {"rows": rows, "count": len(rows)}
+
+
 # 工具列表
 TRAFFIC_TOOLS = [
     get_traffic_forecast,
@@ -235,4 +254,5 @@ TRAFFIC_TOOLS = [
     get_construction_info,
     simulate_scenario,
     get_best_departure_time,
+    query_traffic_graph,
 ]
