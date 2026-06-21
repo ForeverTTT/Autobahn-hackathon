@@ -29,58 +29,58 @@ export default function ArchitectureSection() {
         </p>
 
         {/* Horizontal Architecture Diagram */}
-        <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+        <div className="w-full flex flex-col md:flex-row items-center justify-center gap-8 md:gap-10 px-4">
           {/* Data Layer */}
-          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
-            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+          <div className="w-full md:w-auto md:flex-1 max-w-[320px] bg-[#f8f9fa] rounded-3xl p-10 md:p-12 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-6 py-2.5 rounded-full border border-[#ccc] text-base font-semibold text-[#555] uppercase tracking-wider mb-5">
               Data
             </span>
-            <h4 className="text-[#1a1a1a] font-bold text-xl">
+            <h4 className="text-[#1a1a1a] font-bold text-2xl md:text-3xl">
               Data Processing Layer
             </h4>
           </div>
 
           {/* Arrow */}
-          <div className="text-[#5b7fff] text-4xl font-light rotate-90 md:rotate-0 select-none">
+          <div className="text-[#5b7fff] text-5xl md:text-6xl font-light rotate-90 md:rotate-0 select-none">
             →
           </div>
 
           {/* Model Layer */}
-          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
-            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+          <div className="w-full md:w-auto md:flex-1 max-w-[320px] bg-[#f8f9fa] rounded-3xl p-10 md:p-12 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-6 py-2.5 rounded-full border border-[#ccc] text-base font-semibold text-[#555] uppercase tracking-wider mb-5">
               Model
             </span>
-            <h4 className="text-[#1a1a1a] font-bold text-xl">
+            <h4 className="text-[#1a1a1a] font-bold text-2xl md:text-3xl">
               Model Layer
             </h4>
           </div>
 
           {/* Arrow */}
-          <div className="text-[#5b7fff] text-4xl font-light rotate-90 md:rotate-0 select-none">
+          <div className="text-[#5b7fff] text-5xl md:text-6xl font-light rotate-90 md:rotate-0 select-none">
             →
           </div>
 
           {/* Agent Layer */}
-          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
-            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+          <div className="w-full md:w-auto md:flex-1 max-w-[320px] bg-[#f8f9fa] rounded-3xl p-10 md:p-12 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-6 py-2.5 rounded-full border border-[#ccc] text-base font-semibold text-[#555] uppercase tracking-wider mb-5">
               Agent
             </span>
-            <h4 className="text-[#1a1a1a] font-bold text-xl">
+            <h4 className="text-[#1a1a1a] font-bold text-2xl md:text-3xl">
               AI Agent Layer
             </h4>
           </div>
 
           {/* Arrow */}
-          <div className="text-[#5b7fff] text-4xl font-light rotate-90 md:rotate-0 select-none">
+          <div className="text-[#5b7fff] text-5xl md:text-6xl font-light rotate-90 md:rotate-0 select-none">
             →
           </div>
 
           {/* Frontend Layer */}
-          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
-            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+          <div className="w-full md:w-auto md:flex-1 max-w-[320px] bg-[#f8f9fa] rounded-3xl p-10 md:p-12 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-6 py-2.5 rounded-full border border-[#ccc] text-base font-semibold text-[#555] uppercase tracking-wider mb-5">
               Frontend
             </span>
-            <h4 className="text-[#1a1a1a] font-bold text-xl">
+            <h4 className="text-[#1a1a1a] font-bold text-2xl md:text-3xl">
               Frontend Interaction Layer
             </h4>
           </div>
