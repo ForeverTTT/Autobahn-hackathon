@@ -180,57 +180,29 @@ function ProjectCard({
             </div>
           </div>
         ) : project.layout === "agent-architecture" ? (
-          <div className={`${RADIUS} bg-white p-6 sm:p-8 md:p-12`}>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
-              {/* Data Layer */}
-              <div className="flex-1 min-w-[180px] max-w-[240px] bg-[#f8f9fa] rounded-2xl p-6 text-center border border-[#e0e0e0]">
-                <span className="inline-block px-4 py-1.5 rounded-full border border-[#ccc] text-xs font-medium text-[#666] uppercase tracking-wider mb-3">
-                  Data
-                </span>
-                <h4 className="text-[#1a1a1a] font-bold text-base sm:text-lg">
-                  Data Processing Layer
-                </h4>
-              </div>
-
-              {/* Arrow */}
-              <div className="text-[#5b7fff] text-2xl md:text-3xl rotate-90 md:rotate-0">→</div>
-
-              {/* Model Layer */}
-              <div className="flex-1 min-w-[180px] max-w-[240px] bg-[#f8f9fa] rounded-2xl p-6 text-center border border-[#e0e0e0]">
-                <span className="inline-block px-4 py-1.5 rounded-full border border-[#ccc] text-xs font-medium text-[#666] uppercase tracking-wider mb-3">
-                  Model
-                </span>
-                <h4 className="text-[#1a1a1a] font-bold text-base sm:text-lg">
-                  Model Layer
-                </h4>
-              </div>
-
-              {/* Arrow */}
-              <div className="text-[#5b7fff] text-2xl md:text-3xl rotate-90 md:rotate-0">→</div>
-
-              {/* Agent Layer */}
-              <div className="flex-1 min-w-[180px] max-w-[240px] bg-[#f8f9fa] rounded-2xl p-6 text-center border border-[#e0e0e0]">
-                <span className="inline-block px-4 py-1.5 rounded-full border border-[#ccc] text-xs font-medium text-[#666] uppercase tracking-wider mb-3">
-                  Agent
-                </span>
-                <h4 className="text-[#1a1a1a] font-bold text-base sm:text-lg">
-                  AI Agent Layer
-                </h4>
-              </div>
-
-              {/* Arrow */}
-              <div className="text-[#5b7fff] text-2xl md:text-3xl rotate-90 md:rotate-0">→</div>
-
-              {/* Frontend Layer */}
-              <div className="flex-1 min-w-[180px] max-w-[240px] bg-[#f8f9fa] rounded-2xl p-6 text-center border border-[#e0e0e0]">
-                <span className="inline-block px-4 py-1.5 rounded-full border border-[#ccc] text-xs font-medium text-[#666] uppercase tracking-wider mb-3">
-                  Frontend
-                </span>
-                <h4 className="text-[#1a1a1a] font-bold text-base sm:text-lg">
-                  Frontend Interaction Layer
-                </h4>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-[28%_72%] gap-3 sm:gap-4">
+            <div
+              className={`min-h-[240px] md:h-[600px] ${RADIUS} border border-[#D7E2EA]/20 bg-[#D7E2EA]/5 p-6 sm:p-8 md:p-10 flex flex-col justify-center`}
+            >
+              <span className="text-[#D7E2EA]/60 font-medium uppercase tracking-widest text-[10px] sm:text-xs">
+                Agentic RAG
+              </span>
+              <h3
+                className="mt-4 text-[#D7E2EA] font-medium uppercase leading-none"
+                style={{ fontSize: "clamp(1.15rem, 2.1vw, 1.9rem)" }}
+              >
+                Reason over traffic context
+              </h3>
+              <p className="mt-5 text-[#D7E2EA]/65 font-light leading-relaxed text-sm sm:text-base md:text-lg">
+                Intent parsing, live search, forecast tools, and knowledge retrieval work
+                together to generate explainable travel advice.
+              </p>
             </div>
+            <ProductImage
+              src={project.col1a}
+              alt="Agentic RAG architecture"
+              className="h-[340px] sm:h-[460px] md:h-[600px] p-1 sm:p-2 md:p-2"
+            />
           </div>
         ) : project.layout === "ui-showcase" ? (
           <div className="grid grid-cols-1 md:grid-cols-[32%_60%] justify-center gap-3 sm:gap-4 px-2 sm:px-4 md:px-8">
