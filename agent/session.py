@@ -22,6 +22,26 @@ from .agents import (
     SearchAgent,
     GenerationAgent,
 )
+from .agents.prompt import (
+    FALLBACK_ADVICE_RESPONSE,
+    NO_FACTOR_DATA_RESPONSE,
+    NO_FORECAST_DATA_RESPONSE,
+    NO_PLAN_DETAIL_RESPONSE,
+    NO_PLAN_HYPOTHETICAL_RESPONSE,
+    NO_PLAN_MODIFY_RESPONSE,
+    NO_PLAN_REASON_RESPONSE,
+    SESSION_DETAIL_SYSTEM_PROMPT,
+    SESSION_GENERAL_DETAIL_PROMPT_TEMPLATE,
+    SESSION_HYPOTHETICAL_PROMPT_TEMPLATE,
+    SESSION_HYPOTHETICAL_SYSTEM_PROMPT,
+    SESSION_MODIFY_PLAN_PROMPT_TEMPLATE,
+    SESSION_MODIFY_PLAN_SYSTEM_PROMPT,
+    SESSION_PLAN_COMPARISON_TEMPLATE,
+    SESSION_REASON_PROMPT_TEMPLATE,
+    SESSION_REASON_SYSTEM_PROMPT,
+    SESSION_RETURN_DETAIL_PROMPT_TEMPLATE,
+    SESSION_WEATHER_DETAIL_PROMPT_TEMPLATE,
+)
 
 
 class FollowUpType(Enum):
@@ -205,7 +225,7 @@ class ChatSession:
             search_factors=search_result.data.get("factors", []) if search_result and search_result.success else [],
         )
 
-        advice = generation_result.data.get("advice", "无法生成建议")
+        advice = generation_result.data.get("advice", FALLBACK_ADVICE_RESPONSE)
 
         # 6. 保存上下文
         self.context = SessionContext(
@@ -229,7 +249,7 @@ class ChatSession:
         self._log(f"[Session] Processing ask_reason: {query}")
 
         if not self.context or not self.context.forecast_data:
-            return "抱歉，请先告诉我您的出行计划，我才能解释原因。"
+            return NO_PLAN_REASON_RESPONSE
 
         # 使用 LLM 基于保存的数据生成解释
         from .tools import generate
@@ -238,25 +258,16 @@ class ChatSession:
         forecast_summary = self._summarize_forecast()
         factors_summary = self._summarize_factors()
 
-        prompt = f"""用户之前询问了出行建议，我给出了以下回答：
-
-{self.context.advice}
-
-现在用户追问："{query}"
-
-以下是我做出建议的数据依据：
-
-## 预测数据
-{forecast_summary}
-
-## 影响因素
-{factors_summary}
-
-请用简洁的中文解释为什么给出这样的建议，要引用具体数据（如流量、速度、时间等）。"""
+        prompt = SESSION_REASON_PROMPT_TEMPLATE.format(
+            advice=self.context.advice,
+            query=query,
+            forecast_summary=forecast_summary,
+            factors_summary=factors_summary,
+        )
 
         explanation = await generate(
             prompt,
-            system="你是一个交通顾问，需要解释你的建议依据。使用具体数据支持你的解释。回答要简洁明了。",
+            system=SESSION_REASON_SYSTEM_PROMPT,
         )
 
         return explanation
@@ -266,7 +277,7 @@ class ChatSession:
         self._log(f"[Session] Processing modify_plan: {query}")
 
         if not self.context or not self.context.parsed_intent:
-            return "抱歉，请先告诉我您的出行计划，然后再修改。"
+            return NO_PLAN_MODIFY_RESPONSE
 
         # 保存旧的建议用于对比
         old_advice = self.context.advice
@@ -275,23 +286,17 @@ class ChatSession:
         # 使用 LLM 理解修改意图
         from .tools import generate_json
 
-        modify_prompt = f"""用户原本的计划是：
-- 目的地: {old_parsed.destination}
-- 日期: {old_parsed.time_range.start_date} 至 {old_parsed.time_range.end_date}
-- 道路: {old_parsed.road}
-
-用户现在说: "{query}"
-
-请分析用户想要修改什么。返回 JSON:
-{{
-    "modify_type": "date" | "destination" | "time" | "other",
-    "new_value": "提取的新值",
-    "new_query": "重新组织的完整查询"
-}}"""
+        modify_prompt = SESSION_MODIFY_PLAN_PROMPT_TEMPLATE.format(
+            destination=old_parsed.destination,
+            start_date=old_parsed.time_range.start_date,
+            end_date=old_parsed.time_range.end_date,
+            road=old_parsed.road,
+            query=query,
+        )
 
         modify_info = await generate_json(
             modify_prompt,
-            system="分析用户的修改意图",
+            system=SESSION_MODIFY_PLAN_SYSTEM_PROMPT,
         )
 
         if not modify_info:
@@ -302,14 +307,11 @@ class ChatSession:
         new_advice = await self._process_new_query(new_query, self.user_type)
 
         # 生成对比说明
-        comparison = f"""### 计划对比
-
-**原计划**: {old_parsed.time_range.description}
-**新计划**: {self.context.parsed_intent.time_range.description}
-
----
-
-{new_advice}"""
+        comparison = SESSION_PLAN_COMPARISON_TEMPLATE.format(
+            old_description=old_parsed.time_range.description,
+            new_description=self.context.parsed_intent.time_range.description,
+            new_advice=new_advice,
+        )
 
         return comparison
 
@@ -318,27 +320,23 @@ class ChatSession:
         self._log(f"[Session] Processing hypothetical: {query}")
 
         if not self.context or not self.context.forecast_data:
-            return "抱歉，请先告诉我您的出行计划，然后再问假设问题。"
+            return NO_PLAN_HYPOTHETICAL_RESPONSE
 
         from .tools import generate
 
         forecast_summary = self._summarize_forecast()
 
-        prompt = f"""用户的原始出行计划：
-- 目的地: {self.context.parsed_intent.destination}
-- 日期: {self.context.parsed_intent.time_range.start_date}
-- 我之前的建议: {self.context.advice[:200]}...
-
-用户现在问: "{query}"
-
-可用的预测数据：
-{forecast_summary}
-
-请基于数据回答用户的假设性问题。如果用户问的是特定时间出发，请从数据中找出那个时间的预测并给出建议。"""
+        prompt = SESSION_HYPOTHETICAL_PROMPT_TEMPLATE.format(
+            destination=self.context.parsed_intent.destination,
+            start_date=self.context.parsed_intent.time_range.start_date,
+            advice_preview=f"{self.context.advice[:200]}...",
+            query=query,
+            forecast_summary=forecast_summary,
+        )
 
         answer = await generate(
             prompt,
-            system="你是交通顾问，回答用户的假设性问题。要具体、实用，引用数据支持你的回答。",
+            system=SESSION_HYPOTHETICAL_SYSTEM_PROMPT,
         )
 
         return answer
@@ -348,7 +346,7 @@ class ChatSession:
         self._log(f"[Session] Processing ask_detail: {query}")
 
         if not self.context:
-            return "抱歉，请先告诉我您的出行计划。"
+            return NO_PLAN_DETAIL_RESPONSE
 
         from .tools import generate
 
@@ -358,44 +356,33 @@ class ChatSession:
         # 天气相关
         if "天气" in query_lower:
             factors_summary = self._summarize_factors()
-            prompt = f"""用户询问天气信息。
-
-出行计划: {self.context.parsed_intent.destination}, {self.context.parsed_intent.time_range.description}
-
-可用的因素信息:
-{factors_summary}
-
-请提取并回答天气相关信息。如果没有天气数据，告诉用户。"""
+            prompt = SESSION_WEATHER_DETAIL_PROMPT_TEMPLATE.format(
+                destination=self.context.parsed_intent.destination,
+                time_description=self.context.parsed_intent.time_range.description,
+                factors_summary=factors_summary,
+            )
 
         # 返程相关
         elif any(kw in query_lower for kw in ["返程", "回来", "回程"]):
-            prompt = f"""用户询问返程信息。
-
-原始出行计划: 去 {self.context.parsed_intent.destination}, {self.context.parsed_intent.time_range.description}
-
-请给出返程建议。考虑：
-1. 通常返程高峰在下午15-18点
-2. 建议避开高峰时段
-3. 如果是周末，周日下午返程会更堵"""
+            prompt = SESSION_RETURN_DETAIL_PROMPT_TEMPLATE.format(
+                destination=self.context.parsed_intent.destination,
+                time_description=self.context.parsed_intent.time_range.description,
+            )
 
         else:
             forecast_summary = self._summarize_forecast()
             factors_summary = self._summarize_factors()
-            prompt = f"""用户询问: "{query}"
-
-出行计划: {self.context.parsed_intent.destination}, {self.context.parsed_intent.time_range.description}
-
-预测数据:
-{forecast_summary}
-
-影响因素:
-{factors_summary}
-
-请回答用户的问题。"""
+            prompt = SESSION_GENERAL_DETAIL_PROMPT_TEMPLATE.format(
+                query=query,
+                destination=self.context.parsed_intent.destination,
+                time_description=self.context.parsed_intent.time_range.description,
+                forecast_summary=forecast_summary,
+                factors_summary=factors_summary,
+            )
 
         answer = await generate(
             prompt,
-            system="你是交通顾问，回答用户的具体问题。简洁实用。",
+            system=SESSION_DETAIL_SYSTEM_PROMPT,
         )
 
         return answer
@@ -403,7 +390,7 @@ class ChatSession:
     def _summarize_forecast(self) -> str:
         """生成预测数据摘要"""
         if not self.context or not self.context.forecast_data:
-            return "无预测数据"
+            return NO_FORECAST_DATA_RESPONSE
 
         data = self.context.forecast_data
         lines = []
@@ -412,13 +399,13 @@ class ChatSession:
         if "forecast" in data:
             forecast = data["forecast"]
             if isinstance(forecast, dict) and "predictions" in forecast:
-                lines.append(f"日期: {forecast.get('date', 'N/A')}, 道路: {forecast.get('road', 'N/A')}")
+                lines.append(f"Date: {forecast.get('date', 'N/A')}, road: {forecast.get('road', 'N/A')}")
                 for pred in forecast.get("predictions", [])[:8]:  # 只取前8个时段
                     hour = pred.get("hour", "?")
                     flow = pred.get("kfz_h_p50", 0)
                     speed = pred.get("v_kfz", 0)
                     level = pred.get("congestion_level", "unknown")
-                    lines.append(f"  {hour}:00 - 流量: {flow:.0f}辆/h, 速度: {speed:.1f}km/h, 状态: {level}")
+                    lines.append(f"  {hour}:00 - volume: {flow:.0f} veh/h, speed: {speed:.1f} km/h, status: {level}")
 
         # 处理日级数据
         if "daily_forecasts" in data:
@@ -427,12 +414,12 @@ class ChatSession:
                 level = day.get("congestion_level", "unknown")
                 lines.append(f"  {date}: {level}")
 
-        return "\n".join(lines) if lines else "无预测数据"
+        return "\n".join(lines) if lines else NO_FORECAST_DATA_RESPONSE
 
     def _summarize_factors(self) -> str:
         """生成影响因素摘要"""
         if not self.context:
-            return "无因素数据"
+            return NO_FACTOR_DATA_RESPONSE
 
         lines = []
 
@@ -450,7 +437,7 @@ class ChatSession:
             elif isinstance(factor, dict):
                 lines.append(f"- {factor.get('name', 'Unknown')}: {factor.get('description', '')[:50]}")
 
-        return "\n".join(lines) if lines else "无因素数据"
+        return "\n".join(lines) if lines else NO_FACTOR_DATA_RESPONSE
 
     async def chat_async(
         self,

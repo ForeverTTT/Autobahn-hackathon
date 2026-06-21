@@ -224,7 +224,7 @@ async def handle_plan(
     user_type: Optional[str] = "traveler",
 ) -> Dict[str, Any]:
     """处理出行计划请求。"""
-    query = f"我想在 {date} 去 {destination or 'salzburg'}"
+    query = f"I want to travel to {destination or 'salzburg'} on {date}."
     user_type_enum = UserType(user_type) if user_type else UserType.TRAVELER
     return await orchestrator.process(query, user_type_enum)
 
@@ -286,7 +286,7 @@ async def handle_options(
     user_type: str = "traveler",
 ) -> Dict[str, Any]:
     """处理出行方案对比请求。"""
-    query = f"我想在 {date} 去 {destination}"
+    query = f"I want to travel to {destination} on {date}."
     result = await orchestrator.process(query, UserType(user_type))
 
     options = result.get("options", [])

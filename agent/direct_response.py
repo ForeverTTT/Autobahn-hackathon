@@ -2,6 +2,8 @@
 
 from typing import Optional
 
+from .agents.prompt import DIRECT_GREETING_RESPONSE
+
 
 _GREETINGS = {
     "hi",
@@ -26,6 +28,6 @@ def get_direct_response(query: str) -> Optional[str]:
     normalized = text.rstrip("!！。,.， ")
 
     if normalized in _GREETINGS:
-        return "你好！我是 AlpineFlow，可以帮你分析 A8/A93 出行时间、拥堵风险、施工和返程建议。你可以直接告诉我目的地和日期。"
+        return DIRECT_GREETING_RESPONSE
 
     return None

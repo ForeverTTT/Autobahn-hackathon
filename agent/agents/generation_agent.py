@@ -22,6 +22,8 @@ from ..personas import (
 )
 from .prompt import (
     GENERATION_AGENT_SYSTEM_PROMPT,
+    GENERATION_LLM_PROMPT_TEMPLATE,
+    GENERATION_LLM_SYSTEM_SUFFIX,
     build_generation_prompt,
     get_generation_persona_prompt,
 )
@@ -181,26 +183,14 @@ class GenerationAgent(BaseAgent):
             "factors": self._to_jsonable(factors),
         }
 
-        prompt = f"""用户问题：
-{request.query}
-
-下面是完整 agent 链路已经计算出的证据，包含 IntentParser、ForecastAgent、ContextAgent、SearchAgent 和模型归因结果。请基于这些证据直接生成最终回答。
-
-要求：
-- 用中文回答，Markdown 格式。
-- 不要套用固定模板；根据用户问题自然组织内容。
-- 如果是具体出行/交通 query，必须给出完整链路建议：结论、可选日期或小时、原因、风险和备选方案。
-- 如果证据里有 calendar 或 hourly_recommendations，优先用表格展示。
-- 单日“几点出发”也不要只给一句话，要列出推荐/可选/谨慎时段和依据。
-- 只能引用证据里的预测、上下文、搜索和归因；不确定就说明限制，不要编造实时事实。
-- 不要输出调试日志，也不要提到内部函数名。
-
-证据 JSON：
-{json.dumps(self._to_jsonable(evidence), ensure_ascii=False, indent=2)[:24000]}"""
+        prompt = GENERATION_LLM_PROMPT_TEMPLATE.format(
+            query=request.query,
+            evidence_json=json.dumps(self._to_jsonable(evidence), ensure_ascii=False, indent=2)[:24000],
+        )
 
         system = (
             f"{build_generation_prompt(persona.type.value)}\n\n"
-            "你不是固定模板渲染器。你要像一个真实交通顾问一样，根据证据和用户问题生成回答。"
+            f"{GENERATION_LLM_SYSTEM_SUFFIX}"
         )
 
         client = get_llm_client()
@@ -338,10 +328,10 @@ class GenerationAgent(BaseAgent):
         # 检查是否包含周末
         for i in range((end - start).days + 1):
             day = start + timedelta(days=i)
-            if day.weekday() >= 5:  # 周末
+            if day.weekday() >= 5:  # weekend
                 risk_score += 10
-                if "周末" not in reasons:
-                    reasons.append("周末出行高峰")
+                if "weekend" not in reasons:
+                    reasons.append("weekend travel peak")
 
         # 检查假期因素
         for f in factors:
@@ -350,19 +340,19 @@ class GenerationAgent(BaseAgent):
                 reasons.append(f.name)
             elif f.type == "school_holiday":
                 risk_score += 20
-                if "学校假期" not in reasons:
-                    reasons.append("学校假期")
+                if "school holiday" not in reasons:
+                    reasons.append("school holiday")
             elif f.type == "event" and f.impact in ["high", "very_high"]:
                 risk_score += 25
                 reasons.append(f.name)
 
         # 检查月份（旅游季节）
         month = start.month
-        if month in [7, 8]:  # 暑假高峰
+        if month in [7, 8]:  # summer peak
             risk_score += 15
-            if "夏季旅游高峰" not in reasons:
-                reasons.append("夏季旅游高峰")
-        elif month == 12:  # 圣诞
+            if "summer travel peak" not in reasons:
+                reasons.append("summer travel peak")
+        elif month == 12:  # Christmas
             risk_score += 20
 
         # 确定等级
@@ -380,11 +370,11 @@ class GenerationAgent(BaseAgent):
         month = date.month
         day = date.day
         if day <= 10:
-            return f"{month}月上旬"
+            return f"early {date.strftime('%B')}"
         elif day <= 20:
-            return f"{month}月中旬"
+            return f"mid {date.strftime('%B')}"
         else:
-            return f"{month}月下旬"
+            return f"late {date.strftime('%B')}"
 
     def _format_long_range_advice(
         self,
@@ -533,7 +523,7 @@ class GenerationAgent(BaseAgent):
     def _generate_calendar(self, time_range, forecast, factors) -> List[Dict]:
         """生成日历数据"""
         calendar = []
-        weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        weekday_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
         try:
             start = datetime.strptime(time_range.start_date, "%Y-%m-%d")
@@ -600,22 +590,22 @@ class GenerationAgent(BaseAgent):
     def _score_to_level(self, score: int) -> tuple:
         """分数转等级"""
         if score < 35:
-            return "畅通", "🟢"
+            return "smooth", "🟢"
         elif score < 55:
-            return "中等", "🟠"
+            return "moderate", "🟠"
         else:
-            return "严重", "🔴"
+            return "heavy", "🔴"
 
     def _get_day_reasons(self, day: datetime, factors) -> List[str]:
         """获取某天的拥堵原因"""
         reasons = []
 
         if day.weekday() == 4:
-            reasons.append("周五出行高峰")
+            reasons.append("Friday travel peak")
         elif day.weekday() == 5:
-            reasons.append("周末出行")
+            reasons.append("weekend travel")
         elif day.weekday() == 6:
-            reasons.append("周日返程")
+            reasons.append("Sunday return traffic")
 
         for f in factors:
             if f.impact in ["moderate", "high", "very_high"] and self._factor_matches_day(f, day):
@@ -833,44 +823,44 @@ class GenerationAgent(BaseAgent):
             speed = traffic.get("v_kfz")
             volume = traffic.get("kfz_h")
             if speed is not None:
-                reasons.append(f"均速约 {speed:g} km/h")
+                reasons.append(f"average speed about {speed:g} km/h")
                 if speed < 80:
                     risk += 2
                 elif speed < 95:
                     risk += 1
             if volume is not None:
-                reasons.append(f"流量约 {volume:g} veh/h")
+                reasons.append(f"volume about {volume:g} veh/h")
                 if volume >= 3000:
                     risk += 2
                 elif volume >= 2200:
                     risk += 1
             if traffic.get("historical_reference") or not has_current_context:
-                reasons.append("历史同期参考")
+                reasons.append("historical same-period reference")
         else:
-            reasons.append("无小时交通记录")
+            reasons.append("no hourly traffic record")
 
         if temperature:
             air_temp = temperature.get("air_temp_c")
             road_temp = temperature.get("road_temp_c")
             if air_temp is not None:
-                reasons.append(f"气温约 {air_temp:g}°C")
+                reasons.append(f"air temperature about {air_temp:g}°C")
                 if air_temp >= 35:
                     risk += 1
             if road_temp is not None:
-                reasons.append(f"路温约 {road_temp:g}°C")
+                reasons.append(f"road temperature about {road_temp:g}°C")
                 if road_temp <= 0:
                     risk += 2
 
         if risk == 0:
-            recommendation = "✅ 推荐"
+            recommendation = "✅ Recommended"
         elif risk == 1:
-            recommendation = "🟢 可选"
+            recommendation = "🟢 Optional"
         elif risk <= 3:
-            recommendation = "🟠 谨慎"
+            recommendation = "🟠 Use caution"
         else:
-            recommendation = "🔴 避开"
+            recommendation = "🔴 Avoid"
 
-        return recommendation, "，".join(reasons[:4])
+        return recommendation, ", ".join(reasons[:4])
 
     def _daily_forecast_records(self, forecast) -> List[Dict[str, Any]]:
         """Normalize daily forecast payloads into a list of station-day records."""

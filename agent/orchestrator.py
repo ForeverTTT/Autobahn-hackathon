@@ -7,6 +7,7 @@ from typing import Dict, Any
 
 from .models import AgentRequest, UserType
 from .direct_response import get_direct_response
+from .agents.prompt import FALLBACK_ADVICE_RESPONSE
 from .agents import (
     IntentParser,
     ParsedIntent,
@@ -221,7 +222,7 @@ def ask(query: str, user_type: str = None, verbose: bool = True) -> str:
     orchestrator = Orchestrator(verbose=verbose)
     user_type_enum = UserType(user_type) if user_type else None
     result = orchestrator.process_sync(query, user_type_enum)
-    return result.get("advice", "无法生成建议")
+    return result.get("advice", FALLBACK_ADVICE_RESPONSE)
 
 
 def chat(query: str) -> str:
@@ -250,7 +251,7 @@ def get_plan(
     user_type: str = "traveler"
 ) -> Dict[str, Any]:
     """获取出行计划"""
-    query = f"我想在 {date} 去 {destination}"
+    query = f"I want to travel to {destination} on {date}."
     orchestrator = Orchestrator()
     user_type_enum = UserType(user_type)
     return orchestrator.process_sync(query, user_type_enum)

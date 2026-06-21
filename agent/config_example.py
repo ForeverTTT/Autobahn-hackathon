@@ -52,28 +52,28 @@ ROUTE_HINTS = {
 
 SEARCH_TASKS = {
     "weather": {
-        "name": "天气预报搜索",
+        "name": "Weather forecast search",
         "query_template": (
             "{date} weather forecast {route_hint} driving conditions "
             "rain snow storm ice severe weather DWD"
         ),
     },
     "construction": {
-        "name": "{road} 施工/封路搜索",
+        "name": "{road} construction and closure search",
         "query_template": (
             "{date} {road} Autobahn construction roadworks closure "
             "lane closed Baustelle Sperrung {route_hint}"
         ),
     },
     "event": {
-        "name": "沿线活动搜索",
+        "name": "Corridor event search",
         "query_template": (
             "{date} major events festivals concerts public holidays "
             "traffic Munich Salzburg Bavaria {destination}"
         ),
     },
     "incident": {
-        "name": "{road} 事故/拥堵搜索",
+        "name": "{road} incident and congestion search",
         "query_template": (
             "{date} live traffic incidents accident closure congestion "
             "Stau Unfall {road} {route_hint}"
