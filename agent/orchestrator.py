@@ -126,6 +126,7 @@ class Orchestrator:
             context_data=context_result.data.get("context", {}) if context_result and context_result.success else {},
             context_factors=context_result.data.get("factors", []) if context_result and context_result.success else [],
             search_factors=search_result.data.get("factors", []) if search_result and search_result.success else [],
+            search_data=search_result.data if search_result and search_result.success else {},
         )
 
         # 8. 返回结果

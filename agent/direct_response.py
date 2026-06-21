@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from .agents.prompt import DIRECT_GREETING_RESPONSE
+from .agents.prompt import CONFIRM_RESPONSE, DIRECT_GREETING_RESPONSE
 
 
 _GREETINGS = {
@@ -21,6 +21,17 @@ _GREETINGS = {
     "Hallo, wie geht's"
 }
 
+_CONFIRMATIONS = {
+    "ok",
+    "okay",
+    "thanks",
+    "thank you",
+    "好的",
+    "可以",
+    "好",
+    "谢谢",
+}
+
 
 def get_direct_response(query: str) -> Optional[str]:
     """Return a direct chat response for simple non-traffic messages."""
@@ -29,5 +40,7 @@ def get_direct_response(query: str) -> Optional[str]:
 
     if normalized in _GREETINGS:
         return DIRECT_GREETING_RESPONSE
+    if normalized in _CONFIRMATIONS:
+        return CONFIRM_RESPONSE
 
     return None

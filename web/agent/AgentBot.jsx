@@ -260,7 +260,7 @@ function readStoredConversation(roleId) {
   }
 }
 
-function ChatPanel({ role, onChangeRole }) {
+function ChatPanel({ role, onChangeRole, onBusyChange }) {
   const bodyRef = useRef(null);
   const [storedConversation] = useState(() =>
     readStoredConversation(role.id),
@@ -272,6 +272,12 @@ function ChatPanel({ role, onChangeRole }) {
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [modeNotice, setModeNotice] = useState("");
+
+  useEffect(() => {
+    onBusyChange?.(isLoading);
+    return () => onBusyChange?.(false);
+  }, [isLoading, onBusyChange]);
 
   useEffect(() => {
     try {
@@ -325,6 +331,12 @@ function ChatPanel({ role, onChangeRole }) {
     });
   }, [messages, isLoading, error]);
 
+  useEffect(() => {
+    if (!modeNotice) return undefined;
+    const timer = window.setTimeout(() => setModeNotice(""), 2600);
+    return () => window.clearTimeout(timer);
+  }, [modeNotice]);
+
   const clearRemoteSession = (id = sessionId) =>
     fetch(`/api/chat/${encodeURIComponent(id)}`, {
       method: "DELETE",
@@ -355,6 +367,15 @@ function ChatPanel({ role, onChangeRole }) {
     setHistory((current) =>
       current.filter((conversation) => conversation.id !== conversationId),
     );
+  };
+
+  const requestRoleChange = () => {
+    if (isLoading) {
+      setModeNotice("Please wait until the current answer is finished before changing mode.");
+      return;
+    }
+    setModeNotice("");
+    onChangeRole();
   };
 
   const sendMessage = async (event) => {
@@ -426,11 +447,13 @@ function ChatPanel({ role, onChangeRole }) {
           >
             History
           </button>
-          <button type="button" onClick={onChangeRole}>
+          <button type="button" onClick={requestRoleChange}>
             Change role
           </button>
         </div>
       </div>
+
+      {modeNotice && <div className="agent-mode-notice">{modeNotice}</div>}
 
       <div className="agent-chat-body" ref={bodyRef} aria-live="polite">
         {isHistoryOpen && (
@@ -549,6 +572,7 @@ export default function AgentBot() {
   const [roleId, setRoleId] = useState(readStoredRole);
   const [isOpen, setIsOpen] = useState(false);
   const [isChoosingRole, setIsChoosingRole] = useState(!roleId);
+  const [isAgentBusy, setIsAgentBusy] = useState(false);
   const [position, setPosition] = useState(
     () => readStoredPosition() ?? defaultPosition(),
   );
@@ -590,6 +614,7 @@ export default function AgentBot() {
   }, [isChoosingRole, position]);
 
   const selectRole = (nextRole) => {
+    if (isAgentBusy) return;
     window.localStorage.setItem(ROLE_STORAGE_KEY, nextRole);
     setRoleId(nextRole);
     setIsChoosingRole(false);
@@ -597,10 +622,16 @@ export default function AgentBot() {
 
   const togglePanel = () => {
     setIsOpen((open) => {
+      if (open && isAgentBusy) return true;
       const nextOpen = !open;
       if (nextOpen) setIsChoosingRole(!roleId);
       return nextOpen;
     });
+  };
+
+  const openRolePicker = () => {
+    if (isAgentBusy) return;
+    setIsChoosingRole(true);
   };
 
   const onPointerDown = (event) => {
@@ -653,7 +684,8 @@ export default function AgentBot() {
             <ChatPanel
               key={selectedRole.id}
               role={selectedRole}
-              onChangeRole={() => setIsChoosingRole(true)}
+              onChangeRole={openRolePicker}
+              onBusyChange={setIsAgentBusy}
             />
           )}
         </section>
@@ -670,7 +702,7 @@ export default function AgentBot() {
           dragState.current = null;
         }}
         aria-label={isOpen ? "Close traffic assistant" : "Open traffic assistant"}
-        title="Drag me or click to chat"
+        title={isAgentBusy ? "Generating answer..." : "Drag me or click to chat"}
       >
         <span className="agent-online-dot" />
         <img src={agentImage} alt="Traffic assistant" draggable="false" />

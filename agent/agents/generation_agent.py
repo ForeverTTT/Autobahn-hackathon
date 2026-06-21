@@ -65,6 +65,7 @@ class GenerationAgent(BaseAgent):
         context_data: Dict[str, Any] = None,
         context_factors: List[ExternalFactor] = None,
         search_factors: List[ExternalFactor] = None,
+        search_data: Dict[str, Any] = None,
     ) -> AgentResponse:
         """生成针对用户画像和时间范围的响应"""
         try:
@@ -106,7 +107,9 @@ class GenerationAgent(BaseAgent):
                 result=result,
                 forecast=forecast,
                 context_data=context_data or {},
-                factors=all_factors,
+                context_factors=context_factors or [],
+                search_factors=search_factors or [],
+                search_data=search_data or {},
             )
 
             result = self._attach_generation_prompt(result, persona.type.value)
@@ -168,9 +171,20 @@ class GenerationAgent(BaseAgent):
         result: Dict[str, Any],
         forecast,
         context_data: Dict[str, Any],
-        factors: List[ExternalFactor],
+        context_factors: List[ExternalFactor],
+        search_factors: List[ExternalFactor],
+        search_data: Dict[str, Any],
     ) -> str:
         """Let the LLM turn the completed agent-chain evidence into the final answer."""
+        references = self._build_references(
+            forecast=forecast,
+            context_data=context_data,
+            context_factors=context_factors,
+            search_factors=search_factors,
+            search_data=search_data,
+        )
+        result.setdefault("data", {})["references"] = references
+
         evidence = {
             "user_query": request.query,
             "route": self._to_jsonable(route),
@@ -180,7 +194,10 @@ class GenerationAgent(BaseAgent):
             },
             "forecast": self._to_jsonable(forecast),
             "context": self._compact_context(context_data),
-            "factors": self._to_jsonable(factors),
+            "context_factors": self._to_jsonable(context_factors),
+            "search_factors": self._to_jsonable(search_factors),
+            "search": self._compact_context(search_data),
+            "references": references,
         }
 
         prompt = GENERATION_LLM_PROMPT_TEMPLATE.format(
@@ -235,6 +252,195 @@ class GenerationAgent(BaseAgent):
             else:
                 compact[key] = value
         return compact
+
+    def _build_references(
+        self,
+        forecast,
+        context_data: Dict[str, Any],
+        context_factors: List[ExternalFactor],
+        search_factors: List[ExternalFactor],
+        search_data: Dict[str, Any],
+    ) -> Dict[str, List[str]]:
+        """Create English reference bullets from the three evidence agents."""
+        return {
+            "ForecastAgent": self._forecast_references(forecast),
+            "ContextAgent": self._context_references(context_data, context_factors),
+            "SearchAgent": self._search_references(search_factors, search_data),
+        }
+
+    def _forecast_references(self, forecast) -> List[str]:
+        data = self._to_jsonable(forecast)
+        refs: List[str] = []
+
+        if isinstance(data, dict) and data.get("predictions"):
+            refs.append(
+                "ForecastAgent forecast CSV: "
+                f"{data.get('date', 'unknown date')} on {data.get('road', 'unknown road')}, "
+                f"peak hour {data.get('peak_hour', 'unknown')}:00, "
+                f"average congestion score {data.get('avg_congestion_score', 'unknown')}, "
+                f"total daily volume {data.get('total_volume', 'unknown')} vehicles."
+            )
+            predictions = data.get("predictions", [])
+            if predictions:
+                best = min(predictions, key=lambda row: self._to_float(row.get("congestion_score"), 999))
+                worst = max(predictions, key=lambda row: self._to_float(row.get("congestion_score"), -1))
+                refs.append(
+                    "ForecastAgent hourly CSV: "
+                    f"best observed candidate {best.get('hour', '?')}:00 "
+                    f"(score {best.get('congestion_score', 'unknown')}, "
+                    f"speed {best.get('v_kfz', 'unknown')} km/h, "
+                    f"volume P50 {best.get('kfz_h_p50', 'unknown')} veh/h); "
+                    f"highest-risk candidate {worst.get('hour', '?')}:00 "
+                    f"(score {worst.get('congestion_score', 'unknown')})."
+                )
+
+        elif isinstance(data, list):
+            refs.append(
+                f"ForecastAgent daily forecast CSV: {len(data)} station-day records returned."
+            )
+            for record in data[:6]:
+                refs.append(
+                    "ForecastAgent daily CSV: "
+                    f"{record.get('date', 'unknown date')} {record.get('road', 'unknown road')} "
+                    f"site {record.get('site_id', record.get('site_name', 'unknown'))}, "
+                    f"congestion score {record.get('congestion_score', 'unknown')}, "
+                    f"level {record.get('congestion_level', 'unknown')}."
+                )
+
+        return refs or ["ForecastAgent returned no usable forecast CSV evidence."]
+
+    def _context_references(
+        self,
+        context_data: Dict[str, Any],
+        context_factors: List[ExternalFactor],
+    ) -> List[str]:
+        refs: List[str] = []
+        if not isinstance(context_data, dict):
+            return ["ContextAgent returned no usable context CSV evidence."]
+
+        traffic = context_data.get("hourly_traffic", []) or []
+        temperature = context_data.get("temperature_road", []) or []
+        weather = context_data.get("weather", []) or []
+        holiday = context_data.get("holiday", []) or []
+        construction = context_data.get("construction", []) or []
+        events = context_data.get("events", []) or []
+        historical = context_data.get("historical_same_period", {}) or {}
+
+        if traffic:
+            speeds = [self._to_float(row.get("v_kfz")) for row in traffic]
+            speeds = [value for value in speeds if value is not None]
+            volumes = [self._to_float(row.get("kfz_h")) for row in traffic]
+            volumes = [value for value in volumes if value is not None]
+            refs.append(
+                "ContextAgent traffic CSV: "
+                f"{len(traffic)} hourly traffic rows, "
+                f"average speed {self._avg_text(speeds, 'km/h')}, "
+                f"maximum hourly volume {self._max_text(volumes, 'veh/h')}."
+            )
+
+        if temperature:
+            air = [self._to_float(row.get("air_temp_c")) for row in temperature]
+            air = [value for value in air if value is not None]
+            road_temp = [self._to_float(row.get("road_temp_c")) for row in temperature]
+            road_temp = [value for value in road_temp if value is not None]
+            refs.append(
+                "ContextAgent temperature CSV: "
+                f"{len(temperature)} rows, "
+                f"air temperature range {self._range_text(air, '°C')}, "
+                f"road temperature range {self._range_text(road_temp, '°C')}."
+            )
+
+        if weather:
+            refs.append(
+                f"ContextAgent weather CSV: {len(weather)} daily weather rows checked "
+                "for precipitation, snowfall, visibility, ice risk, and high temperature."
+            )
+
+        if holiday:
+            refs.append(
+                f"ContextAgent holiday CSV: {len(holiday)} holiday rows checked for public holidays, school holidays, and traffic-window risk."
+            )
+
+        if construction:
+            active = [
+                row for row in construction
+                if self._to_float(row.get("construction_count"), 0) > 0
+                or self._to_float(row.get("sum_closed_lanes"), 0) > 0
+            ]
+            refs.append(
+                f"ContextAgent construction CSV: {len(active)} active construction day rows found out of {len(construction)} checked."
+            )
+
+        if events:
+            active_events = [row for row in events if row.get("has_special_event")]
+            refs.append(
+                f"ContextAgent events CSV: {len(active_events)} special-event rows found out of {len(events)} checked."
+            )
+
+        if isinstance(historical, dict):
+            hist_traffic = historical.get("hourly_traffic", []) or []
+            hist_years = historical.get("source_years") or []
+            if hist_traffic:
+                year_text = f" from {', '.join(map(str, hist_years))}" if hist_years else ""
+                refs.append(
+                    "ContextAgent historical same-period CSV: "
+                    f"{len(hist_traffic)} hourly reference rows"
+                    f"{year_text}."
+                )
+
+        for factor in context_factors[:4]:
+            refs.append(
+                "ContextAgent extracted factor: "
+                f"type {factor.type}, impact {factor.impact}, source {factor.source}."
+            )
+
+        return refs or ["ContextAgent returned no usable context CSV evidence."]
+
+    def _search_references(
+        self,
+        search_factors: List[ExternalFactor],
+        search_data: Dict[str, Any],
+    ) -> List[str]:
+        refs: List[str] = []
+        if isinstance(search_data, dict):
+            sources = search_data.get("sources", []) or []
+            search_plan = search_data.get("search_plan", []) or []
+            errors = search_data.get("errors", []) or []
+            if search_plan:
+                refs.append(
+                    f"SearchAgent Tavily plan: {len(search_plan)} search tasks for weather, construction, events, and incidents."
+                )
+            for source in sources[:5]:
+                refs.append(
+                    "SearchAgent Tavily source: "
+                    f"{source.get('type', 'unknown')} - {source.get('title', 'untitled')} "
+                    f"({source.get('url', 'no URL')})."
+                )
+            for error in errors[:2]:
+                refs.append(f"SearchAgent warning: {error}.")
+
+        for factor in search_factors[:4]:
+            refs.append(
+                "SearchAgent extracted factor: "
+                f"type {factor.type}, impact {factor.impact}, source {factor.source}."
+            )
+
+        return refs or ["SearchAgent returned no usable live-search evidence."]
+
+    def _avg_text(self, values: List[float], unit: str) -> str:
+        if not values:
+            return "unknown"
+        return f"{sum(values) / len(values):.1f} {unit}"
+
+    def _max_text(self, values: List[float], unit: str) -> str:
+        if not values:
+            return "unknown"
+        return f"{max(values):.1f} {unit}"
+
+    def _range_text(self, values: List[float], unit: str) -> str:
+        if not values:
+            return "unknown"
+        return f"{min(values):.1f}-{max(values):.1f} {unit}"
 
     def _to_jsonable(self, value: Any):
         if is_dataclass(value):

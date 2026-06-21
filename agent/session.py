@@ -23,6 +23,7 @@ from .agents import (
     GenerationAgent,
 )
 from .agents.prompt import (
+    CONFIRM_RESPONSE,
     FALLBACK_ADVICE_RESPONSE,
     NO_FACTOR_DATA_RESPONSE,
     NO_FORECAST_DATA_RESPONSE,
@@ -223,9 +224,17 @@ class ChatSession:
             context_data=context_result.data.get("context", {}) if context_result and context_result.success else {},
             context_factors=context_result.data.get("factors", []) if context_result and context_result.success else [],
             search_factors=search_result.data.get("factors", []) if search_result and search_result.success else [],
+            search_data=search_result.data if search_result and search_result.success else {},
         )
 
-        advice = generation_result.data.get("advice", FALLBACK_ADVICE_RESPONSE)
+        if not generation_result.success:
+            advice = (
+                f"Unable to generate the final LLM answer.\n\n"
+                f"Reason: {generation_result.message or 'unknown generation error'}\n\n"
+                "Please check the OpenAI/API configuration on this machine and try again."
+            )
+        else:
+            advice = generation_result.data.get("advice", FALLBACK_ADVICE_RESPONSE)
 
         # 6. 保存上下文
         self.context = SessionContext(
@@ -476,7 +485,7 @@ class ChatSession:
         elif follow_up_type == FollowUpType.ASK_DETAIL:
             response = await self._process_ask_detail(query)
         elif follow_up_type == FollowUpType.CONFIRM:
-            response = "好的，祝您旅途愉快！如有其他问题随时问我。"
+            response = CONFIRM_RESPONSE
         else:
             # COMPARE 或其他情况，作为新查询处理
             response = await self._process_new_query(query, self.user_type)

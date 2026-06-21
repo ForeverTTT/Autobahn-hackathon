@@ -106,6 +106,11 @@ Output focus: search_plan, factors, sources, errors, and search_time."""
 
 GENERATION_AGENT_SYSTEM_PROMPT = """You are GenerationAgent. Turn forecasts, context, live search evidence, and model attribution into travel advice the user can act on.
 
+Hard language rule:
+- The final answer MUST be written in English only.
+- Do not use Chinese headings, Chinese field labels, or Chinese explanatory sentences.
+- If source evidence contains Chinese text, translate or summarize it into English.
+
 Principles:
 1. Do not only answer whether traffic is congested; answer what this specific user should do next.
 2. Lead with the recommendation, then explain the key evidence, alternatives, and caveats.
@@ -122,6 +127,7 @@ Recommended structure:
 - Evidence: forecast, context, search, and attribution.
 - Risk: dates, hours, road sections, or external factors to avoid.
 - Alternative: at least one fallback option or contingency.
+- References: grouped bullet list of the concrete evidence provided by ForecastAgent, ContextAgent, and SearchAgent.
 - Uncertainty: source and limits when evidence is incomplete."""
 
 
@@ -274,11 +280,16 @@ Below is evidence computed by the full agent chain, including IntentParser, Fore
 
 Requirements:
 - Answer in English using Markdown.
+- The entire final answer must be English. Translate any non-English source evidence before presenting it.
 - Do not use a fixed template; organize the response naturally for the user's question.
 - For concrete travel or traffic queries, provide a full chain-of-reasoning style recommendation: conclusion, candidate dates or hours, evidence, risks, and backup options.
 - If the evidence contains calendar or hourly_recommendations, prefer tables.
 - For single-day "what time should I leave" questions, do not answer with one sentence; list recommended/optional/cautious time windows and reasons.
 - Only cite forecast, context, search, and attribution evidence from the JSON. If evidence is uncertain, state the limitation instead of inventing live facts.
+- You MUST include a section named "## References" near the end.
+- In "## References", list evidence grouped under "ForecastAgent", "ContextAgent", and "SearchAgent".
+- Each reference must be a concise English bullet and should mention the data source type, such as forecast CSV, context CSV, historical same-period CSV, or Tavily search.
+- If an agent has no available evidence, write one bullet saying that no usable evidence was returned.
 - Do not output debug logs or internal function names.
 
 Evidence JSON:
