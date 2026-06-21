@@ -160,15 +160,6 @@
   border-left: 1px solid #e5e8e1;
 }
 
-.achievement-icon {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  border: 1.5px solid #b8c0b8;
-  border-radius: 3px;
-  background: #ffffff;
-}
-
 .achievement-info {
   min-width: 0;
 }

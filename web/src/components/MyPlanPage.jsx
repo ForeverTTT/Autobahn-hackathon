@@ -313,7 +313,6 @@ export default function MyPlanPage() {
           </div>
 
           <div className="status-achievement">
-            <div className="achievement-icon" aria-hidden="true" />
             <div className="achievement-info">
               <div className="achievement-title">Off-Peak Achievement</div>
               <div className="achievement-stats">
