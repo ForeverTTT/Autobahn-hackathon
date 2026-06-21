@@ -11,7 +11,7 @@ const MEDIA: MediaItem[] = [
   { type: "image", src: "/shots/station-map.png" },
   { type: "image", src: "/shots/web-map-3.png" },
   { type: "image", src: "/shots/web-hourly-2.png" },
-  { type: "video", src: "/shots/web-map-2.mp4" }, // Changed to video
+  { type: "video", src: "/shots/maprecord1.mov" },
 ];
 
 const ROW_1 = MEDIA.slice(0, 4);
