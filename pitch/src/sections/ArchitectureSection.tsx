@@ -22,19 +22,68 @@ export default function ArchitectureSection() {
         className="mx-auto flex max-w-6xl flex-col items-center"
       >
         <p
-          className="mb-8 text-center font-medium text-[#0C0C0C]/55"
+          className="mb-12 text-center font-medium text-[#0C0C0C]/55"
           style={{ fontSize: "clamp(1rem, 1.6vw, 1.35rem)" }}
         >
           AI-native traffic flow prediction platform
         </p>
 
-        <div className="w-full max-w-[820px] overflow-hidden">
-          <img
-            src="/shots/project_architecture.png"
-            alt="Project architecture"
-            className="block h-auto w-full object-contain"
-            loading="lazy"
-          />
+        {/* Horizontal Architecture Diagram */}
+        <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+          {/* Data Layer */}
+          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+              Data
+            </span>
+            <h4 className="text-[#1a1a1a] font-bold text-xl">
+              Data Processing Layer
+            </h4>
+          </div>
+
+          {/* Arrow */}
+          <div className="text-[#5b7fff] text-4xl font-light rotate-90 md:rotate-0 select-none">
+            →
+          </div>
+
+          {/* Model Layer */}
+          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+              Model
+            </span>
+            <h4 className="text-[#1a1a1a] font-bold text-xl">
+              Model Layer
+            </h4>
+          </div>
+
+          {/* Arrow */}
+          <div className="text-[#5b7fff] text-4xl font-light rotate-90 md:rotate-0 select-none">
+            →
+          </div>
+
+          {/* Agent Layer */}
+          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+              Agent
+            </span>
+            <h4 className="text-[#1a1a1a] font-bold text-xl">
+              AI Agent Layer
+            </h4>
+          </div>
+
+          {/* Arrow */}
+          <div className="text-[#5b7fff] text-4xl font-light rotate-90 md:rotate-0 select-none">
+            →
+          </div>
+
+          {/* Frontend Layer */}
+          <div className="w-full md:w-auto md:flex-1 max-w-[260px] bg-[#f8f9fa] rounded-3xl p-8 text-center border border-[#e0e0e0] shadow-sm">
+            <span className="inline-block px-5 py-2 rounded-full border border-[#ccc] text-sm font-semibold text-[#555] uppercase tracking-wider mb-4">
+              Frontend
+            </span>
+            <h4 className="text-[#1a1a1a] font-bold text-xl">
+              Frontend Interaction Layer
+            </h4>
+          </div>
         </div>
       </FadeIn>
     </section>
