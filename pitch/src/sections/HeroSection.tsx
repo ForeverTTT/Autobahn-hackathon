@@ -82,29 +82,20 @@ export default function HeroSection() {
         </FadeIn>
       </div>
 
-      {/* Floating product window — magnetic, centred, overlapping the heading.
-          Centring transforms live on a plain wrapper so they don't fight
-          Framer Motion's animation transform on the FadeIn element. */}
+      {/* Floating product window — centred, overlapping the heading. */}
       <div className="absolute left-1/2 -translate-x-1/2 z-10 top-1/2 -translate-y-1/2 sm:top-auto sm:translate-y-0 sm:bottom-[4%] md:bottom-[5%] pointer-events-none">
         <FadeIn delay={0.6} y={30}>
-          <Magnet
-            padding={150}
-            strength={4}
-            activeTransition="transform 0.3s ease-out"
-            inactiveTransition="transform 0.6s ease-in-out"
-          >
-            <div className="hero-product-float">
-              <video
-                src="/shots/maprecord1.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-[330px] sm:w-[460px] md:w-[570px] lg:w-[660px] rounded-2xl border border-[#D7E2EA]/25 shadow-[0_30px_80px_rgba(0,0,0,0.6)] select-none"
-                draggable={false}
-              />
-            </div>
-          </Magnet>
+          <div className="hero-product-float">
+            <video
+              src="/shots/maprecord1.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-[330px] sm:w-[460px] md:w-[570px] lg:w-[660px] rounded-2xl border border-[#D7E2EA]/25 shadow-[0_30px_80px_rgba(0,0,0,0.6)] select-none"
+              draggable={false}
+            />
+          </div>
         </FadeIn>
       </div>
     </section>
