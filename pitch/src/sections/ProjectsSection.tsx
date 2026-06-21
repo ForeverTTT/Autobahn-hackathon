@@ -108,7 +108,11 @@ function ProjectCard({
       <motion.div
         style={{ scale, top: `${index * 28}px` }}
         className={`relative w-full max-w-7xl ${RADIUS} border-2 border-[#D7E2EA] bg-[#0C0C0C] p-4 sm:p-6 md:p-8 origin-top ${
-          project.layout === "ui-showcase" ? "md:min-h-[760px]" : ""
+          project.layout === "ui-showcase"
+            ? "md:min-h-[760px]"
+            : project.layout === "agent-architecture"
+              ? "md:min-h-[700px]"
+              : ""
         }`}
       >
         {/* Top row */}
@@ -146,7 +150,7 @@ function ProjectCard({
                 src={project.col1a}
                 alt="CatBoost model architecture"
                 loading="lazy"
-                className="h-full w-full object-contain scale-[0.96]"
+                className="h-full w-full object-contain"
               />
             </div>
             <ProductImage
@@ -176,9 +180,9 @@ function ProjectCard({
             </div>
           </div>
         ) : project.layout === "agent-architecture" ? (
-          <div className="grid grid-cols-1 md:grid-cols-[34%_66%] gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-[28%_72%] gap-3 sm:gap-4">
             <div
-              className={`min-h-[240px] md:h-[540px] ${RADIUS} border border-[#D7E2EA]/20 bg-[#D7E2EA]/5 p-6 sm:p-8 md:p-10 flex flex-col justify-center`}
+              className={`min-h-[240px] md:h-[600px] ${RADIUS} border border-[#D7E2EA]/20 bg-[#D7E2EA]/5 p-6 sm:p-8 md:p-10 flex flex-col justify-center`}
             >
               <span className="text-[#D7E2EA]/60 font-medium uppercase tracking-widest text-[10px] sm:text-xs">
                 Agentic RAG
@@ -197,7 +201,7 @@ function ProjectCard({
             <ProductImage
               src={project.col1a}
               alt="Agentic RAG architecture"
-              className="h-[320px] sm:h-[420px] md:h-[540px] p-2 sm:p-3 md:p-4"
+              className="h-[340px] sm:h-[460px] md:h-[600px] p-1 sm:p-2 md:p-2"
             />
           </div>
         ) : project.layout === "ui-showcase" ? (

@@ -19,14 +19,23 @@ export default function ArchitectureSection() {
       <FadeIn
         delay={0.1}
         y={50}
-        className="mx-auto max-w-3xl overflow-hidden rounded-[28px] sm:rounded-[36px] md:rounded-[44px] border border-[#0C0C0C]/10 bg-white"
+        className="mx-auto flex max-w-6xl flex-col items-center"
       >
-        <img
-          src="/shots/project_architecture.png"
-          alt="Project architecture diagram"
-          loading="lazy"
-          className="block w-full"
-        />
+        <p
+          className="mb-8 text-center font-medium text-[#0C0C0C]/55"
+          style={{ fontSize: "clamp(1rem, 1.6vw, 1.35rem)" }}
+        >
+          AI-native traffic flow prediction platform
+        </p>
+
+        <div className="w-full max-w-[1050px] overflow-hidden">
+          <img
+            src="/shots/project_architecture.png"
+            alt="Project architecture"
+            className="block h-auto w-full object-contain"
+            loading="lazy"
+          />
+        </div>
       </FadeIn>
     </section>
   );
