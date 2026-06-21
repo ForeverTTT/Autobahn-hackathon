@@ -433,6 +433,7 @@
   font-weight: 700;
   margin-bottom: 0.25rem;
   color: var(--de-black);
+  transition: color 0.3s ease;
 }
 
 .value-critical {
@@ -453,7 +454,7 @@
   position: absolute;
   bottom: 0;
   width: 100%;
-  transition: height 0.8s ease;
+  transition: height 0.5s ease, background-color 0.3s ease;
   border-radius: 10px;
 }
 
@@ -461,6 +462,7 @@
   font-family: monospace;
   font-weight: 700;
   font-size: 0.7rem;
+  transition: color 0.3s ease;
 }
 
 .trend-up {
