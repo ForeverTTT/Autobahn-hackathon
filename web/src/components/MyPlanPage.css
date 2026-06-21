@@ -180,7 +180,8 @@
 }
 
 .highlight-time {
-  color: var(--de-gold);
+  color: var(--de-black);
+  font-size: 1.3rem;
 }
 
 .status-subtitle {
