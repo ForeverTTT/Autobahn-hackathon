@@ -11,11 +11,11 @@ const NAV_LINKS = [
 ];
 
 const TEAM_NAMES = [
-  "Dummy Name 1",
-  "Dummy Name 2",
-  "Dummy Name 3",
-  "Dummy Name 4",
-  "Dummy Name 5",
+  "Hanyan Chen",
+  "Kerui Ren",
+  "Linhan Li",
+  "Xiansheng Huang",
+  "Yining Li",
 ];
 
 export default function HeroSection() {

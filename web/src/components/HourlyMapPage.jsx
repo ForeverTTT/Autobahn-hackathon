@@ -366,7 +366,8 @@ function parseExplanation(text) {
   return text
     .split(/\r?\n/)
     .map((line) => line.replace(/^\s*[•\-*·–—]+\s*/, "").trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((line) => !/[\u4e00-\u9fff]/.test(line));
 }
 
 function worseStatus(a, b) {

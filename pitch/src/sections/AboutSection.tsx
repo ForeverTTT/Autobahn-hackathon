@@ -13,7 +13,7 @@ const STATS = [
   { value: "420K+", label: "hourly forecasts" },
   { value: "12", label: "corridor sites" },
   { value: "88%", label: "peak-hour recall" },
-  { value: "7", label: "explainable factors" },
+  { value: "6", label: "explainable factors" },
 ];
 
 export default function AboutSection() {

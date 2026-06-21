@@ -68,7 +68,14 @@ def _get_pregenerated(date: str, hour: int, road: str, lang: str) -> Optional[Di
     """从预生成的 CSV 中获取解释"""
     _load_pregenerated_explanations()
     key = f"{date}:{hour}:{road}:{lang}"
-    return _pregenerated_explanations.get(key)
+    item = _pregenerated_explanations.get(key)
+    if lang == "en" and item and _contains_cjk(item.get("explanation", "")):
+        return None
+    return item
+
+
+def _contains_cjk(text: str) -> bool:
+    return any("\u4e00" <= char <= "\u9fff" for char in str(text))
 
 
 def _get_cached(cache_key: str) -> Optional[Dict[str, Any]]:
@@ -100,19 +107,17 @@ def _generate_template_explanation(
     lines = []
 
     if lang == "en":
-        # 基于拥堵等级的描述
         lines.append(f"• Traffic status: {level_name}, congestion score {congestion_score}/100")
 
-        # 流量和速度
         if flow > 0:
             lines.append(f"• Traffic flow: {flow:.0f} vehicles/hour, average speed {speed:.1f} km/h")
 
-        # 影响因素（最多3个）
-        for f in factors[:3]:
-            name = f.get("name", "")
-            desc = f.get("description", "")
-            if name and desc:
-                lines.append(f"• {name}: {desc[:100]}")
+        for f in factors:
+            note = _english_factor_note(f)
+            if note:
+                lines.append(f"• {note}")
+            if len(lines) >= 5:
+                break
 
     elif lang == "de":
         lines.append(f"• Verkehrsstatus: {level_name}, Stauindex {congestion_score}/100")
@@ -139,6 +144,29 @@ def _generate_template_explanation(
                 lines.append(f"• {name}：{desc[:100]}")
 
     return "\n".join(lines) if lines else "• No data available"
+
+
+def _english_factor_note(factor: Dict[str, Any]) -> str:
+    """Translate factor metadata into an English radar-note bullet."""
+    factor_type = str(factor.get("type", "unknown")).lower()
+    impact = str(factor.get("impact", "neutral")).replace("_", " ")
+    source = str(factor.get("source", "context")).replace("_", " ")
+
+    if factor_type == "construction":
+        return ""
+    if factor_type in {"weather", "temperature", "historical_same_period_weather"}:
+        return f"Weather and temperature context from {source} data has {impact} impact."
+    if factor_type in {"holiday", "school_holiday", "holiday_window"}:
+        return f"Holiday travel context from {source} data has {impact} impact."
+    if factor_type in {"event", "historical_same_period_event"}:
+        return f"Event context from {source} data has {impact} impact."
+    if factor_type in {"historical_traffic", "historical_same_period"}:
+        return f"Historical same-period traffic data indicates {impact} pressure."
+    if factor_type == "incident":
+        return f"Live incident search indicates {impact} traffic impact."
+    if factor_type and factor_type != "unknown":
+        return f"{factor_type.replace('_', ' ').title()} evidence from {source} data has {impact} impact."
+    return ""
 
 
 @dataclass
