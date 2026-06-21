@@ -16,7 +16,7 @@ _GREETINGS = {
     "Hallo",
     "Hallo!",
     "Hallo, wie geht's?",
-    "Hallo, wie geht's?
+    "Hallo, wie geht's"
 }
 
 
