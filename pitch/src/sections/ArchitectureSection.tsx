@@ -28,7 +28,7 @@ export default function ArchitectureSection() {
           AI-native traffic flow prediction platform
         </p>
 
-        <div className="w-full max-w-[920px] overflow-hidden">
+        <div className="w-full max-w-[820px] overflow-hidden">
           <img
             src="/shots/project_architecture.png"
             alt="Project architecture"
