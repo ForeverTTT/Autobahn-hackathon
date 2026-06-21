@@ -772,9 +772,9 @@ export default function HourlyMapPage() {
   }, [forecast, selectedDate, selectedHour, journeyRoad, dirNumber, geometry]);
 
   // Global-mode factor radar — REAL attribution from factors.json. The
-  // historical baseline (factor index 0) is dropped — it's a structural prior,
-  // not a situational cause — and the remaining reasons are re-proportioned
-  // among themselves, then scaled so the largest fills the chart (ratios kept).
+  // historical baseline (factor index 0) and construction are dropped, and the
+  // remaining reasons are re-proportioned among themselves, then scaled so the
+  // largest fills the chart (ratios kept).
   // No % is shown. Attribution covers 2026 only, so other years map to the same
   // month/day.
   const radarFactors = useMemo(() => {
@@ -787,8 +787,9 @@ export default function HourlyMapPage() {
       "Event",
       "Construction",
     ];
-    // exclude the historical baseline (index 0)
-    const keep = allLabels.map((label, i) => ({ label, i })).slice(1);
+    const keep = allLabels
+      .map((label, i) => ({ label, i }))
+      .filter(({ label, i }) => i !== 0 && label.toLowerCase() !== "construction");
     if (!factorData) {
       return keep.map(({ label }) => ({ label, value: 0, pct: 0 }));
     }
