@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DateField } from "./TimeControls";
 import "./MyPlanPage.css";
 
-// Mock data for the hourly traffic stats
-const MOCK_STATS = [
+// Base data for the hourly traffic stats
+const BASE_STATS = [
   { p: 120, c: -2 },
   { p: 80, c: 0 },
   { p: 40, c: 1 },
@@ -29,6 +29,16 @@ const MOCK_STATS = [
   { p: 250, c: 10 },
   { p: 180, c: 5 },
 ];
+
+// Generate random fluctuation for live updates
+function generateLiveStats(baseStats) {
+  return baseStats.map((stat) => {
+    const fluctuation = Math.floor(Math.random() * 30) - 15;
+    const newP = Math.max(10, stat.p + fluctuation);
+    const newC = Math.floor(Math.random() * 16) - 8;
+    return { p: newP, c: newC };
+  });
+}
 
 function LiveClock() {
   const [time, setTime] = useState(new Date());
@@ -170,26 +180,39 @@ export default function MyPlanPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [changedCount, setChangedCount] = useState(1284);
+  const [liveStats, setLiveStats] = useState(BASE_STATS);
+
+  // Live data updates every 2 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveStats(generateLiveStats(BASE_STATS));
+      // Randomly increment changed count
+      if (Math.random() > 0.5) {
+        setChangedCount((c) => c + Math.floor(Math.random() * 3) + 1);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Find recommended hour (lowest traffic)
   const recommendedHour = useMemo(() => {
     let minIndex = 0;
-    let minValue = MOCK_STATS[0].p;
-    MOCK_STATS.forEach((stat, index) => {
+    let minValue = liveStats[0].p;
+    liveStats.forEach((stat, index) => {
       if (stat.p < minValue) {
         minValue = stat.p;
         minIndex = index;
       }
     });
     return minIndex;
-  }, []);
+  }, [liveStats]);
 
   const stats = useMemo(() => {
-    return MOCK_STATS.map((item, index) => ({
+    return liveStats.map((item, index) => ({
       ...item,
       isMe: index === myPlanHour,
     }));
-  }, [myPlanHour]);
+  }, [myPlanHour, liveStats]);
 
   const mySlot = stats[myPlanHour];
   const recommendedSlot = stats[recommendedHour];
