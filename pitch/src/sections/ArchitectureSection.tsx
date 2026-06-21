@@ -51,7 +51,7 @@ export default function ArchitectureSection() {
               Model
             </span>
             <h4 className="text-[#1a1a1a] font-bold text-xl md:text-2xl">
-              Model Layer
+              Model<br />Layer
             </h4>
           </div>
 
