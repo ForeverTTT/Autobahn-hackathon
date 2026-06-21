@@ -160,7 +160,9 @@ def _english_factor_note(factor: Dict[str, Any]) -> str:
         return f"Holiday travel context from {source} data has {impact} impact."
     if factor_type in {"event", "historical_same_period_event"}:
         return f"Event context from {source} data has {impact} impact."
-    if factor_type in {"historical_traffic", "historical_same_period"}:
+    if factor_type == "historical_traffic":
+        return f"Hourly traffic context from {source} data shows {impact} pressure for this time slot."
+    if factor_type == "historical_same_period":
         return f"Historical same-period traffic data indicates {impact} pressure."
     if factor_type == "incident":
         return f"Live incident search indicates {impact} traffic impact."
