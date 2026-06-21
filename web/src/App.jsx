@@ -84,8 +84,8 @@ export default function App() {
             items={NAV_ITEMS}
             activeHref={`#/${page}`}
             baseColor="#000000"
-            pillColor="#ffffff"
-            pillTextColor="#000000"
+            pillColor="transparent"
+            pillTextColor="#ffffff"
             hoveredPillTextColor="#ffffff"
             initialLoadAnimation={false}
           />

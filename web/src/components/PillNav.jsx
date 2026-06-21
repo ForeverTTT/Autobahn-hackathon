@@ -127,27 +127,10 @@ const PillNav = ({
     return () => window.removeEventListener("resize", onResize);
   }, [items, ease, initialLoadAnimation]);
 
-  const handleEnter = (i) => {
-    const tl = tlRefs.current[i];
-    if (!tl) return;
-    activeTweenRefs.current[i]?.kill();
-    activeTweenRefs.current[i] = tl.tweenTo(tl.duration(), {
-      duration: 0.3,
-      ease,
-      overwrite: "auto",
-    });
-  };
-
-  const handleLeave = (i) => {
-    const tl = tlRefs.current[i];
-    if (!tl) return;
-    activeTweenRefs.current[i]?.kill();
-    activeTweenRefs.current[i] = tl.tweenTo(0, {
-      duration: 0.2,
-      ease,
-      overwrite: "auto",
-    });
-  };
+  // Gooey label-flip hover animation removed — the label must always stay
+  // visible (the selected pill keeps its text). Hover styling is pure CSS now.
+  const handleEnter = () => {};
+  const handleLeave = () => {};
 
   const handleLogoEnter = () => {
     const img = logoImgRef.current;

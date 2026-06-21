@@ -118,13 +118,24 @@
   will-change: transform, opacity;
 }
 
-/* active page: inverted pill — black background, white label */
+/* Segmented-toggle behaviour (like the A8/A93 switch): black track, only the
+   selected pill is a white capsule with black text; the rest are transparent
+   with white text. The gooey hover animation is disabled for this clean look. */
+.pill .hover-circle,
+.pill .pill-label-hover {
+  display: none;
+}
+
+.pill:not(.is-active):hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .pill.is-active {
-  background: var(--base, #000);
+  background: #ffffff;
 }
 
 .pill.is-active .pill-label {
-  color: var(--hover-text, #fff);
+  color: #17201a;
 }
 
 .pill.is-active::after {
