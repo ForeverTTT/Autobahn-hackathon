@@ -61,8 +61,8 @@ const PROJECTS: Project[] = [
     category: "Web · interactive forecast UI",
     href: DEMO.hourly,
     col1a: "/shots/timeline.mp4",
-    col1b: "/shots/UI1.jpeg",
-    col2: "/shots/myplan.mp4",
+    col1b: "/shots/myplan.mp4",
+    col2: "/shots/UI1.jpeg",
     layout: "ui-showcase",
   },
 ];
@@ -218,20 +218,20 @@ function ProjectCard({
             </div>
             <div className="grid grid-cols-1 gap-3 sm:gap-4">
               <div className={`h-[180px] sm:h-[225px] md:h-[290px] bg-white p-2 sm:p-3 ${RADIUS}`}>
-                <video
+                <img
                   src={project.col2}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
+                  alt="Traffic calendar interface"
+                  loading="lazy"
                   className={`h-full w-full object-contain ${RADIUS}`}
                 />
               </div>
               <div className={`h-[180px] sm:h-[225px] md:h-[290px] bg-white p-2 sm:p-3 ${RADIUS}`}>
-                <img
+                <video
                   src={project.col1b}
-                  alt="Traffic calendar interface"
-                  loading="lazy"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className={`h-full w-full object-contain ${RADIUS}`}
                 />
               </div>
