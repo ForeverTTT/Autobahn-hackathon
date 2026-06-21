@@ -60,9 +60,9 @@ const PROJECTS: Project[] = [
     name: "Interactive User Interface",
     category: "Web · interactive forecast UI",
     href: DEMO.hourly,
-    col1a: "/shots/ui3.jpeg",
+    col1a: "/shots/timeline.mp4",
     col1b: "/shots/UI1.jpeg",
-    col2: "/shots/ui2.jpeg",
+    col2: "/shots/myplan.mp4",
     layout: "ui-showcase",
   },
 ];
@@ -207,19 +207,23 @@ function ProjectCard({
         ) : project.layout === "ui-showcase" ? (
           <div className="grid grid-cols-1 md:grid-cols-[32%_60%] justify-center gap-3 sm:gap-4 px-2 sm:px-4 md:px-8">
             <div className={`h-[300px] sm:h-[420px] md:h-[600px] bg-white p-2 sm:p-3 ${RADIUS}`}>
-              <img
+              <video
                 src={project.col1a}
-                alt="Hourly traffic mobile interface"
-                loading="lazy"
+                autoPlay
+                loop
+                muted
+                playsInline
                 className={`h-full w-full object-contain ${RADIUS}`}
               />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:gap-4">
               <div className={`h-[180px] sm:h-[225px] md:h-[290px] bg-white p-2 sm:p-3 ${RADIUS}`}>
-                <img
+                <video
                   src={project.col2}
-                  alt="Live corridor map interface"
-                  loading="lazy"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className={`h-full w-full object-contain ${RADIUS}`}
                 />
               </div>
