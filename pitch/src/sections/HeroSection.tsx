@@ -94,9 +94,12 @@ export default function HeroSection() {
             inactiveTransition="transform 0.6s ease-in-out"
           >
             <div className="hero-product-float">
-              <img
-                src="/shots/web-map-4.png"
-                alt="AlpineFlow segment map and forecast"
+              <video
+                src="/shots/maprecord1.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="w-[330px] sm:w-[460px] md:w-[570px] lg:w-[660px] rounded-2xl border border-[#D7E2EA]/25 shadow-[0_30px_80px_rgba(0,0,0,0.6)] select-none"
                 draggable={false}
               />
