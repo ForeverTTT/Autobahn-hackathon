@@ -1766,6 +1766,11 @@ button.day-cell.selected {
   border-radius: 9999px;
   background: #000000;
 }
+
+.map-toolbar--float .map-dir-pills {
+  width: 286px;
+}
+
 .map-toolbar--float .map-pills button,
 .map-toolbar--float .map-dir-pills button {
   height: 26px;
@@ -1784,6 +1789,16 @@ button.day-cell.selected {
     background 150ms ease,
     color 150ms ease;
 }
+
+.map-toolbar--float .map-dir-pills button {
+  min-width: 0;
+  flex: 1 1 50%;
+  padding-right: 9px;
+  padding-left: 9px;
+  font-size: 9.5px;
+  letter-spacing: 0;
+}
+
 .map-toolbar--float .map-pills button.active,
 .map-toolbar--float .map-dir-pills button.active {
   background: #ffffff;
