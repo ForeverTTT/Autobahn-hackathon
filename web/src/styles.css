@@ -90,6 +90,10 @@ a:focus-visible {
   pointer-events: auto;
 }
 
+.map-topbar .pill-nav-container {
+  transform: translateX(44px);
+}
+
 /* Brand top-left (calendar only); margin-right:auto keeps PillNav at the right. */
 .app-brand {
   display: inline-flex;

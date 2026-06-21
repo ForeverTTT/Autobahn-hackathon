@@ -73,7 +73,10 @@ export default function App() {
 
   return (
     <div className="app-shell" ref={shellRef}>
-      <header className="topbar" ref={navRef}>
+      <header
+        className={`topbar ${page === "map" ? "map-topbar" : ""}`}
+        ref={navRef}
+      >
         <div className="topbar-inner">
           {page !== "map" && (
             <a className="app-brand" href="#/calendar" aria-label="AlpineFlow">
