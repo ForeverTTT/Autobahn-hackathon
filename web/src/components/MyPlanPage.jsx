@@ -139,13 +139,13 @@ function ConfirmModal({ isOpen, onClose, onConfirm, fromHour, toHour, timeSaved 
           </div>
           {timeSaved > 0 && (
             <p className="time-benefit">
-              ✨ You'll save approximately{" "}
+              You'll save approximately{" "}
               <strong>{timeSaved} minutes</strong> of waiting time!
             </p>
           )}
           {timeSaved < 0 && (
             <p className="time-warning">
-              ⚠️ This time slot has{" "}
+              This time slot has{" "}
               <strong>{Math.abs(timeSaved)} more minutes</strong> of expected delay.
             </p>
           )}
@@ -166,7 +166,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, fromHour, toHour, timeSaved 
 function Toast({ message, isVisible }) {
   return (
     <div className={`toast ${isVisible ? "toast-visible" : ""}`}>
-      <span className="toast-icon">✓</span>
+      <span className="toast-icon" />
       {message}
     </div>
   );
@@ -304,7 +304,7 @@ export default function MyPlanPage() {
                 </span>
               </h2>
               <p className="status-subtitle">
-                📍 A8 Munich → Salzburg · Predicted delay:{" "}
+                A8 Munich → Salzburg · Predicted delay:{" "}
                 <span className="delay-time">
                   {Math.round(mySlot.p / 40)} min
                 </span>
@@ -313,7 +313,7 @@ export default function MyPlanPage() {
           </div>
 
           <div className="status-achievement">
-            <div className="achievement-icon">🏆</div>
+            <div className="achievement-icon" aria-hidden="true" />
             <div className="achievement-info">
               <div className="achievement-title">Off-Peak Achievement</div>
               <div className="achievement-stats">
@@ -414,7 +414,7 @@ export default function MyPlanPage() {
           <div className="suggestion-content">
             <div className="suggestion-info">
               <div className="suggestion-badge">
-                ✨ <strong>Better Option Found!</strong>
+                <strong>Better option found</strong>
               </div>
               <p className="suggestion-text">
                 Switch to{" "}
