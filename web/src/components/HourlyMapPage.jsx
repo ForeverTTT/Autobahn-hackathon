@@ -616,7 +616,7 @@ function initialMapState() {
     road: roadParam === "A93" ? "A93" : "A8",
     direction: directionParam === 2 ? 2 : 1,
     date:
-      validDate && dateYear >= 2023 && dateYear <= 2029
+      validDate && dateYear >= 2026 && dateYear <= 2029
         ? dateParam
         : getDefaultDateKey(),
     hour: hourParam >= 0 && hourParam <= 23 ? hourParam : 8,
@@ -1184,7 +1184,12 @@ export default function HourlyMapPage() {
         <span className="panel-kicker">LIVE CORRIDOR</span>
         <div className="map-control">
           <span>Date</span>
-          <DateField value={selectedDate} onChange={setSelectedDate} />
+          <DateField
+            value={selectedDate}
+            min="2026-01-01"
+            max="2029-12-31"
+            onChange={setSelectedDate}
+          />
         </div>
         <div className="map-control">
           <span>Hour</span>

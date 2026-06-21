@@ -11,7 +11,7 @@ import {
 import RouteArrow from "../../arrows/RouteArrow";
 import { SelectMenu } from "./TimeControls";
 
-const YEARS = Array.from({ length: 7 }, (_, index) => 2023 + index);
+const YEARS = Array.from({ length: 4 }, (_, index) => 2026 + index);
 const MONTHS = [
   "January",
   "February",
