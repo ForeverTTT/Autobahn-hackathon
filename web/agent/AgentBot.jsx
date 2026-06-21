@@ -569,6 +569,8 @@ function ChatPanel({ role, onChangeRole, onBusyChange }) {
 
 export default function AgentBot() {
   const dragState = useRef(null);
+  const isAgentBusyRef = useRef(false);
+  const roleIdRef = useRef(null);
   const [roleId, setRoleId] = useState(readStoredRole);
   const [isOpen, setIsOpen] = useState(false);
   const [isChoosingRole, setIsChoosingRole] = useState(!roleId);
@@ -577,6 +579,14 @@ export default function AgentBot() {
     () => readStoredPosition() ?? defaultPosition(),
   );
   const selectedRole = ROLES.find((role) => role.id === roleId) ?? null;
+
+  useEffect(() => {
+    isAgentBusyRef.current = isAgentBusy;
+  }, [isAgentBusy]);
+
+  useEffect(() => {
+    roleIdRef.current = roleId;
+  }, [roleId]);
 
   useEffect(() => {
     const keepInsideViewport = () => {
@@ -636,7 +646,6 @@ export default function AgentBot() {
 
   const onPointerDown = (event) => {
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
     dragState.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -647,28 +656,47 @@ export default function AgentBot() {
     };
   };
 
-  const onPointerMove = (event) => {
-    const drag = dragState.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+  useEffect(() => {
+    const onWindowPointerMove = (event) => {
+      const drag = dragState.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
 
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (Math.abs(deltaX) + Math.abs(deltaY) > 5) drag.moved = true;
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      if (Math.abs(deltaX) + Math.abs(deltaY) > 5) drag.moved = true;
 
-    setPosition(
-      clampPosition({
-        x: drag.originX + deltaX,
-        y: drag.originY + deltaY,
-      }),
-    );
-  };
+      setPosition(
+        clampPosition({
+          x: drag.originX + deltaX,
+          y: drag.originY + deltaY,
+        }),
+      );
+    };
 
-  const onPointerUp = (event) => {
-    const drag = dragState.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    dragState.current = null;
-    if (!drag.moved) togglePanel();
-  };
+    const onWindowPointerUp = (event) => {
+      const drag = dragState.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      dragState.current = null;
+      if (!drag.moved) {
+        setIsOpen((open) => {
+          if (open && isAgentBusyRef.current) return true;
+          const nextOpen = !open;
+          if (nextOpen) setIsChoosingRole(!roleIdRef.current);
+          return nextOpen;
+        });
+      }
+    };
+
+    window.addEventListener("pointermove", onWindowPointerMove);
+    window.addEventListener("pointerup", onWindowPointerUp);
+    window.addEventListener("pointercancel", onWindowPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onWindowPointerMove);
+      window.removeEventListener("pointerup", onWindowPointerUp);
+      window.removeEventListener("pointercancel", onWindowPointerUp);
+    };
+  }, []);
 
   return (
     <div className="agent-layer">
@@ -696,8 +724,6 @@ export default function AgentBot() {
         type="button"
         style={{ left: position.x, top: position.y }}
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
         onPointerCancel={() => {
           dragState.current = null;
         }}

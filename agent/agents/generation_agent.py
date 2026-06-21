@@ -260,13 +260,13 @@ class GenerationAgent(BaseAgent):
         context_factors: List[ExternalFactor],
         search_factors: List[ExternalFactor],
         search_data: Dict[str, Any],
-    ) -> Dict[str, List[str]]:
-        """Create English reference bullets from the three evidence agents."""
-        return {
-            "ForecastAgent": self._forecast_references(forecast),
-            "ContextAgent": self._context_references(context_data, context_factors),
-            "SearchAgent": self._search_references(search_factors, search_data),
-        }
+    ) -> List[str]:
+        """Create a flat English reference bullet list from useful evidence only."""
+        return (
+            self._forecast_references(forecast)
+            + self._context_references(context_data, context_factors)
+            + self._search_references(search_factors, search_data)
+        )
 
     def _forecast_references(self, forecast) -> List[str]:
         data = self._to_jsonable(forecast)
@@ -307,7 +307,7 @@ class GenerationAgent(BaseAgent):
                     f"level {record.get('congestion_level', 'unknown')}."
                 )
 
-        return refs or ["ForecastAgent returned no usable forecast CSV evidence."]
+        return refs
 
     def _context_references(
         self,
@@ -316,7 +316,7 @@ class GenerationAgent(BaseAgent):
     ) -> List[str]:
         refs: List[str] = []
         if not isinstance(context_data, dict):
-            return ["ContextAgent returned no usable context CSV evidence."]
+            return refs
 
         traffic = context_data.get("hourly_traffic", []) or []
         temperature = context_data.get("temperature_road", []) or []
@@ -394,7 +394,7 @@ class GenerationAgent(BaseAgent):
                 f"type {factor.type}, impact {factor.impact}, source {factor.source}."
             )
 
-        return refs or ["ContextAgent returned no usable context CSV evidence."]
+        return refs
 
     def _search_references(
         self,
@@ -404,20 +404,12 @@ class GenerationAgent(BaseAgent):
         refs: List[str] = []
         if isinstance(search_data, dict):
             sources = search_data.get("sources", []) or []
-            search_plan = search_data.get("search_plan", []) or []
-            errors = search_data.get("errors", []) or []
-            if search_plan:
-                refs.append(
-                    f"SearchAgent Tavily plan: {len(search_plan)} search tasks for weather, construction, events, and incidents."
-                )
             for source in sources[:5]:
                 refs.append(
                     "SearchAgent Tavily source: "
                     f"{source.get('type', 'unknown')} - {source.get('title', 'untitled')} "
                     f"({source.get('url', 'no URL')})."
                 )
-            for error in errors[:2]:
-                refs.append(f"SearchAgent warning: {error}.")
 
         for factor in search_factors[:4]:
             refs.append(
@@ -425,7 +417,7 @@ class GenerationAgent(BaseAgent):
                 f"type {factor.type}, impact {factor.impact}, source {factor.source}."
             )
 
-        return refs or ["SearchAgent returned no usable live-search evidence."]
+        return refs
 
     def _avg_text(self, values: List[float], unit: str) -> str:
         if not values:

@@ -287,9 +287,10 @@ Requirements:
 - For single-day "what time should I leave" questions, do not answer with one sentence; list recommended/optional/cautious time windows and reasons.
 - Only cite forecast, context, search, and attribution evidence from the JSON. If evidence is uncertain, state the limitation instead of inventing live facts.
 - You MUST include a section named "## References" near the end.
-- In "## References", list evidence grouped under "ForecastAgent", "ContextAgent", and "SearchAgent".
-- Each reference must be a concise English bullet and should mention the data source type, such as forecast CSV, context CSV, historical same-period CSV, or Tavily search.
-- If an agent has no available evidence, write one bullet saying that no usable evidence was returned.
+- In "## References", output a simple flat bullet list only. Do not add subheadings such as ForecastAgent, ContextAgent, or SearchAgent.
+- Each reference must be a concise English bullet and should mention the data source type, such as forecast CSV, context CSV, historical same-period CSV, or Tavily source.
+- Do not include placeholder bullets like "no usable evidence", API limit notices, or empty-agent messages.
+- If there are no useful references, omit the "## References" section entirely.
 - Do not output debug logs or internal function names.
 
 Evidence JSON:
