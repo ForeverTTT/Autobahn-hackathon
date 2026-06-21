@@ -121,6 +121,11 @@ export default function CalendarPage() {
   const [detailDirection, setDetailDirection] = useState(1);
   const [trafficDays, setTrafficDays] = useState([]);
   const [trafficState, setTrafficState] = useState("loading");
+  const todayKey = formatDateKey(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,6 +169,13 @@ export default function CalendarPage() {
 
     setYear(nextYear);
     setMonth(next.getMonth());
+    setSelectedDay(null);
+  };
+
+  const goToToday = () => {
+    if (!YEARS.includes(today.getFullYear())) return;
+    setYear(today.getFullYear());
+    setMonth(today.getMonth());
     setSelectedDay(null);
   };
 
@@ -235,6 +247,14 @@ export default function CalendarPage() {
               >
                 <ArrowIcon direction="right" />
               </button>
+              <button
+                className="today-button"
+                type="button"
+                onClick={goToToday}
+                disabled={!YEARS.includes(today.getFullYear())}
+              >
+                Today
+              </button>
             </div>
 
             <div className="road-control">
@@ -303,9 +323,10 @@ export default function CalendarPage() {
                   type="button"
                   className={`day-cell ${
                     selectedDay === item.day ? "selected" : ""
-                  }`}
+                  } ${item.dateKey === todayKey ? "today" : ""}`}
                   key={item.dateKey}
                   onClick={() => toggleDay(item.day)}
+                  aria-current={item.dateKey === todayKey ? "date" : undefined}
                   aria-label={`${MONTHS[month]} ${item.day}, ${year}. ${directions[0]} ${statusLabel(item.directions[0])}${item.scores[0] === null ? "" : `, score ${item.scores[0]}`}; ${directions[1]} ${statusLabel(item.directions[1])}${item.scores[1] === null ? "" : `, score ${item.scores[1]}`}.`}
                 >
                   <span className="day-number">{item.day}</span>

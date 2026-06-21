@@ -411,6 +411,7 @@ a:focus-visible {
 }
 
 .month-navigation {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 12px;
@@ -465,6 +466,33 @@ a:focus-visible {
 
 .date-selectors {
   min-width: 0;
+}
+
+.month-navigation > .today-button {
+  position: absolute;
+  bottom: 0;
+  left: calc(100% + 12px);
+  width: auto;
+  min-width: 65px;
+  padding: 0 14px;
+  border: 2px solid #17201a;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #17201a;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.month-navigation > .today-button:hover:not(:disabled) {
+  background: #f0f4ed;
+}
+
+.month-navigation > .today-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .date-select-row {
@@ -678,6 +706,19 @@ button.day-cell.selected {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
+button.day-cell.today {
+  z-index: 2;
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+button.day-cell.today.selected {
+  background: #eef0ff;
+  box-shadow:
+    inset 0 0 0 3px var(--ink),
+    inset 0 0 0 6px #eef0ff,
+    inset 0 0 0 8px var(--accent);
+}
+
 .day-cell.empty {
   background:
     linear-gradient(
@@ -784,6 +825,47 @@ button.day-cell.selected {
 .day-bar-half.unavailable,
 .day-bar-half.neutral {
   background: #d4dad3;
+}
+
+@media (max-width: 1280px) {
+  .calendar-page.page-container {
+    width: min(1380px, 96vw);
+  }
+
+  .calendar-toolbar {
+    gap: 16px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .direction-key-row {
+    gap: 9px;
+  }
+
+  .direction-key-row .legend-inline {
+    gap: 8px;
+    padding-left: 9px;
+  }
+
+  .direction-key-row .legend-title {
+    padding-right: 9px;
+    font-size: 8px;
+  }
+
+  .direction-key-row .legend-item {
+    gap: 5px;
+    font-size: 10px;
+  }
+
+  .dir-legend-name {
+    padding-right: 9px;
+    padding-left: 9px;
+    font-size: 9px;
+  }
+
+  .road-selector button {
+    min-width: 62px;
+  }
 }
 
 .calendar-route-shapes .route-direction-shape {
