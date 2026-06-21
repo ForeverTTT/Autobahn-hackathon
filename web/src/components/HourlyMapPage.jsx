@@ -319,11 +319,12 @@ function statusColor(status) {
 }
 
 // Road-segment colour from the REAL congestion_score (scored_traffic CSV).
-// Thresholds match the dataset's own congestion_level bands:
-// smooth ≤ 20, light 20–40 (busy), moderate > 40 (heavy).
+// Keep these five bands identical to the Calendar daily-score thresholds.
 function congestionStatus(score) {
-  if (score > 40) return "heavy";
-  if (score > 20) return "busy";
+  if (score >= 41) return "critical";
+  if (score >= 37) return "heavy";
+  if (score >= 31) return "moderate";
+  if (score >= 25) return "light";
   return "smooth";
 }
 
