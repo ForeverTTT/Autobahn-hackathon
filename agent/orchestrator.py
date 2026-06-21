@@ -6,6 +6,7 @@ import asyncio
 from typing import Dict, Any
 
 from .models import AgentRequest, UserType
+from .direct_response import get_direct_response
 from .agents import (
     IntentParser,
     ParsedIntent,
@@ -51,6 +52,21 @@ class Orchestrator:
         Returns:
             针对用户画像的响应
         """
+        direct_response = get_direct_response(query)
+        if direct_response:
+            return {
+                "success": True,
+                "query": query,
+                "persona": None,
+                "time_range": None,
+                "trip_plan": None,
+                "parsed": None,
+                "advice": direct_response,
+                "data": {"mode": "direct"},
+                "factors": [],
+                "raw": {},
+            }
+
         # 1. 解析意图，识别用户画像、时间范围和数据需求
         parsed = await self.intent_parser.parse_async(query, user_type)
 

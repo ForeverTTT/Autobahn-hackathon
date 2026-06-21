@@ -205,6 +205,12 @@
   font-size: 12px;
 }
 
+.agent-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .agent-chat-header button {
   padding: 6px 8px;
   border: 1px solid #dde2da;
@@ -214,6 +220,108 @@
   cursor: pointer;
   font-size: 8px;
   font-weight: 800;
+}
+
+.agent-history-panel {
+  margin-bottom: 14px;
+  padding: 11px;
+  border: 1px solid #dfe5db;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px rgba(30, 41, 33, 0.08);
+}
+
+.agent-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+  color: #17201a;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.agent-history-heading button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #756b37;
+  cursor: pointer;
+  font: inherit;
+  font-size: 8px;
+}
+
+.agent-history-list {
+  display: grid;
+  gap: 7px;
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.agent-history-item {
+  display: grid;
+  grid-template-columns: 1fr 28px;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.agent-history-item button {
+  border: 1px solid #e2e7de;
+  border-radius: 10px;
+  background: #f8faf5;
+  color: #455048;
+  cursor: pointer;
+  text-align: left;
+}
+
+.agent-history-item button:first-child {
+  min-width: 0;
+  padding: 8px 9px;
+}
+
+.agent-history-item button:last-child {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #8a928c;
+  font-size: 15px;
+  text-align: center;
+}
+
+.agent-history-item button:hover {
+  border-color: #d4b63d;
+  background: #fff9df;
+}
+
+.agent-history-item button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.agent-history-item strong,
+.agent-history-item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-history-item strong {
+  color: #17201a;
+  font-size: 10px;
+}
+
+.agent-history-item small {
+  margin-top: 4px;
+  color: #879087;
+  font-size: 8px;
+}
+
+.agent-history-panel > p {
+  margin: 0;
+  color: #879087;
+  font-size: 9px;
 }
 
 .agent-chat-body {

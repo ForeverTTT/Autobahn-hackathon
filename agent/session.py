@@ -7,11 +7,13 @@ ChatSession - 多轮对话会话管理
 - 追问原因、修改计划、假设性问题
 """
 import asyncio
+import re
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
 from .models import AgentRequest, AgentResponse, UserType
+from .direct_response import get_direct_response
 from .agents import (
     IntentParser,
     ParsedIntent,
@@ -98,6 +100,9 @@ class ChatSession:
         """检测追问类型"""
         query_lower = query.lower().strip()
 
+        if self._looks_like_new_trip_query(query_lower):
+            return FollowUpType.NEW_QUERY
+
         # 追问原因
         reason_keywords = ["为什么", "why", "原因", "怎么", "咋"]
         if any(kw in query_lower for kw in reason_keywords):
@@ -130,6 +135,26 @@ class ChatSession:
 
         # 默认为新查询
         return FollowUpType.NEW_QUERY
+
+    def _looks_like_new_trip_query(self, query_lower: str) -> bool:
+        """A concrete destination/date/route request should run the full chain."""
+        destination_keywords = [
+            "salzburg", "萨尔茨堡", "innsbruck", "因斯布鲁克",
+            "munich", "münchen", "muenchen", "慕尼黑", "a8", "a93",
+        ]
+        trip_keywords = ["去", "到", "出发", "返程", "回来", "回程", "自驾", "开车", "travel", "drive"]
+        time_keywords = [
+            "今天", "明天", "后天", "下周", "周一", "周二", "周三", "周四", "周五", "周六", "周日",
+            "几点", "哪天", "什么时候",
+        ]
+
+        has_destination = any(kw in query_lower for kw in destination_keywords)
+        has_trip_intent = any(kw in query_lower for kw in trip_keywords)
+        has_time = any(kw in query_lower for kw in time_keywords) or bool(
+            re.search(r"\d{4}-\d{2}-\d{2}", query_lower)
+        )
+
+        return has_destination and (has_trip_intent or has_time)
 
     async def _process_new_query(self, query: str, user_type: UserType = None) -> str:
         """处理新查询 - 调用全部 Agent"""
@@ -435,6 +460,12 @@ class ChatSession:
         """异步对话"""
         if user_type is not None:
             self.user_type = user_type
+
+        direct_response = get_direct_response(query)
+        if direct_response:
+            self.history.append(Message(role="user", content=query))
+            self.history.append(Message(role="assistant", content=direct_response))
+            return direct_response
 
         # 添加用户消息到历史
         self.history.append(Message(role="user", content=query))

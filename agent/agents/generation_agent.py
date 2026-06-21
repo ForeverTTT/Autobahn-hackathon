@@ -2,6 +2,9 @@
 GenerationAgent - 响应生成Agent
 根据用户画像和时间范围生成针对性的决策建议
 """
+from dataclasses import asdict, is_dataclass
+from enum import Enum
+import json
 import re
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
@@ -24,6 +27,7 @@ from .prompt import (
 )
 from ..tools import (
     aggregate_daily_reasons,
+    get_llm_client,
     load_factor_contribution_knowledge,
     score_to_stress_index,
     summarize_factor_reasons,
@@ -78,22 +82,30 @@ class GenerationAgent(BaseAgent):
             # 确定路线
             route = self._determine_route(request.destination, request.road)
 
-            # 根据时间范围长度选择生成策略
+            # 根据时间范围长度生成结构化证据；最终自然语言由 LLM 生成，避免固定模板回复。
             if time_range and time_range.duration_days > 14:
-                # 长时间范围（超过2周）：生成最佳窗口推荐
                 result = self._generate_long_range_response(
                     request, parsed_intent, forecast, all_factors, route
                 )
             elif time_range and time_range.duration_days > 1:
-                # 中等时间范围（2-14天）：生成日历视图
                 result = self._generate_calendar_response(
                     request, parsed_intent, forecast, all_factors, route, context_data or {}
                 )
             else:
-                # 短时间范围（1天）：根据用户画像生成
                 result = self._generate_persona_response(
                     request, parsed_intent, persona, forecast, all_factors, route
                 )
+
+            result["advice"] = await self._generate_llm_advice(
+                request=request,
+                parsed_intent=parsed_intent,
+                persona=persona,
+                route=route,
+                result=result,
+                forecast=forecast,
+                context_data=context_data or {},
+                factors=all_factors,
+            )
 
             result = self._attach_generation_prompt(result, persona.type.value)
 
@@ -144,6 +156,106 @@ class GenerationAgent(BaseAgent):
             "composed": build_generation_prompt(persona),
         }
         return result
+
+    async def _generate_llm_advice(
+        self,
+        request: AgentRequest,
+        parsed_intent: ParsedIntent,
+        persona: PersonaProfile,
+        route,
+        result: Dict[str, Any],
+        forecast,
+        context_data: Dict[str, Any],
+        factors: List[ExternalFactor],
+    ) -> str:
+        """Let the LLM turn the completed agent-chain evidence into the final answer."""
+        evidence = {
+            "user_query": request.query,
+            "route": self._to_jsonable(route),
+            "parsed_intent": self._summarize_intent(parsed_intent),
+            "chain_result": {
+                key: value for key, value in result.items() if key != "advice"
+            },
+            "forecast": self._to_jsonable(forecast),
+            "context": self._compact_context(context_data),
+            "factors": self._to_jsonable(factors),
+        }
+
+        prompt = f"""用户问题：
+{request.query}
+
+下面是完整 agent 链路已经计算出的证据，包含 IntentParser、ForecastAgent、ContextAgent、SearchAgent 和模型归因结果。请基于这些证据直接生成最终回答。
+
+要求：
+- 用中文回答，Markdown 格式。
+- 不要套用固定模板；根据用户问题自然组织内容。
+- 如果是具体出行/交通 query，必须给出完整链路建议：结论、可选日期或小时、原因、风险和备选方案。
+- 如果证据里有 calendar 或 hourly_recommendations，优先用表格展示。
+- 单日“几点出发”也不要只给一句话，要列出推荐/可选/谨慎时段和依据。
+- 只能引用证据里的预测、上下文、搜索和归因；不确定就说明限制，不要编造实时事实。
+- 不要输出调试日志，也不要提到内部函数名。
+
+证据 JSON：
+{json.dumps(self._to_jsonable(evidence), ensure_ascii=False, indent=2)[:24000]}"""
+
+        system = (
+            f"{build_generation_prompt(persona.type.value)}\n\n"
+            "你不是固定模板渲染器。你要像一个真实交通顾问一样，根据证据和用户问题生成回答。"
+        )
+
+        client = get_llm_client()
+        return await client.generate(
+            prompt,
+            system=system,
+            temperature=0.2,
+            max_tokens=3200,
+        )
+
+    def _summarize_intent(self, parsed_intent: ParsedIntent) -> Dict[str, Any]:
+        if not parsed_intent:
+            return {}
+
+        trip_plan = parsed_intent.trip_plan
+        return {
+            "persona": parsed_intent.persona_type.value,
+            "user_type": parsed_intent.user_type.value,
+            "core_question": parsed_intent.core_question,
+            "destination": parsed_intent.destination,
+            "road": parsed_intent.road,
+            "intent": parsed_intent.intent,
+            "time_range": self._to_jsonable(parsed_intent.time_range),
+            "data_requirements": self._to_jsonable(parsed_intent.data_requirements),
+            "trip_plan": self._to_jsonable(trip_plan) if trip_plan else None,
+        }
+
+    def _compact_context(self, context_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Keep LLM evidence focused enough for token limits while preserving useful facts."""
+        if not isinstance(context_data, dict):
+            return {}
+
+        compact = {}
+        for key, value in context_data.items():
+            if isinstance(value, list):
+                compact[key] = value[:24]
+            elif isinstance(value, dict):
+                compact[key] = {
+                    sub_key: sub_value[:24] if isinstance(sub_value, list) else sub_value
+                    for sub_key, sub_value in value.items()
+                }
+            else:
+                compact[key] = value
+        return compact
+
+    def _to_jsonable(self, value: Any):
+        if is_dataclass(value):
+            return self._to_jsonable(asdict(value))
+        if isinstance(value, Enum):
+            return value.value
+        if isinstance(value, dict):
+            return {str(k): self._to_jsonable(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._to_jsonable(v) for v in value]
+        return value
 
     # ============ 长时间范围：最佳窗口推荐 ============
 

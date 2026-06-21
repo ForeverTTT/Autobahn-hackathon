@@ -7,7 +7,9 @@ import "./AgentBot.css";
 const ROLE_STORAGE_KEY = `alpineflow-agent-role:${import.meta.env.VITE_AGENT_SESSION_ID}`;
 const POSITION_STORAGE_KEY = "alpineflow-agent-position";
 const CHAT_STORAGE_KEY_PREFIX = "alpineflow-agent-chat:";
+const HISTORY_STORAGE_KEY_PREFIX = "alpineflow-agent-history:";
 const MAX_STORED_MESSAGES = 200;
+const MAX_HISTORY_CONVERSATIONS = 20;
 const AVATAR_SIZE = 92;
 const EDGE_GAP = 18;
 
@@ -144,31 +146,104 @@ function chatStorageKey(roleId) {
   return `${CHAT_STORAGE_KEY_PREFIX}${roleId}`;
 }
 
+function historyStorageKey(roleId) {
+  return `${HISTORY_STORAGE_KEY_PREFIX}${roleId}`;
+}
+
+function normalizeMessages(messages) {
+  return Array.isArray(messages)
+    ? messages
+        .filter(
+          (message) =>
+            (message?.role === "user" || message?.role === "assistant") &&
+            typeof message.content === "string",
+        )
+        .map((message) => ({
+          id:
+            typeof message.id === "string"
+              ? message.id
+              : createSessionId(),
+          role: message.role,
+          content: message.content,
+          createdAt:
+            typeof message.createdAt === "string"
+              ? message.createdAt
+              : null,
+        }))
+    : [];
+}
+
+function titleFromMessages(messages) {
+  const firstUserMessage = messages.find((message) => message.role === "user");
+  const title = firstUserMessage?.content?.trim() || "Untitled chat";
+  return title.length > 52 ? `${title.slice(0, 52)}…` : title;
+}
+
+function formatHistoryTime(value) {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("en", {
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return "";
+  }
+}
+
+function readStoredHistory(roleId) {
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(historyStorageKey(roleId)),
+    );
+    return Array.isArray(stored)
+      ? stored
+          .map((conversation) => {
+            const messages = normalizeMessages(conversation?.messages);
+            if (!messages.length) return null;
+            const sessionId =
+              typeof conversation?.sessionId === "string" &&
+              conversation.sessionId
+                ? conversation.sessionId
+                : createSessionId();
+
+            return {
+              id:
+                typeof conversation?.id === "string"
+                  ? conversation.id
+                  : sessionId,
+              sessionId,
+              title:
+                typeof conversation?.title === "string" &&
+                conversation.title
+                  ? conversation.title
+                  : titleFromMessages(messages),
+              messages,
+              createdAt:
+                typeof conversation?.createdAt === "string"
+                  ? conversation.createdAt
+                  : messages[0]?.createdAt || new Date().toISOString(),
+              updatedAt:
+                typeof conversation?.updatedAt === "string"
+                  ? conversation.updatedAt
+                  : messages.at(-1)?.createdAt || new Date().toISOString(),
+            };
+          })
+          .filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function readStoredConversation(roleId) {
   try {
     const stored = JSON.parse(
       window.localStorage.getItem(chatStorageKey(roleId)),
     );
-    const messages = Array.isArray(stored?.messages)
-      ? stored.messages
-          .filter(
-            (message) =>
-              (message?.role === "user" || message?.role === "assistant") &&
-              typeof message.content === "string",
-          )
-          .map((message) => ({
-            id:
-              typeof message.id === "string"
-                ? message.id
-                : createSessionId(),
-            role: message.role,
-            content: message.content,
-            createdAt:
-              typeof message.createdAt === "string"
-                ? message.createdAt
-                : null,
-          }))
-      : [];
+    const messages = normalizeMessages(stored?.messages);
 
     return {
       sessionId:
@@ -192,6 +267,8 @@ function ChatPanel({ role, onChangeRole }) {
   );
   const [sessionId, setSessionId] = useState(storedConversation.sessionId);
   const [messages, setMessages] = useState(storedConversation.messages);
+  const [history, setHistory] = useState(() => readStoredHistory(role.id));
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -209,6 +286,37 @@ function ChatPanel({ role, onChangeRole }) {
       // Ignore storage quota/privacy errors; the active chat still works.
     }
   }, [messages, role.id, sessionId]);
+
+  useEffect(() => {
+    if (!messages.length) return;
+
+    const now = new Date().toISOString();
+    setHistory((current) => {
+      const nextConversation = {
+        id: sessionId,
+        sessionId,
+        title: titleFromMessages(messages),
+        messages: messages.slice(-MAX_STORED_MESSAGES),
+        createdAt: current.find((item) => item.sessionId === sessionId)?.createdAt || messages[0]?.createdAt || now,
+        updatedAt: now,
+      };
+      return [
+        nextConversation,
+        ...current.filter((item) => item.sessionId !== sessionId),
+      ].slice(0, MAX_HISTORY_CONVERSATIONS);
+    });
+  }, [messages, sessionId]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        historyStorageKey(role.id),
+        JSON.stringify(history),
+      );
+    } catch {
+      // Ignore storage errors; active chat still remains available.
+    }
+  }, [history, role.id]);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({
@@ -229,8 +337,24 @@ function ChatPanel({ role, onChangeRole }) {
     window.localStorage.removeItem(chatStorageKey(role.id));
     setSessionId(createSessionId());
     setMessages([]);
+    setIsHistoryOpen(false);
     setDraft("");
     setError("");
+  };
+
+  const restoreConversation = (conversation) => {
+    if (!conversation || isLoading) return;
+    setSessionId(conversation.sessionId || createSessionId());
+    setMessages(normalizeMessages(conversation.messages));
+    setDraft("");
+    setError("");
+    setIsHistoryOpen(false);
+  };
+
+  const deleteHistoryItem = (conversationId) => {
+    setHistory((current) =>
+      current.filter((conversation) => conversation.id !== conversationId),
+    );
   };
 
   const sendMessage = async (event) => {
@@ -295,12 +419,60 @@ function ChatPanel({ role, onChangeRole }) {
           <span>TRAFFIC ASSISTANT</span>
           <strong>{role.label} mode</strong>
         </div>
-        <button type="button" onClick={onChangeRole}>
-          Change role
-        </button>
+        <div className="agent-header-actions">
+          <button
+            type="button"
+            onClick={() => setIsHistoryOpen((current) => !current)}
+          >
+            History
+          </button>
+          <button type="button" onClick={onChangeRole}>
+            Change role
+          </button>
+        </div>
       </div>
 
       <div className="agent-chat-body" ref={bodyRef} aria-live="polite">
+        {isHistoryOpen && (
+          <div className="agent-history-panel">
+            <div className="agent-history-heading">
+              <span>Conversation history</span>
+              <button type="button" onClick={() => setIsHistoryOpen(false)}>
+                Close
+              </button>
+            </div>
+
+            {history.length ? (
+              <div className="agent-history-list">
+                {history.map((conversation) => (
+                  <div className="agent-history-item" key={conversation.id}>
+                    <button
+                      type="button"
+                      onClick={() => restoreConversation(conversation)}
+                      disabled={isLoading}
+                    >
+                      <strong>{conversation.title}</strong>
+                      <small>
+                        {conversation.messages.length} messages ·{" "}
+                        {formatHistoryTime(conversation.updatedAt)}
+                      </small>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete history item"
+                      onClick={() => deleteHistoryItem(conversation.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>No saved conversations yet.</p>
+            )}
+          </div>
+        )}
+
         <div className="agent-message assistant">
           <img src={agentImage} alt="" />
           <div className="agent-message-content">
