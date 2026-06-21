@@ -102,14 +102,22 @@ a:focus-visible {
 
 .app-brand-logo {
   display: block;
-  width: 38px;
-  height: auto;
+  height: 34px;
+  width: auto;
 }
 
 .app-brand span {
   font-size: 25px;
   font-weight: 850;
   letter-spacing: 0.06em;
+}
+
+/* collaboration mark between the partner logo and the wordmark */
+.app-brand .app-brand-x {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #9aa29a;
 }
 
 

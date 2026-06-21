@@ -77,11 +77,6 @@ export default function App() {
         <div className="topbar-inner">
           {page !== "map" && (
             <a className="app-brand" href="#/calendar" aria-label="AlpineFlow">
-              <img
-                className="app-brand-logo"
-                src={`${import.meta.env.BASE_URL}brand-logo.png`}
-                alt=""
-              />
               <span>ALPINEFLOW</span>
             </a>
           )}
