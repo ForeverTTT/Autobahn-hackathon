@@ -291,8 +291,6 @@ const DIR_STATIONS = {
     { site: "A93_Ro_MQDZ_AD Inntal_(S)_Ro", label: "AD Inntal", lat: 47.794, lng: 12.09 },
   ],
 };
-// which station colours each (visual) map segment
-const SEG_STATION = { A8: [0, 1, 1, 2], A93: [0, 1, 2] };
 
 const FORECAST_START = Date.UTC(2026, 0, 1);
 const FORECAST_DAYS = 1461;
@@ -380,18 +378,96 @@ function roadSegments(road) {
   );
 }
 
-// Concatenate a road's segments into one ordered point list (each segment keeps
-// its own ordered points), reversed when travelling the second direction.
-function buildJourney(road, dirNumber) {
-  let segments = roadSegments(road).map((segment) => ({
-    ...segment,
-    pts: segment.path,
-  }));
-  if (dirNumber === 2) {
-    segments = [...segments]
-      .reverse()
-      .map((segment) => ({ ...segment, pts: [...segment.path].reverse() }));
+function samePoint([latA, lngA], [latB, lngB]) {
+  return latA === latB && lngA === lngB;
+}
+
+function joinRoadPoints(road, dirNumber) {
+  const points = [];
+  roadSegments(road).forEach((segment) => {
+    segment.path.forEach((point) => {
+      if (!points.length || !samePoint(points.at(-1), point)) {
+        points.push(point);
+      }
+    });
+  });
+  return dirNumber === 2 ? points.reverse() : points;
+}
+
+// Project a sensor coordinate onto the route and return its distance from the
+// start of the currently selected travel direction.
+function distanceAlongRoute(pts, cum, station) {
+  let nearestDistance = 0;
+  let nearestSquaredDistance = Infinity;
+
+  for (let index = 1; index < pts.length; index += 1) {
+    const [latA, lngA] = pts[index - 1];
+    const [latB, lngB] = pts[index];
+    const referenceLat =
+      ((latA + latB + station.lat) / 3) * (Math.PI / 180);
+    const longitudeScale = Math.cos(referenceLat);
+    const ax = lngA * longitudeScale;
+    const ay = latA;
+    const bx = lngB * longitudeScale;
+    const by = latB;
+    const px = station.lng * longitudeScale;
+    const py = station.lat;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lengthSquared = dx * dx + dy * dy;
+    const t =
+      lengthSquared === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSquared),
+          );
+    const projectedX = ax + t * dx;
+    const projectedY = ay + t * dy;
+    const squaredDistance =
+      (px - projectedX) ** 2 + (py - projectedY) ** 2;
+
+    if (squaredDistance < nearestSquaredDistance) {
+      nearestSquaredDistance = squaredDistance;
+      nearestDistance =
+        cum[index - 1] + t * (cum[index] - cum[index - 1]);
+    }
   }
+
+  return nearestDistance;
+}
+
+function sliceBetween(pts, cum, startDistance, endDistance) {
+  const sliced = [pointAt(pts, cum, startDistance)];
+  for (let index = 1; index < pts.length - 1; index += 1) {
+    if (cum[index] > startDistance && cum[index] < endDistance) {
+      sliced.push(pts[index]);
+    }
+  }
+  const endPoint = pointAt(pts, cum, endDistance);
+  if (!samePoint(sliced.at(-1), endPoint)) sliced.push(endPoint);
+  return sliced;
+}
+
+// Each direction has three sensor series. The visual road is split into three
+// matching data zones, with boundaries halfway between neighbouring sensors.
+function buildJourney(road, dirNumber) {
+  const pts = joinRoadPoints(road, dirNumber);
+  const { cum, len } = cumulative(pts);
+  const stations = DIR_STATIONS[`${road}-${dirNumber}`] ?? [];
+  const stationDistances = stations.map((station) =>
+    distanceAlongRoute(pts, cum, station),
+  );
+  const boundaries = stationDistances
+    .slice(0, -1)
+    .map((distance, index) => (distance + stationDistances[index + 1]) / 2);
+  const segmentEdges = [0, ...boundaries, len];
+  const segments = stations.map((station, index) => ({
+    title: `${station.label} sensor zone`,
+    stationIndex: index,
+    pts: sliceBetween(pts, cum, segmentEdges[index], segmentEdges[index + 1]),
+  }));
+
   return { segments };
 }
 
@@ -588,7 +664,13 @@ export default function HourlyMapPage() {
     const journey = buildJourney(journeyRoad, dirNumber);
     const segments = journey.segments.map((segment) => {
       const { cum, len } = cumulative(segment.pts);
-      return { title: segment.title, pts: segment.pts, cum, len };
+      return {
+        title: segment.title,
+        stationIndex: segment.stationIndex,
+        pts: segment.pts,
+        cum,
+        len,
+      };
     });
     let acc = 0;
     const segStart = segments.map((s) => {
@@ -677,11 +759,12 @@ export default function HourlyMapPage() {
       .map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.ty.toFixed(2)}`)
       .join(" ");
 
-    // per visual map-segment congestion score (for road colouring) via the
-    // station mapping — REAL congestion_score from scored_traffic.
-    const stationFor = SEG_STATION[journeyRoad] ?? [];
-    const segCong = geometry.segments.map((_, j) =>
-      forecast ? congAt(stations[stationFor[j] ?? 0]?.site, selectedHour) : 0,
+    // The three visual data zones align one-to-one with the three sensor
+    // series for this road and direction.
+    const segCong = geometry.segments.map((segment) =>
+      forecast
+        ? congAt(stations[segment.stationIndex]?.site, selectedHour)
+        : 0,
     );
 
     return { points, pathD, truckPathD, max, segCong };
