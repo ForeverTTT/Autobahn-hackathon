@@ -15,7 +15,7 @@ const TEAM_NAMES = [
   "Kerui Ren",
   "Linhan Li",
   "Xiansheng Huang",
-  "Yining Li",
+  "Yiru Li",
 ];
 
 export default function HeroSection() {
