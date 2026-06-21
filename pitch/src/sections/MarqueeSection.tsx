@@ -1,23 +1,39 @@
 import { useEffect, useRef, useState } from "react";
 
+type MediaItem = { type: "image" | "video"; src: string };
+
 // Product + corridor imagery captured from the live web frontend.
-const IMAGES = [
-  "/shots/web-map-4.png",
-  "/shots/web-calendar.png",
-  "/shots/web-map-1.png",
-  "/shots/station-map.png",
-  "/shots/web-map-3.png",
-  "/shots/web-hourly-2.png",
-  "/shots/web-map-2.png",
+// Use { type: "video", src: "..." } for videos
+const MEDIA: MediaItem[] = [
+  { type: "image", src: "/shots/web-map-4.png" },
+  { type: "image", src: "/shots/web-calendar.png" },
+  { type: "image", src: "/shots/web-map-1.png" },
+  { type: "image", src: "/shots/station-map.png" },
+  { type: "image", src: "/shots/web-map-3.png" },
+  { type: "image", src: "/shots/web-hourly-2.png" },
+  { type: "video", src: "/shots/web-map-2.mp4" }, // Changed to video
 ];
 
-const ROW_1 = IMAGES.slice(0, 4);
-const ROW_2 = IMAGES.slice(4);
+const ROW_1 = MEDIA.slice(0, 4);
+const ROW_2 = MEDIA.slice(4);
 
-function Tile({ src }: { src: string }) {
+function Tile({ media }: { media: MediaItem }) {
+  if (media.type === "video") {
+    return (
+      <video
+        src={media.src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="rounded-2xl object-cover flex-shrink-0 border border-[#D7E2EA]/10"
+        style={{ width: 420, height: 270 }}
+      />
+    );
+  }
   return (
     <img
-      src={src}
+      src={media.src}
       loading="lazy"
       alt=""
       className="rounded-2xl object-cover flex-shrink-0 border border-[#D7E2EA]/10"
@@ -56,8 +72,8 @@ export default function MarqueeSection() {
           className="flex gap-3 w-max"
           style={{ transform: `translateX(${x1}px)`, willChange: "transform" }}
         >
-          {[...ROW_1, ...ROW_1, ...ROW_1].map((src, i) => (
-            <Tile key={`r1-${i}`} src={src} />
+          {[...ROW_1, ...ROW_1, ...ROW_1].map((media, i) => (
+            <Tile key={`r1-${i}`} media={media} />
           ))}
         </div>
 
@@ -66,8 +82,8 @@ export default function MarqueeSection() {
           className="flex gap-3 w-max"
           style={{ transform: `translateX(${x2}px)`, willChange: "transform" }}
         >
-          {[...ROW_2, ...ROW_2, ...ROW_2, ...ROW_2].map((src, i) => (
-            <Tile key={`r2-${i}`} src={src} />
+          {[...ROW_2, ...ROW_2, ...ROW_2, ...ROW_2].map((media, i) => (
+            <Tile key={`r2-${i}`} media={media} />
           ))}
         </div>
       </div>
